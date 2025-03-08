@@ -8,15 +8,34 @@
   export let width = "400px"; // Default width for desktop
   export let height = "70vh"; // Default height for mobile
 
+  // State for expanded mode
+  let expanded = false;
+  let normalWidth = width;
+
+  // Compute actual width based on expanded state
+  $: actualWidth = expanded ? `${parseInt(normalWidth) * 2}px` : normalWidth;
+
   // Handle close events
   function close() {
     isOpen = false;
+  }
+
+  // Toggle expanded mode
+  function toggleExpand() {
+    expanded = !expanded;
   }
 
   // Generate Wikipedia URL
   $: wikiUrl = wiki_page
     ? `https://en.wikipedia.org/wiki/${encodeURIComponent(wiki_page)}`
     : "about:blank";
+
+  // Open in new tab
+  function openInNewTab() {
+    if (wiki_page) {
+      window.open(wikiUrl, "_blank");
+    }
+  }
 
   // Custom transition for desktop and mobile
   function slideTransition(node, { duration }) {
@@ -43,12 +62,44 @@
       class="pane"
       in:slideTransition={{ duration: 300 }}
       out:slideTransition={{ duration: 200 }}
+      style="width: {actualWidth};"
     >
       <div class="pane-header">
         <h2>{title}</h2>
-        <button class="close-button" on:click={close} aria-label="Close panel">
-          &times;
-        </button>
+        <div class="header-buttons">
+          <button
+            class="icon-button external-link-button"
+            on:click={openInNewTab}
+            title="Open in new tab"
+            aria-label="Open in new tab"
+          >
+            <img
+              src="/icons/external-link.svg"
+              alt="Open in new tab"
+              class="icon"
+            />
+          </button>
+          <button
+            class="icon-button expand-button"
+            class:active={expanded}
+            on:click={toggleExpand}
+            title={expanded ? "Shrink pane" : "Expand pane"}
+            aria-label={expanded ? "Shrink pane" : "Expand pane"}
+          >
+            <img
+              src={expanded ? "/icons/shrink.svg" : "/icons/expand.svg"}
+              alt={expanded ? "Shrink pane" : "Expand pane"}
+              class="icon"
+            />
+          </button>
+          <button
+            class="close-button"
+            on:click={close}
+            aria-label="Close panel"
+          >
+            &times;
+          </button>
+        </div>
       </div>
       <div class="pane-content">
         {#if wiki_page}
@@ -85,12 +136,12 @@
     display: flex;
     flex-direction: column;
     height: 100vh; /* Full height on desktop */
-    width: var(--width, 400px);
     position: fixed;
     top: 0;
     left: 0;
     z-index: 1001;
     pointer-events: auto; /* Allow interaction with the pane itself */
+    transition: width 0.3s ease;
   }
 
   .pane-header {
@@ -108,20 +159,46 @@
   .pane-header h2 {
     margin: 0;
     font-size: 1.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
+  .header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .icon-button,
   .close-button {
     background: transparent;
     border: none;
-    font-size: 1.5rem;
     cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    margin: -0.25rem -0.5rem -0.25rem 0.25rem;
+    padding: 0.25rem;
     border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
+  .icon-button:hover,
   .close-button:hover {
     background-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .close-button {
+    font-size: 1.5rem;
+    margin-left: 4px;
+  }
+
+  .expand-button.active {
+    color: #1a73e8;
   }
 
   .pane-content {
@@ -142,12 +219,17 @@
   /* Mobile styles - slide from bottom */
   @media (max-width: 768px) {
     .pane {
-      width: 100%; /* Full width on mobile */
+      width: 100% !important; /* Full width on mobile */
       height: var(--height, 70vh); /* Partial height on mobile */
       top: auto;
       bottom: 0;
       border-top-left-radius: 12px;
       border-top-right-radius: 12px;
+    }
+
+    /* Hide expand button on mobile */
+    .expand-button {
+      display: none;
     }
   }
 </style>
