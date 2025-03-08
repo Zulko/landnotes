@@ -1,34 +1,26 @@
 <script>
-  import { onMount } from 'svelte';
-  import Map from './lib/Map.svelte';
-  // Initial sample markers (will be replaced with data from DuckDB)
+  import { onMount } from "svelte";
+  import Map from "./lib/Map.svelte";
   let markers = [
     { lat: 51.505, lng: -0.09, popup: "London" },
     { lat: 48.8566, lng: 2.3522, popup: "Paris" },
-    { lat: 40.7128, lng: -74.0060, popup: "New York" },
+    { lat: 40.7128, lng: -74.006, popup: "New York" },
   ];
 
-  let dbStatus = 'not started';
-  let rowCount = 0;
+  let dataStatus = "not started";
+  let mapBounds = {
+    northEast: { lat: 0, lng: 0 },
+    southWest: { lat: 0, lng: 0 },
+  };
+  let zoom = 13;
 
-  // Handle status updates
-  function handleStatusChange(status, count) {
-    dbStatus = status;
-    console.log(`DuckDB status: ${status}`);
-    
-    if (status === 'complete') {
-      rowCount = count;
-      console.log(`Database loaded with ${count} rows`);
-      loadMarkersFromDB();
-    }
-  }
-
-  // Load markers from DuckDB
-  async function loadMarkersFromDB() {
-    const dbMarkers = await getMarkers();
-    if (dbMarkers.length > 0) {
-      markers = dbMarkers;
-    }
+  function handleBoundsChange(event) {
+    console.log("Map bounds updated:", event.detail);
+    mapBounds = {
+      northEast: event.detail.bounds._northEast,
+      southWest: event.detail.bounds._southWest,
+    };
+    console.log("Map bounds updated:", mapBounds);
   }
 
   onMount(async () => {
@@ -38,13 +30,17 @@
 
 <main>
   <div class="status-bar">
-    <span>Status: {dbStatus}</span>
-    {#if dbStatus === 'complete'}
-      <span>Rows: {rowCount}</span>
-    {/if}
+    <span>Status: {dataStatus}</span>
+    <span>
+      Bounds: NE({mapBounds.northEast.lat.toFixed(4)},
+      {mapBounds.northEast.lng.toFixed(4)}) - SE({mapBounds.southWest.lat.toFixed(
+        4
+      )},
+      {mapBounds.southWest.lng.toFixed(4)})</span
+    >
   </div>
-  
-  <Map {markers} />
+
+  <Map {markers} on:boundschange={handleBoundsChange} />
 </main>
 
 <style>
@@ -55,7 +51,7 @@
     margin: 0;
     position: relative;
   }
-  
+
   .status-bar {
     position: absolute;
     top: 10px;
@@ -68,4 +64,4 @@
     display: flex;
     gap: 10px;
   }
-</style> 
+</style>

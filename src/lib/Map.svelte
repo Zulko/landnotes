@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
+  import { createEventDispatcher } from 'svelte';
 
   // Props
   export let markers = [];
@@ -11,6 +12,7 @@
   let mapElement;
   let map;
   let markerLayer;
+  const dispatch = createEventDispatcher();
 
   onMount(() => {
     // Initialize the map
@@ -26,13 +28,33 @@
     
     // Add initial markers
     updateMarkers();
+
+    // Add event listeners for bounds changes
+    map.on('moveend', handleBoundsChange);
+    map.on('zoomend', handleBoundsChange);
+    map.on('resize', handleBoundsChange);
   });
 
   onDestroy(() => {
     if (map) {
+      map.off('moveend', handleBoundsChange);
+      map.off('zoomend', handleBoundsChange);
+      map.off('resize', handleBoundsChange);
       map.remove();
     }
   });
+
+  // Function to handle bounds changes and dispatch the event
+  function handleBoundsChange() {
+    if (!map) return;
+    
+    const bounds = map.getBounds();
+    dispatch('boundschange', {
+      bounds: bounds,
+      center: bounds.getCenter(),
+      zoom: map.getZoom()
+    });
+  }
 
   // Function to update markers when the markers prop changes
   function updateMarkers() {
