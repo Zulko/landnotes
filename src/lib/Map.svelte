@@ -217,18 +217,29 @@
         width 0.1s ease,
         height 0.1s ease;
     }
+  }
 
-    & > .marker-text-container {
-      margin-top: -5px;
-      font-size: 14px;
-      line-height: 0.8em;
-      position: relative;
-      text-align: center;
-      visibility: hidden;
-      opacity: 0;
-      transition:
-        visibility 0.1s ease,
-        opacity 0.1s ease;
+  :global(.marker-text-container) {
+    margin-top: -5px;
+    font-size: 14px;
+    line-height: 0.8em;
+    position: relative;
+    text-align: center;
+    visibility: hidden;
+    opacity: 0;
+    transition:
+      visibility 0.1s ease,
+      opacity 0.1s ease;
+    & > .marker-text-outline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      font-weight: bold;
+      color: white;
+      -webkit-text-stroke: 6px white;
+      text-stroke: 6px white;
+      z-index: 1;
     }
   }
 

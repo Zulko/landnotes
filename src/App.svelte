@@ -8,7 +8,7 @@
       name: "City with a very very long name",
       type: "city",
       page: "London",
-      sizeClass: "dot",
+      sizeClass: "full",
     },
     {
       lat: 48.8566,
