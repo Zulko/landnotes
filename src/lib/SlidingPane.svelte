@@ -8,19 +8,30 @@
   export let width = "400px"; // Default width for desktop
   export let height = "70vh"; // Default height for mobile
 
-  // State for expanded mode
+  // Single expansion state for all devices
   let expanded = false;
   let normalWidth = width;
+  let normalHeight = height;
 
-  // Compute actual width based on expanded state
-  $: actualWidth = expanded ? `${parseInt(normalWidth) * 2}px` : normalWidth;
+  // Detect mobile view
+  $: isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+
+  // Compute actual dimensions based on expanded state
+  $: actualWidth = isMobile
+    ? "100%"
+    : expanded
+      ? `${parseInt(normalWidth) * 2}px`
+      : normalWidth;
+  $: actualHeight = isMobile ? (expanded ? "100vh" : normalHeight) : "100vh";
 
   // Handle close events
   function close() {
     isOpen = false;
+    // Reset expanded state when closing
+    expanded = false;
   }
 
-  // Toggle expanded mode
+  // Toggle expanded mode (works for both desktop and mobile)
   function toggleExpand() {
     expanded = !expanded;
   }
@@ -52,9 +63,20 @@
       `,
     };
   }
+
+  // Handle window resize
+  function handleResize() {
+    if (typeof window !== "undefined") {
+      // Update mobile detection
+      isMobile = window.innerWidth <= 768;
+    }
+  }
 </script>
 
-<svelte:window on:keydown={(e) => e.key === "Escape" && close()} />
+<svelte:window
+  on:keydown={(e) => e.key === "Escape" && close()}
+  on:resize={handleResize}
+/>
 
 {#if isOpen}
   <div class="pane-container">
@@ -62,7 +84,7 @@
       class="pane"
       in:slideTransition={{ duration: 300 }}
       out:slideTransition={{ duration: 200 }}
-      style="width: {actualWidth};"
+      style="width: {actualWidth}; height: {actualHeight};"
     >
       <div class="pane-header">
         <h2>{title}</h2>
@@ -79,8 +101,9 @@
               class="icon"
             />
           </button>
+          <!-- Desktop Expand Button (hidden on mobile) -->
           <button
-            class="icon-button expand-button"
+            class="icon-button expand-button desktop-only"
             class:active={expanded}
             on:click={toggleExpand}
             title={expanded ? "Shrink pane" : "Expand pane"}
@@ -88,6 +111,22 @@
           >
             <img
               src={expanded ? "/icons/shrink.svg" : "/icons/expand.svg"}
+              alt={expanded ? "Shrink pane" : "Expand pane"}
+              class="icon"
+            />
+          </button>
+          <!-- Mobile Expand Button (hidden on desktop) -->
+          <button
+            class="icon-button expand-button mobile-only"
+            class:active={expanded}
+            on:click={toggleExpand}
+            title={expanded ? "Shrink pane" : "Expand pane"}
+            aria-label={expanded ? "Shrink pane" : "Expand pane"}
+          >
+            <img
+              src={expanded
+                ? "/icons/shrink.svg"
+                : "/icons/expand-vertical.svg"}
               alt={expanded ? "Shrink pane" : "Expand pane"}
               class="icon"
             />
@@ -141,7 +180,9 @@
     left: 0;
     z-index: 1001;
     pointer-events: auto; /* Allow interaction with the pane itself */
-    transition: width 0.3s ease;
+    transition:
+      width 0.3s ease,
+      height 0.3s ease;
   }
 
   .pane-header {
@@ -197,7 +238,8 @@
     margin-left: 4px;
   }
 
-  .expand-button.active {
+  .expand-button.active,
+  .expand-button-mobile.active {
     color: #1a73e8;
   }
 
@@ -216,20 +258,33 @@
     overflow: auto;
   }
 
+  /* Hide/show based on device type */
+  .desktop-only {
+    display: block;
+  }
+
+  .mobile-only {
+    display: none;
+  }
+
   /* Mobile styles - slide from bottom */
   @media (max-width: 768px) {
     .pane {
       width: 100% !important; /* Full width on mobile */
-      height: var(--height, 70vh); /* Partial height on mobile */
       top: auto;
       bottom: 0;
       border-top-left-radius: 12px;
       border-top-right-radius: 12px;
     }
 
-    /* Hide expand button on mobile */
-    .expand-button {
+    /* Hide desktop-only elements on mobile */
+    .desktop-only {
       display: none;
+    }
+
+    /* Show mobile-only elements on mobile */
+    .mobile-only {
+      display: block;
     }
   }
 </style>
