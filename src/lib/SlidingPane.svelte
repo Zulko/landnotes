@@ -52,15 +52,19 @@
   function slideTransition(node, { duration }) {
     const isMobile = window.innerWidth <= 768;
 
-    // Different transform depending on device type
-    const transformProp = isMobile ? "translateY" : "translateX";
-
     return {
       duration,
-      css: (t) => `
-        transform: ${transformProp}(${(t - 1) * 100}%);
-        opacity: ${t}
-      `,
+      css: (t) => {
+        // For desktop: slide from left (-100% to 0%)
+        // For mobile: slide from bottom (100% to 0%)
+        const value = isMobile ? (1 - t) * 100 : (t - 1) * 100;
+        const prop = isMobile ? "translateY" : "translateX";
+
+        return `
+          transform: ${prop}(${value}%);
+          opacity: ${t};
+        `;
+      },
     };
   }
 
