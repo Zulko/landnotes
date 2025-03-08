@@ -1,6 +1,7 @@
 <script>
   import { onMount } from "svelte";
   import Map from "./lib/Map.svelte";
+  import SlidingPane from "./lib/SlidingPane.svelte";
   let markers = [
     {
       lat: 51.508056,
@@ -33,6 +34,16 @@
   };
   let zoom = 13;
 
+  // State to control the sliding pane
+  let isPaneOpen = false;
+  let paneContent = "";
+
+  // Function to open the pane with different content
+  function openPane(content) {
+    paneContent = content;
+    isPaneOpen = true;
+  }
+
   function handleBoundsChange(event) {
     console.log("Map bounds updated:", event.detail);
     mapBounds = {
@@ -57,9 +68,20 @@
       )},
       {mapBounds.southWest.lng.toFixed(4)})</span
     >
+    <button on:click={() => openPane("Example content")}
+      >Open Sliding Pane</button
+    >
   </div>
 
   <Map {markers} on:boundschange={handleBoundsChange} />
+
+  <SlidingPane bind:isOpen={isPaneOpen} title="Information">
+    <div>
+      {paneContent}
+      <!-- Add your pane content here -->
+      <p>This is the sliding pane content area.</p>
+    </div>
+  </SlidingPane>
 </main>
 
 <style>
