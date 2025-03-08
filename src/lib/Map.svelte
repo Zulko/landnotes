@@ -7,13 +7,58 @@
   // Props
   export let markers = [];
   export let zoom = 13;
-  export let center = [51.505, -0.09]; // Default to London
+  export let center = [51.508056, -0.076111]; // Default to London
 
   let mapElement;
   let map;
   let markerLayer;
   const dispatch = createEventDispatcher();
 
+  function computeMarkerHtml(marker) {
+    const iconByType = {
+      adm1st: "map",
+      adm2nd: "map",
+      adm3rd: "map",
+      airport: "plane-takeoff",
+      building: "building",
+      church: "church",
+      city: "city",
+      country: "flag",
+      county: "map",
+      edu: "school",
+      event: "newspaper",
+      forest: "trees",
+      glacier: "mountain-snow",
+      island: "tree-palm",
+      isle: "tree-palm",
+      landmark: "landmark",
+      locality: "locality",
+      mountain: "mountain-snow",
+      other: "pin",
+      railwaystation: "train-front",
+      river: "river",
+      school: "school",
+      settlement: "city",
+      town: "city",
+      village: "city",
+      waterbody: "waves",
+    };
+    const icon = iconByType[marker.type] || iconByType.other;
+
+    return `
+    <div class="map-marker marker-size-${marker.sizeClass}">
+        <div class="marker-icon-circle">
+          <img src="/icons/${icon}.svg">
+        </div>
+        <div class="marker-text-container">
+          <div class="marker-text marker-text-outline">${
+            marker.name || marker.page
+          }</div>
+          <div class="marker-text">${marker.name || marker.page}</div>
+        </div>
+      </div>
+    `;
+  }
   onMount(() => {
     // Initialize the map
     map = L.map(mapElement).setView(center, zoom);
@@ -66,18 +111,15 @@
 
     // Add new markers
     markers.forEach((marker) => {
-      L.marker([marker.lat, marker.lng])
-        .bindPopup(marker.popup || "")
-        .addTo(markerLayer);
+      const markerHtml = computeMarkerHtml(marker);
+      const icon = L.divIcon({
+        className: "custom-div-icon",
+        html: markerHtml,
+        iconSize: [100, 40],
+        iconAnchor: [50, 20],
+      });
+      L.marker([marker.lat, marker.lng], { icon: icon }).addTo(markerLayer);
     });
-
-    var textIcon = L.divIcon({
-      className: "custom-div-icon", // You can style this class in CSS
-      html: '<div style="background-color: white; border: 1px solid #ccc; padding: 4px;">City Name</div>',
-      iconSize: [100, 40],
-      iconAnchor: [50, 20],
-    });
-    L.marker([51.505, -0.09], { icon: textIcon }).addTo(map);
   }
 
   // Watch for changes to markers
@@ -108,5 +150,87 @@
   :global(.leaflet-container) {
     height: 100%;
     width: 100%;
+  }
+
+  :global(.map-marker) {
+    transition:
+      transform 0.1s ease,
+      filter 0.1s ease;
+  }
+
+  :global(.map-marker:hover) {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+    z-index: 1000 !important; /* Ensure hovered markers appear above others */
+  }
+
+  :global(.marker-icon-circle) {
+    background-color: white;
+
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 32px;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  :global(.marker-size-full > .marker-icon-circle) {
+    width: 32px;
+    height: 32px;
+  }
+
+  :global(.marker-size-reduced > .marker-icon-circle) {
+    width: 24px;
+    height: 24px;
+  }
+
+  :global(.marker-size-dot > .marker-icon-circle) {
+    width: 12px;
+    height: 12px;
+  }
+
+  :global(.marker-size-tinydot > .marker-icon-circle) {
+    width: 4px;
+    height: 4px;
+  }
+
+  :global(.map-marker:hover .marker-icon-circle) {
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+  }
+
+  :global(.marker-icon img) {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 2px;
+  }
+  :global(.marker-text) {
+    font-weight: bold;
+    color: #111;
+    position: relative;
+    z-index: 2;
+  }
+  :global(.marker-text-outline) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    font-weight: bold;
+    color: white;
+    -webkit-text-stroke: 6px white;
+    text-stroke: 6px white;
+    z-index: 1;
+  }
+  :global(.marker-text-container) {
+    margin-top: -5px;
+    font-size: 14px;
+    line-height: 1;
+    position: relative;
+    text-align: center;
+    display: flex;
+    justify-content: center;
   }
 </style>

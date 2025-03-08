@@ -2,9 +2,28 @@
   import { onMount } from "svelte";
   import Map from "./lib/Map.svelte";
   let markers = [
-    { lat: 51.505, lng: -0.09, popup: "London" },
-    { lat: 48.8566, lng: 2.3522, popup: "Paris" },
-    { lat: 40.7128, lng: -74.006, popup: "New York" },
+    {
+      lat: 51.508056,
+      lng: -0.076111,
+      name: "City with a very very long name",
+      type: "city",
+      page: "London",
+      sizeClass: "full",
+    },
+    {
+      lat: 48.8566,
+      lng: 2.3522,
+      name: "Paris",
+      type: "landmark",
+      sizeClass: "full",
+    },
+    {
+      lat: 40.7128,
+      lng: -74.006,
+      name: "New York",
+      type: "city",
+      sizeClass: "full",
+    },
   ];
 
   let dataStatus = "not started";
