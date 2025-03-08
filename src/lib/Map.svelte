@@ -61,13 +61,22 @@
   }
   onMount(() => {
     // Initialize the map
-    map = L.map(mapElement).setView(center, zoom);
+    map = L.map(mapElement, {
+      zoomControl: false, // Disable default zoom control
+    }).setView(center, zoom);
 
     // Add tile layer (OpenStreetMap)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
+
+    // Add zoom control to bottom right
+    L.control
+      .zoom({
+        position: "bottomright",
+      })
+      .addTo(map);
 
     // Create a layer group for markers
     markerLayer = L.layerGroup().addTo(map);
@@ -222,7 +231,7 @@
   :global(.marker-text-container) {
     margin-top: -5px;
     font-size: 14px;
-    line-height: 0.8em;
+    line-height: 0.9em;
     position: relative;
     text-align: center;
     visibility: hidden;
