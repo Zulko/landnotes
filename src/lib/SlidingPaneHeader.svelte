@@ -1,9 +1,7 @@
 <script>
   // Props
   export let title = "";
-  export let wiki_page = "";
   export let expanded = false;
-  export let isMobile = false;
 
   // Events
   export let onClose = () => {};

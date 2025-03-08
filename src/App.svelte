@@ -8,7 +8,7 @@
       lng: -0.076111,
       name: "City with a very very long name",
       type: "city",
-      wiki_page: "London",
+      pageTitle: "London",
       sizeClass: "full",
     },
     {
@@ -16,7 +16,7 @@
       lng: 2.3522,
       name: "Paris",
       type: "landmark",
-      wiki_page: "Paris",
+      pageTitle: "Paris",
       sizeClass: "full",
     },
     {
@@ -24,7 +24,7 @@
       lng: -74.006,
       name: "New York",
       type: "city",
-      wiki_page: "New York City",
+      pageTitle: "New York City",
       sizeClass: "full",
     },
   ];
@@ -49,8 +49,8 @@
   // Function to handle marker clicks
   function handleMarkerClick(event) {
     const marker = event.detail;
-    if (marker.wiki_page) {
-      openWikiPane(marker.wiki_page);
+    if (marker.pageTitle) {
+      openWikiPane(marker.pageTitle);
     }
   }
 
@@ -87,7 +87,7 @@
     on:markerclick={handleMarkerClick}
   />
 
-  <SlidingPane bind:isOpen={isPaneOpen} title={wikiPage} wiki_page={wikiPage}>
+  <SlidingPane bind:isOpen={isPaneOpen} title={wikiPage} pageTitle={wikiPage}>
     <!-- Content will be handled by the iframe in SlidingPane -->
   </SlidingPane>
 </main>

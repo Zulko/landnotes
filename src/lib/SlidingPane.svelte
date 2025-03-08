@@ -5,7 +5,7 @@
   // Props
   export let isOpen = false;
   export let title = "";
-  export let wiki_page = ""; // Wikipedia page name
+  export let pageTitle = ""; // Wikipedia page name
   export let width = "400px"; // Default width for desktop
   export let height = "70vh"; // Default height for mobile
 
@@ -28,7 +28,6 @@
   // Handle close events
   function close() {
     isOpen = false;
-    // Reset expanded state when closing
     expanded = false;
   }
 
@@ -38,15 +37,15 @@
   }
 
   // Generate Wikipedia URL
-  $: wikiUrl = wiki_page
+  $: wikiUrl = pageTitle
     ? isMobile || parseInt(actualWidth) < 768
-      ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(wiki_page)}`
-      : `https://en.wikipedia.org/wiki/${encodeURIComponent(wiki_page)}`
+      ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(pageTitle)}`
+      : `https://en.wikipedia.org/wiki/${encodeURIComponent(pageTitle)}`
     : "about:blank";
 
   // Open in new tab
   function openInNewTab() {
-    if (wiki_page) {
+    if (pageTitle) {
       window.open(wikiUrl, "_blank");
     }
   }
@@ -95,7 +94,7 @@
     >
       <SlidingPaneHeader
         {title}
-        {wiki_page}
+        {pageTitle}
         {expanded}
         {isMobile}
         onClose={close}
@@ -104,7 +103,7 @@
       />
 
       <div class="pane-content">
-        {#if wiki_page}
+        {#if pageTitle}
           <iframe
             title="Wikipedia Content"
             src={wikiUrl}
