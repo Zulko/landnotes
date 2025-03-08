@@ -3,16 +3,25 @@
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { createEventDispatcher } from "svelte";
+  import { getGeoTable } from "./geodata";
 
   // Props
   export let markers = [];
-  export let zoom = 13;
-  export let center = [51.508056, -0.076111]; // Default to London
+  // export let zoom = 13;
+  // export let center = [51.508056, -0.076111]; // Default to London
+  export let onMarkerClick = null; // Function to call when marker is clicked
+
+  // New props for controlled centering
+  export let targetLocation = null; // Format: { lat, lng, zoom }
 
   let mapElement;
   let map;
   let markerLayer;
+
+  // Use the traditional event dispatcher
   const dispatch = createEventDispatcher();
+
+  let isFlying = false; // Track if map is currently in flyTo animation
 
   function computeMarkerHtml(marker) {
     const iconByType = {
@@ -46,7 +55,9 @@
     const icon = iconByType[marker.type] || iconByType.other;
 
     return `
-    <div class="map-marker marker-size-${marker.sizeClass}">
+    <div class="map-marker marker-size-${marker.sizeClass} ${
+      marker.isSelected ? "marker-selected" : ""
+    }" >
         <div class="marker-icon-circle">
           <img src="/icons/${icon}.svg">
         </div>
@@ -63,7 +74,8 @@
     // Initialize the map
     map = L.map(mapElement, {
       zoomControl: false, // Disable default zoom control
-    }).setView(center, zoom);
+    }).setView([0, 0], 1);
+    flyTo(targetLocation);
 
     // Add tile layer (OpenStreetMap)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -89,13 +101,7 @@
     map.on("zoomend", handleBoundsChange);
     map.on("resize", handleBoundsChange);
 
-    return () => {
-      // Clean up on component destruction
-      map.off("moveend", handleBoundsChange);
-      map.off("zoomend", handleBoundsChange);
-      map.off("resize", handleBoundsChange);
-      map.remove();
-    };
+    // No need to return a cleanup function here as we're using onDestroy
   });
 
   onDestroy(() => {
@@ -104,14 +110,38 @@
       map.off("zoomend", handleBoundsChange);
       map.off("resize", handleBoundsChange);
       map.remove();
+      map = null; // Set to null to prevent double cleanup
     }
   });
 
-  // Function to handle bounds changes and dispatch the event
+  function flyTo(targetLocation) {
+    const { lat, lng, zoom: targetZoom } = targetLocation;
+    isFlying = true;
+    map.flyTo([lat, lng], targetZoom, {
+      animate: true,
+      duration: 1, // Duration in seconds
+    });
+
+    // Set isFlying back to false after animation completes
+    setTimeout(() => {
+      isFlying = false;
+      // Dispatch a single boundschange event after flying completes
+      handleBoundsChange();
+    }, 1100); // Slightly longer than animation duration to ensure it's complete
+
+    targetLocation = null;
+  }
+
+  // Watch for changes to targetLocation and update the map view
+  $: if (map && targetLocation) {
+    flyTo(targetLocation);
+  }
+
   function handleBoundsChange() {
-    if (!map) return;
+    if (!map || isFlying) return; // Skip if map is flying
 
     const bounds = map.getBounds();
+
     dispatch("boundschange", {
       bounds: bounds,
       center: bounds.getCenter(),
@@ -156,6 +186,33 @@
       map.invalidateSize();
     }
   }
+
+  function addMarkers() {
+    // Clear existing markers
+    markers.forEach((marker) => map.removeLayer(marker));
+    markers = [];
+
+    // Get data and add markers
+    const geoTable = getGeoTable(); // Assuming this function exists and returns your data
+    if (geoTable) {
+      geoTable.objects().forEach((point) => {
+        if (point.lat && point.lon) {
+          const marker = L.marker([point.lat, point.lon]).addTo(map);
+
+          // Add click handler
+          if (onMarkerClick) {
+            marker.on("click", () => {
+              onMarkerClick(point);
+            });
+          }
+
+          // You can add popups or other features here
+
+          markers.push(marker);
+        }
+      });
+    }
+  }
 </script>
 
 <div
@@ -187,15 +244,23 @@
       filter: brightness(1.2);
       z-index: 1000 !important; /* Ensure hovered markers appear above others */
     }
-    &:hover > .marker-icon-circle {
+    &:hover > .marker-icon-circle,
+    &.marker-selected > .marker-icon-circle {
       --circle-size: 32px !important;
       box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
     }
 
-    &:hover > .marker-text-container {
+    &:hover > .marker-text-container,
+    &.marker-selected > .marker-text-container {
       visibility: visible;
       opacity: 1;
     }
+
+    &.marker-selected > .marker-icon-circle {
+      border: 6px solid #f00707;
+      box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.95);
+    }
+
     &.marker-size-full > .marker-text-container {
       visibility: visible;
       opacity: 1;

@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import Map from "./lib/Map.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
+
   let markers = [
     {
       lat: 51.508056,
@@ -18,6 +19,7 @@
       type: "landmark",
       pageTitle: "Paris",
       sizeClass: "full",
+      isSelected: true,
     },
     {
       lat: 40.7128,
@@ -34,11 +36,22 @@
     northEast: { lat: 0, lng: 0 },
     southWest: { lat: 0, lng: 0 },
   };
-  let zoom = 13;
 
   // State to control the sliding pane
   let isPaneOpen = false;
   let wikiPage = "";
+
+  // State for selected marker
+  let selectedMarker = null;
+  let mapCenter = [51.508056, -0.076111];
+  let mapZoom = 13;
+
+  // Add a target location state
+  let targetMapLocation = {
+    lat: 51.508056,
+    lng: -0.076111,
+    zoom: 13,
+  };
 
   // Function to open the pane with a Wikipedia page
   function openWikiPane(page) {
@@ -49,20 +62,28 @@
   // Function to handle marker clicks
   function handleMarkerClick(event) {
     const marker = event.detail;
-    if (marker.pageTitle) {
-      openWikiPane(marker.pageTitle);
-    }
+    selectedMarker = marker;
+
+    // Set the target location instead of directly setting center/zoom
+    targetMapLocation = {
+      lat: marker.lat,
+      lng: marker.lng,
+      zoom: Math.max(13, mapZoom), // Ensure zoom is at least 13
+    };
+
+    openWikiPane(marker.pageTitle);
   }
 
   function handleBoundsChange(event) {
-    console.log("Map bounds updated:", event.detail);
+    const center = event.detail.center;
+    mapCenter = [center.lat, center.lng];
+    mapZoom = event.detail.zoom;
     mapBounds = {
       northEast: event.detail.bounds._northEast,
       southWest: event.detail.bounds._southWest,
     };
     console.log("Map bounds updated:", mapBounds);
   }
-
   onMount(async () => {
     console.log("App starting");
   });
@@ -83,6 +104,7 @@
 
   <Map
     {markers}
+    targetLocation={targetMapLocation}
     on:boundschange={handleBoundsChange}
     on:markerclick={handleMarkerClick}
   />
