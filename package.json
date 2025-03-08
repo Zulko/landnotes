@@ -14,6 +14,8 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
+    "arquero": "^8.0.1",
+    "latlon-geohash": "^2.0.0",
     "leaflet": "^1.9.4"
   }
 }
