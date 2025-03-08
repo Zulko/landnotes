@@ -115,8 +115,7 @@
       const icon = L.divIcon({
         className: "custom-div-icon",
         html: markerHtml,
-        iconSize: [100, 40],
-        iconAnchor: [50, 20],
+        iconSize: [128, 64],
       });
       L.marker([marker.lat, marker.lng], { icon: icon }).addTo(markerLayer);
     });
@@ -156,46 +155,52 @@
     transition:
       transform 0.1s ease,
       filter 0.1s ease;
-  }
+    display: block;
+    text-align: center;
 
-  :global(.map-marker:hover) {
-    transform: scale(1.1);
-    filter: brightness(1.2);
-    z-index: 1000 !important; /* Ensure hovered markers appear above others */
-  }
+    &:hover {
+      transform: scale(1.1);
+      filter: brightness(1.2);
+      z-index: 1000 !important; /* Ensure hovered markers appear above others */
+    }
 
-  :global(.marker-icon-circle) {
-    background-color: white;
+    &:hover > .marker-icon-circle {
+      width: 42px !important;
+      height: 42px !important;
+    }
 
-    border-radius: 50%;
-    border: 2px solid #ccc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 32px;
-    transition:
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
-  }
+    &.marker-size-full > .marker-icon-circle {
+      width: 32px;
+      height: 32px;
+    }
 
-  :global(.marker-size-full > .marker-icon-circle) {
-    width: 32px;
-    height: 32px;
-  }
+    &.marker-size-reduced > .marker-icon-circle {
+      width: 24px;
+      height: 24px;
+    }
 
-  :global(.marker-size-reduced > .marker-icon-circle) {
-    width: 24px;
-    height: 24px;
-  }
+    &.marker-size-dot {
+      width: 12px;
+      height: 12px;
+    }
 
-  :global(.marker-size-dot > .marker-icon-circle) {
-    width: 12px;
-    height: 12px;
-  }
+    &.marker-size-tinydot > .marker-icon-circle {
+      width: 4px;
+      height: 4px;
+    }
 
-  :global(.marker-size-tinydot > .marker-icon-circle) {
-    width: 4px;
-    height: 4px;
+    & > .marker-icon-circle {
+      background-color: white;
+      border-radius: 50%;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto; /* Center the circle in its parent div */
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+    }
   }
 
   :global(.map-marker:hover .marker-icon-circle) {
@@ -205,7 +210,8 @@
   :global(.marker-icon img) {
     width: 22px;
     height: 22px;
-    margin-bottom: 2px;
+    margin: 0; /* Remove bottom margin to help with centering */
+    display: block; /* Ensure the image behaves as a block */
   }
   :global(.marker-text) {
     font-weight: bold;
@@ -230,7 +236,5 @@
     line-height: 1;
     position: relative;
     text-align: center;
-    display: flex;
-    justify-content: center;
   }
 </style>
