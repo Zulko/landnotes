@@ -39,7 +39,9 @@
 
   // Generate Wikipedia URL
   $: wikiUrl = wiki_page
-    ? `https://en.wikipedia.org/wiki/${encodeURIComponent(wiki_page)}`
+    ? isMobile || parseInt(actualWidth) < 768
+      ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(wiki_page)}`
+      : `https://en.wikipedia.org/wiki/${encodeURIComponent(wiki_page)}`
     : "about:blank";
 
   // Open in new tab

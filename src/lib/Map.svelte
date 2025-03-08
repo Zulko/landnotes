@@ -88,6 +88,14 @@
     map.on("moveend", handleBoundsChange);
     map.on("zoomend", handleBoundsChange);
     map.on("resize", handleBoundsChange);
+
+    return () => {
+      // Clean up on component destruction
+      map.off("moveend", handleBoundsChange);
+      map.off("zoomend", handleBoundsChange);
+      map.off("resize", handleBoundsChange);
+      map.remove();
+    };
   });
 
   onDestroy(() => {
@@ -126,7 +134,14 @@
         html: markerHtml,
         iconSize: [128, 32],
       });
-      L.marker([marker.lat, marker.lng], { icon: icon }).addTo(markerLayer);
+      const mapMarker = L.marker([marker.lat, marker.lng], {
+        icon: icon,
+      }).addTo(markerLayer);
+
+      // Add click handler to dispatch custom markerclick event
+      mapMarker.on("click", () => {
+        dispatch("markerclick", marker);
+      });
     });
   }
 

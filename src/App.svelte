@@ -8,7 +8,7 @@
       lng: -0.076111,
       name: "City with a very very long name",
       type: "city",
-      page: "London",
+      wiki_page: "London",
       sizeClass: "full",
     },
     {
@@ -16,6 +16,7 @@
       lng: 2.3522,
       name: "Paris",
       type: "landmark",
+      wiki_page: "Paris",
       sizeClass: "full",
     },
     {
@@ -23,6 +24,7 @@
       lng: -74.006,
       name: "New York",
       type: "city",
+      wiki_page: "New York City",
       sizeClass: "full",
     },
   ];
@@ -42,6 +44,14 @@
   function openWikiPane(page) {
     wikiPage = page;
     isPaneOpen = true;
+  }
+
+  // Function to handle marker clicks
+  function handleMarkerClick(event) {
+    const marker = event.detail;
+    if (marker.wiki_page) {
+      openWikiPane(marker.wiki_page);
+    }
   }
 
   function handleBoundsChange(event) {
@@ -71,7 +81,11 @@
     <button on:click={() => openWikiPane("London")}>Open Wikipedia</button>
   </div>
 
-  <Map {markers} on:boundschange={handleBoundsChange} />
+  <Map
+    {markers}
+    on:boundschange={handleBoundsChange}
+    on:markerclick={handleMarkerClick}
+  />
 
   <SlidingPane bind:isOpen={isPaneOpen} title={wikiPage} wiki_page={wikiPage}>
     <!-- Content will be handled by the iframe in SlidingPane -->
