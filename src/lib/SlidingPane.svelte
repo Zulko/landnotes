@@ -4,6 +4,7 @@
   // Props
   export let isOpen = false;
   export let title = "";
+  export let wiki_page = ""; // Wikipedia page name
   export let width = "400px"; // Default width for desktop
   export let height = "70vh"; // Default height for mobile
 
@@ -12,13 +13,10 @@
     isOpen = false;
   }
 
-  // Close when clicking backdrop
-  function handleBackdropClick(event) {
-    // Only close if the backdrop itself is clicked (not its children)
-    if (event.target === event.currentTarget) {
-      close();
-    }
-  }
+  // Generate Wikipedia URL
+  $: wikiUrl = wiki_page
+    ? `https://en.wikipedia.org/wiki/${encodeURIComponent(wiki_page)}`
+    : "about:blank";
 
   // Custom transition for desktop and mobile
   function slideTransition(node, { duration }) {
@@ -40,11 +38,7 @@
 <svelte:window on:keydown={(e) => e.key === "Escape" && close()} />
 
 {#if isOpen}
-  <div
-    class="backdrop"
-    on:click={handleBackdropClick}
-    transition:fade={{ duration: 150 }}
-  >
+  <div class="pane-container">
     <div
       class="pane"
       in:slideTransition={{ duration: 300 }}
@@ -57,24 +51,31 @@
         </button>
       </div>
       <div class="pane-content">
-        <slot></slot>
+        {#if wiki_page}
+          <iframe
+            title="Wikipedia Content"
+            src={wikiUrl}
+            frameborder="0"
+            class="wiki-iframe"
+            sandbox="allow-same-origin allow-scripts"
+          ></iframe>
+        {:else}
+          <p>No page specified</p>
+        {/if}
       </div>
     </div>
   </div>
 {/if}
 
 <style>
-  .backdrop {
+  .pane-container {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: transparent;
+    width: 0; /* No width to allow interaction with elements behind */
+    height: 0; /* No height to allow interaction with elements behind */
     z-index: 1000;
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-end;
+    pointer-events: none; /* Allow interactions with elements behind */
   }
 
   .pane {
@@ -83,9 +84,13 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    height: 100%; /* Full height on desktop */
+    height: 100vh; /* Full height on desktop */
     width: var(--width, 400px);
+    position: fixed;
+    top: 0;
+    left: 0;
     z-index: 1001;
+    pointer-events: auto; /* Allow interaction with the pane itself */
   }
 
   .pane-header {
@@ -121,8 +126,17 @@
 
   .pane-content {
     flex: 1;
-    padding: 1rem;
-    overflow-y: auto;
+    padding: 0; /* Remove padding for iframe */
+    overflow: hidden; /* Let iframe handle scrolling */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wiki-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    overflow: auto;
   }
 
   /* Mobile styles - slide from bottom */
@@ -130,12 +144,10 @@
     .pane {
       width: 100%; /* Full width on mobile */
       height: var(--height, 70vh); /* Partial height on mobile */
+      top: auto;
+      bottom: 0;
       border-top-left-radius: 12px;
       border-top-right-radius: 12px;
-    }
-
-    .backdrop {
-      justify-content: center; /* Center horizontally on mobile */
     }
   }
 </style>

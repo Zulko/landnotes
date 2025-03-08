@@ -36,11 +36,11 @@
 
   // State to control the sliding pane
   let isPaneOpen = false;
-  let paneContent = "";
+  let wikiPage = "";
 
-  // Function to open the pane with different content
-  function openPane(content) {
-    paneContent = content;
+  // Function to open the pane with a Wikipedia page
+  function openWikiPane(page) {
+    wikiPage = page;
     isPaneOpen = true;
   }
 
@@ -68,19 +68,13 @@
       )},
       {mapBounds.southWest.lng.toFixed(4)})</span
     >
-    <button on:click={() => openPane("Example content")}
-      >Open Sliding Pane</button
-    >
+    <button on:click={() => openWikiPane("London")}>Open Wikipedia</button>
   </div>
 
   <Map {markers} on:boundschange={handleBoundsChange} />
 
-  <SlidingPane bind:isOpen={isPaneOpen} title="Information">
-    <div>
-      {paneContent}
-      <!-- Add your pane content here -->
-      <p>This is the sliding pane content area.</p>
-    </div>
+  <SlidingPane bind:isOpen={isPaneOpen} title={wikiPage} wiki_page={wikiPage}>
+    <!-- Content will be handled by the iframe in SlidingPane -->
   </SlidingPane>
 </main>
 
