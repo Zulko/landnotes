@@ -3,7 +3,6 @@
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { createEventDispatcher } from "svelte";
-  import { getGeoTable } from "./geodata";
 
   // Props
   export let markers = [];
@@ -12,7 +11,7 @@
   export let onMarkerClick = null; // Function to call when marker is clicked
 
   // New props for controlled centering
-  export let targetLocation = null; // Format: { lat, lng, zoom }
+  export let targetLocation = null; // Format: { lat, lon, zoom }
 
   let mapElement;
   let map;
@@ -115,9 +114,9 @@
   });
 
   function flyTo(targetLocation) {
-    const { lat, lng, zoom: targetZoom } = targetLocation;
+    const { lat, lon, zoom: targetZoom } = targetLocation;
     isFlying = true;
-    map.flyTo([lat, lng], targetZoom, {
+    map.flyTo([lat, lon], targetZoom, {
       animate: true,
       duration: 1, // Duration in seconds
     });
@@ -164,7 +163,7 @@
         html: markerHtml,
         iconSize: [128, 32],
       });
-      const mapMarker = L.marker([marker.lat, marker.lng], {
+      const mapMarker = L.marker([marker.lat, marker.lon], {
         icon: icon,
       }).addTo(markerLayer);
 
@@ -184,33 +183,6 @@
   function handleResize() {
     if (map) {
       map.invalidateSize();
-    }
-  }
-
-  function addMarkers() {
-    // Clear existing markers
-    markers.forEach((marker) => map.removeLayer(marker));
-    markers = [];
-
-    // Get data and add markers
-    const geoTable = getGeoTable(); // Assuming this function exists and returns your data
-    if (geoTable) {
-      geoTable.objects().forEach((point) => {
-        if (point.lat && point.lon) {
-          const marker = L.marker([point.lat, point.lon]).addTo(map);
-
-          // Add click handler
-          if (onMarkerClick) {
-            marker.on("click", () => {
-              onMarkerClick(point);
-            });
-          }
-
-          // You can add popups or other features here
-
-          markers.push(marker);
-        }
-      });
     }
   }
 </script>

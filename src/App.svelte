@@ -2,11 +2,13 @@
   import { onMount } from "svelte";
   import Map from "./lib/Map.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
+  import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
+  import { Mixin } from "leaflet";
 
   let markers = [
     {
       lat: 51.508056,
-      lng: -0.076111,
+      lon: -0.076111,
       name: "City with a very very long name",
       type: "city",
       pageTitle: "London",
@@ -14,7 +16,7 @@
     },
     {
       lat: 48.8566,
-      lng: 2.3522,
+      lon: 2.3522,
       name: "Paris",
       type: "landmark",
       pageTitle: "Paris",
@@ -23,7 +25,7 @@
     },
     {
       lat: 40.7128,
-      lng: -74.006,
+      lon: -74.006,
       name: "New York",
       type: "city",
       pageTitle: "New York City",
@@ -33,8 +35,8 @@
 
   let dataStatus = "not started";
   let mapBounds = {
-    northEast: { lat: 0, lng: 0 },
-    southWest: { lat: 0, lng: 0 },
+    northEast: { lat: 0, lon: 0 },
+    southWest: { lat: 0, lon: 0 },
   };
 
   // State to control the sliding pane
@@ -44,13 +46,13 @@
   // State for selected marker
   let selectedMarker = null;
   let mapCenter = [51.508056, -0.076111];
-  let mapZoom = 13;
+  let mapZoom = 1;
 
   // Add a target location state
   let targetMapLocation = {
     lat: 51.508056,
-    lng: -0.076111,
-    zoom: 13,
+    lon: -0.076111,
+    zoom: 1,
   };
 
   // Function to open the pane with a Wikipedia page
@@ -67,22 +69,31 @@
     // Set the target location instead of directly setting center/zoom
     targetMapLocation = {
       lat: marker.lat,
-      lng: marker.lng,
+      lon: marker.lon,
       zoom: Math.max(13, mapZoom), // Ensure zoom is at least 13
     };
 
     openWikiPane(marker.pageTitle);
   }
 
-  function handleBoundsChange(event) {
+  async function handleBoundsChange(event) {
     const center = event.detail.center;
-    mapCenter = [center.lat, center.lng];
     mapZoom = event.detail.zoom;
-    mapBounds = {
-      northEast: event.detail.bounds._northEast,
-      southWest: event.detail.bounds._southWest,
+    console.log("mapZoom", mapZoom);
+    mapCenter = [center.lat, center.lon];
+    const bounds = {
+      minLat: event.detail.bounds._southWest.lat,
+      maxLat: event.detail.bounds._northEast.lat,
+      minLon: event.detail.bounds._southWest.lng,
+      maxLon: event.detail.bounds._northEast.lng,
     };
-    console.log("Map bounds updated:", mapBounds);
+    const entries = await getGeoEntriesInBounds(bounds);
+    const uniqueEntries = getUniqueByGeoHash({
+      entries,
+      hashLength: Math.min(8, mapZoom / 2),
+      scoreField: "page_len",
+    });
+    console.log("Unique entries:", uniqueEntries);
   }
   onMount(async () => {
     console.log("App starting");
@@ -94,10 +105,10 @@
     <span>Status: {dataStatus}</span>
     <span>
       Bounds: NE({mapBounds.northEast.lat.toFixed(4)},
-      {mapBounds.northEast.lng.toFixed(4)}) - SE({mapBounds.southWest.lat.toFixed(
+      {mapBounds.northEast.lon.toFixed(4)}) - SE({mapBounds.southWest.lat.toFixed(
         4
       )},
-      {mapBounds.southWest.lng.toFixed(4)})</span
+      {mapBounds.southWest.lon.toFixed(4)})</span
     >
     <button on:click={() => openWikiPane("London")}>Open Wikipedia</button>
   </div>
