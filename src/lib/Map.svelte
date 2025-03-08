@@ -115,7 +115,7 @@
       const icon = L.divIcon({
         className: "custom-div-icon",
         html: markerHtml,
-        iconSize: [128, 64],
+        iconSize: [128, 32],
       });
       L.marker([marker.lat, marker.lng], { icon: icon }).addTo(markerLayer);
     });
@@ -163,56 +163,75 @@
       filter: brightness(1.2);
       z-index: 1000 !important; /* Ensure hovered markers appear above others */
     }
-
     &:hover > .marker-icon-circle {
-      width: 42px !important;
-      height: 42px !important;
+      --circle-size: 32px !important;
+      box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    &:hover > .marker-text-container {
+      visibility: visible;
+      opacity: 1;
+    }
+    &.marker-size-full > .marker-text-container {
+      visibility: visible;
+      opacity: 1;
     }
 
     &.marker-size-full > .marker-icon-circle {
-      width: 32px;
-      height: 32px;
+      --circle-size: 32px;
+      box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
     }
 
     &.marker-size-reduced > .marker-icon-circle {
-      width: 24px;
-      height: 24px;
+      --circle-size: 24px;
     }
 
-    &.marker-size-dot {
-      width: 12px;
-      height: 12px;
+    &.marker-size-dot > .marker-icon-circle {
+      --circle-size: 12px;
     }
 
     &.marker-size-tinydot > .marker-icon-circle {
-      width: 4px;
-      height: 4px;
+      --circle-size: 4px;
     }
 
     & > .marker-icon-circle {
+      width: var(--circle-size);
+      height: var(--circle-size);
       background-color: white;
       border-radius: 50%;
-      border: 2px solid #ccc;
+      border: 2px solid #222;
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 0 auto; /* Center the circle in its parent div */
       transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease;
+        width 0.1s ease,
+        height 0.1s ease;
+    }
+    & > .marker-icon-circle img {
+      width: calc(var(--circle-size) * 0.7);
+      height: calc(var(--circle-size) * 0.7);
+      margin: 0; /* Remove bottom margin to help with centering */
+      display: block; /* Ensure the image behaves as a block */
+      transition:
+        width 0.1s ease,
+        height 0.1s ease;
+    }
+
+    & > .marker-text-container {
+      margin-top: -5px;
+      font-size: 14px;
+      line-height: 0.8em;
+      position: relative;
+      text-align: center;
+      visibility: hidden;
+      opacity: 0;
+      transition:
+        visibility 0.1s ease,
+        opacity 0.1s ease;
     }
   }
 
-  :global(.map-marker:hover .marker-icon-circle) {
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
-  }
-
-  :global(.marker-icon img) {
-    width: 22px;
-    height: 22px;
-    margin: 0; /* Remove bottom margin to help with centering */
-    display: block; /* Ensure the image behaves as a block */
-  }
   :global(.marker-text) {
     font-weight: bold;
     color: #111;
@@ -229,12 +248,5 @@
     -webkit-text-stroke: 6px white;
     text-stroke: 6px white;
     z-index: 1;
-  }
-  :global(.marker-text-container) {
-    margin-top: -5px;
-    font-size: 14px;
-    line-height: 1;
-    position: relative;
-    text-align: center;
   }
 </style>
