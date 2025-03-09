@@ -3,6 +3,7 @@
   // Props
   export let title = "";
   export let expanded = false;
+  export let isMobile = false;
 
   // Events
   export let onClose = () => {};

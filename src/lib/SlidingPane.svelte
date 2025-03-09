@@ -83,49 +83,41 @@
   on:resize={handleResize}
 />
 
-{#if isOpen}
-  <div class="pane-container">
-    <div
-      class="pane"
-      in:slideTransition={{ duration: 300 }}
-      out:slideTransition={{ duration: 200 }}
-      style="width: {actualWidth}; height: {actualHeight};"
-    >
-      <SlidingPaneHeader
-        {title}
-        {expanded}
-        {isMobile}
-        onClose={close}
-        onToggleExpand={toggleExpand}
-        onOpenExternal={openInNewTab}
-      />
+<div class="pane-container" class:is-open={isOpen}>
+  <div class="pane" style="width: {actualWidth}; height: {actualHeight};">
+    <SlidingPaneHeader
+      {title}
+      {expanded}
+      {isMobile}
+      onClose={close}
+      onToggleExpand={toggleExpand}
+      onOpenExternal={openInNewTab}
+    />
 
-      <div class="pane-content">
-        {#if page_title}
-          <iframe
-            title="Wikipedia Content"
-            src={wikiUrl}
-            frameborder="0"
-            class="wiki-iframe"
-            sandbox="allow-same-origin allow-scripts"
-          ></iframe>
-        {:else}
-          <p>No page specified</p>
-        {/if}
-      </div>
+    <div class="pane-content">
+      {#if page_title}
+        <iframe
+          title="Wikipedia Content"
+          src={wikiUrl}
+          frameborder="0"
+          class="wiki-iframe"
+          sandbox="allow-same-origin allow-scripts"
+        ></iframe>
+      {:else}
+        <p>No page specified</p>
+      {/if}
     </div>
   </div>
-{/if}
+</div>
 
 <style>
   .pane-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 0; /* No width to allow interaction with elements behind */
-    height: 0; /* No height to allow interaction with elements behind */
-    z-index: 1000;
-    pointer-events: none; /* Allow interactions with elements behind */
+    display: none;
+    height: 100%;
+  }
+
+  .pane-container.is-open {
+    display: flex;
   }
 
   .pane {
@@ -134,21 +126,16 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Full height on desktop */
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1001;
-    pointer-events: auto; /* Allow interaction with the pane itself */
     transition:
       width 0.3s ease,
       height 0.3s ease;
+    z-index: 100;
   }
 
   .pane-content {
     flex: 1;
-    padding: 0; /* Remove padding for iframe */
-    overflow: hidden; /* Let iframe handle scrolling */
+    padding: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
   }
@@ -160,12 +147,10 @@
     overflow: auto;
   }
 
-  /* Mobile styles - slide from bottom */
+  /* Mobile styles */
   @media (max-width: 768px) {
     .pane {
-      width: 100% !important; /* Full width on mobile */
-      top: auto;
-      bottom: 0;
+      width: 100% !important;
       border-top-left-radius: 12px;
       border-top-right-radius: 12px;
     }

@@ -24,6 +24,9 @@
 
   // Track if we need to select a marker once data is loaded
 
+  // Detect mobile view
+  let isMobile = false;
+
   // Function to open the pane with a Wikipedia page
   function openWikiPane(page) {
     wikiPage = page;
@@ -122,8 +125,14 @@
     addMarkerClasses(uniqueEntries, hashlevel);
     markers = uniqueEntries;
   }
+
+  function handleResize() {
+    isMobile = window.innerWidth <= 768;
+  }
+
   onMount(async () => {
     console.log("App starting!");
+    handleResize(); // Initialize mobile detection
 
     // Read URL parameters when the app loads
     const urlState = readURLParams();
@@ -137,17 +146,27 @@
   });
 </script>
 
-<main>
-  <Map
-    {markers}
-    targetLocation={targetMapLocation}
-    on:boundschange={handleBoundsChange}
-    on:markerclick={handleMarkerClick}
-  />
+<svelte:window on:resize={handleResize} />
 
-  <SlidingPane bind:isOpen={isPaneOpen} title={wikiPage} page_title={wikiPage}>
-    <!-- Content will be handled by the iframe in SlidingPane -->
-  </SlidingPane>
+<main class:has-open-pane={isPaneOpen} class:is-mobile={isMobile}>
+  <div class="content-container">
+    <div class="wiki-pane-container">
+      <SlidingPane
+        bind:isOpen={isPaneOpen}
+        title={wikiPage}
+        page_title={wikiPage}
+      />
+    </div>
+
+    <div class="map-container">
+      <Map
+        {markers}
+        targetLocation={targetMapLocation}
+        on:boundschange={handleBoundsChange}
+        on:markerclick={handleMarkerClick}
+      />
+    </div>
+  </div>
 </main>
 
 <style>
@@ -157,5 +176,49 @@
     padding: 0;
     margin: 0;
     position: relative;
+    overflow: hidden;
+  }
+
+  .content-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
+
+  .wiki-pane-container {
+    flex: 0 0 0;
+    transition: flex 0.3s ease;
+    height: 100%;
+    z-index: 100;
+  }
+
+  .map-container {
+    flex: 1;
+    height: 100%;
+    z-index: 50;
+  }
+
+  /* When pane is open on desktop */
+  main.has-open-pane:not(.is-mobile) .wiki-pane-container {
+    flex: 0 0 400px; /* Default width, will be adjusted by SlidingPane component */
+  }
+
+  /* Mobile layout */
+  main.is-mobile .content-container {
+    flex-direction: column;
+  }
+
+  main.is-mobile .wiki-pane-container {
+    flex: 0 0 0;
+    order: 2; /* Put wiki pane at the bottom */
+  }
+
+  main.is-mobile.has-open-pane .wiki-pane-container {
+    flex: 0 0 70vh; /* Default height, will be adjusted by SlidingPane component */
+  }
+
+  main.is-mobile .map-container {
+    order: 1; /* Put map at the top */
+    flex: 1;
   }
 </style>
