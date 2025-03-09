@@ -1,4 +1,5 @@
 <script>
+  import { rootUrl } from "../config";
   // Props
   export let title = "";
   export let expanded = false;
@@ -29,7 +30,9 @@
       aria-label={expanded ? "Shrink pane" : "Expand pane"}
     >
       <img
-        src={expanded ? "/icons/shrink.svg" : "/icons/expand.svg"}
+        src={expanded
+          ? `${rootUrl}/icons/shrink.svg`
+          : `${rootUrl}/icons/expand.svg`}
         alt={expanded ? "Shrink pane" : "Expand pane"}
         class="icon"
       />
@@ -43,7 +46,9 @@
       aria-label={expanded ? "Shrink pane" : "Expand pane"}
     >
       <img
-        src={expanded ? "/icons/shrink.svg" : "/icons/expand-vertical.svg"}
+        src={expanded
+          ? `${rootUrl}/icons/shrink.svg`
+          : `${rootUrl}/icons/expand-vertical.svg`}
         alt={expanded ? "Shrink pane" : "Expand pane"}
         class="icon"
       />

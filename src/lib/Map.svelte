@@ -3,6 +3,7 @@
   import L, { marker } from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { createEventDispatcher } from "svelte";
+  import { rootUrl } from "../config";
 
   // Props
   export let markers = [];
@@ -64,7 +65,7 @@
     return `
     <div class="map-marker marker-display-${marker.displayClass}" >
         <div class="marker-icon-circle">
-          <img src="/icons/${icon}.svg">
+          <img src="${rootUrl}/icons/${icon}.svg">
         </div>
         <div class="marker-text-container">
           <div class="marker-text marker-text-outline">${label}</div>
