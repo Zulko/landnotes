@@ -19,7 +19,7 @@
       title="Open in new tab"
       aria-label="Open in new tab"
     >
-      <img src="/icons/external-link.svg" alt="Open in new tab" class="icon" />
+      <img src=`${basePath}/icons/external-link.svg` alt="Open in new tab" class="icon" />
     </button>
     <!-- Desktop Expand Button (hidden on mobile) -->
     <button
