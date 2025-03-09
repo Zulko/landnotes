@@ -158,17 +158,4 @@
     margin: 0;
     position: relative;
   }
-
-  .status-bar {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: rgba(255, 255, 255, 0.8);
-    padding: 5px 10px;
-    border-radius: 4px;
-    z-index: 1000;
-    font-size: 14px;
-    display: flex;
-    gap: 10px;
-  }
 </style>
