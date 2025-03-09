@@ -93,7 +93,6 @@
     >
       <SlidingPaneHeader
         {title}
-        {page_title}
         {expanded}
         {isMobile}
         onClose={close}

@@ -94,7 +94,7 @@ self.addEventListener('message', async (event) => {
       let fileUrls = [];
       let table = null;
       
-      if (geohashes_1.length > 3) {
+      if (geohashes_1.length > 5) {
         table = tinyGeoCollection;
         fileUrls = [`${basePath}geodata/geo3_unique.csv.gz`];
       } else {
