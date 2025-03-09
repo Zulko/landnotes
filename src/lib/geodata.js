@@ -74,10 +74,17 @@ export async function loadCsvGzFile(url) {
     }
 
     // Parse CSV directly from response text
-    const csvText = await response.text();
-    const rows = parseCsv(csvText);
-    
-    return rows;
+    try {
+      const csvText = await response.text();
+      const rows = parseCsv(csvText);
+      return rows;
+    } catch {
+      // If text parsing fails, try gzip
+      const blob = await response.blob();
+      const decompressed = await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      const rows = parseCsv(decompressed);
+      return rows;
+    }
   } catch (error) {
     console.error(`Error loading data from ${url}:`, error);
     return []; // Return empty array instead of throwing to make app more resilient
