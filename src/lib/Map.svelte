@@ -192,7 +192,6 @@
       let displayClass = marker.displayClass;
       let pane = marker.displayClass;
       if (hoveredMarker === marker) {
-        console.log("hovered");
         displayClass = "full";
         pane = "selected";
       }

@@ -156,9 +156,9 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   }
   
   if (geohashes_1.length > 3) {
-    if (!ingestedFiles.includes("_geodata/geo3_unique.csv.gz")) {
+    if (!ingestedFiles.includes("geodata/geo3_unique.csv.gz")) {
       // Use consistent path format
-      const fileUrl = "_geodata/geo3_unique.csv.gz";
+      const fileUrl = "geodata/geo3_unique.csv.gz";
       try {
         const rows = await loadCsvGzFile(fileUrl);
         addLatLonToRows(rows);
@@ -182,14 +182,14 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   } else {
     // Download and ingest any new geohash files that haven't been processed yet
     // Use consistent path format without leading dot or slash
-    const needDownload = geohashes_1.filter(g => !ingestedFiles.includes(`_geodata/${g}.csv.gz`));
+    const needDownload = geohashes_1.filter(g => !ingestedFiles.includes(`geodata/${g}.csv.gz`));
     
     if (needDownload.length > 0) {
       // needDownload all rows first before doing a single bulk insert
       
       // Load all files in parallel but collect results before inserting
       const loadResults = await Promise.all(needDownload.map(async (g) => {
-        const url = `_geodata/${g}.csv.gz`;
+        const url = `geodata/${g}.csv.gz`;
         try {
           const rows = await loadCsvGzFile(url);
           ingestedFiles.push(url);
