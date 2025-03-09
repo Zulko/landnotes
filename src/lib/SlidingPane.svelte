@@ -1,5 +1,4 @@
 <script>
-  import { fade } from "svelte/transition";
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
 
   // Props

@@ -1,7 +1,6 @@
 import Loki from 'lokijs';
 import ngeohash from 'ngeohash'; // Import ngeohash for better performance
-import { rootUrl } from '../config'; // Import rootUrl from config file
-
+const basePath = import.meta.env.BASE_URL;
 // Initialize a LokiJS database
 
 const ingestedFiles = [];
@@ -160,7 +159,7 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   if (geohashes_1.length > 3) {
     if (!ingestedFiles.includes("geodata/geo3_unique.csv.gz")) {
       // Use consistent path format
-      const fileUrl = rootUrl + "/geodata/geo3_unique.csv.gz";
+      const fileUrl = `${basePath}geodata/geo3_unique.csv.gz`;
       try {
         const rows = await loadCsvGzFile(fileUrl);
         addLatLonToRows(rows);
@@ -191,7 +190,7 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
       
       // Load all files in parallel but collect results before inserting
       const loadResults = await Promise.all(needDownload.map(async (g) => {
-        const url = rootUrl + `/geodata/${g}.csv.gz`;
+        const url = `${basePath}geodata/${g}.csv.gz`;
         try {
           const rows = await loadCsvGzFile(url);
           ingestedFiles.push(url);

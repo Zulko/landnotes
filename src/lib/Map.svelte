@@ -1,9 +1,11 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  import L, { marker } from "leaflet";
+  import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { createEventDispatcher } from "svelte";
-  import { rootUrl } from "../config";
+
+  const basePath = import.meta.env.BASE_URL;
+  console.log("basePath", basePath);
 
   // Props
   export let markers = [];
@@ -65,7 +67,7 @@
     return `
     <div class="map-marker marker-display-${marker.displayClass}" >
         <div class="marker-icon-circle">
-          <img src="${rootUrl}/icons/${icon}.svg">
+          <img src="${basePath}icons/${icon}.svg">
         </div>
         <div class="marker-text-container">
           <div class="marker-text marker-text-outline">${label}</div>

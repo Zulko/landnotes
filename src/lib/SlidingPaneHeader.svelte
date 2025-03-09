@@ -1,5 +1,5 @@
 <script>
-  import { rootUrl } from "../config";
+  const basePath = import.meta.env.BASE_URL;
   // Props
   export let title = "";
   export let expanded = false;
@@ -31,8 +31,8 @@
     >
       <img
         src={expanded
-          ? `${rootUrl}/icons/shrink.svg`
-          : `${rootUrl}/icons/expand.svg`}
+          ? `${basePath}icons/shrink.svg`
+          : `${basePath}icons/expand.svg`}
         alt={expanded ? "Shrink pane" : "Expand pane"}
         class="icon"
       />
@@ -47,8 +47,8 @@
     >
       <img
         src={expanded
-          ? `${rootUrl}/icons/shrink.svg`
-          : `${rootUrl}/icons/expand-vertical.svg`}
+          ? `${basePath}icons/shrink.svg`
+          : `${basePath}icons/expand-vertical.svg`}
         alt={expanded ? "Shrink pane" : "Expand pane"}
         class="icon"
       />
