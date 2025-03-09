@@ -82,6 +82,7 @@
     // Initialize the map
     map = L.map(mapElement, {
       zoomControl: false, // Disable default zoom control
+      worldCopyJump: true,
     }).setView([0, 0], 1);
     flyTo(targetLocation);
 

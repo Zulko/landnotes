@@ -3,15 +3,10 @@
   import Map from "./lib/Map.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
   import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
-  import { Mixin } from "leaflet";
 
   let markers = [];
 
   let dataStatus = "not started";
-  let mapBounds = {
-    northEast: { lat: 0, lon: 0 },
-    southWest: { lat: 0, lon: 0 },
-  };
 
   // State to control the sliding pane
   let isPaneOpen = false;
@@ -19,7 +14,6 @@
 
   // State for selected marker
   let selectedMarker = null;
-  let mapCenter = [51.508056, -0.076111];
   let mapZoom = 1;
 
   // Add a target location state
@@ -84,8 +78,7 @@
   async function handleBoundsChange(event) {
     const center = event.detail.center;
     mapZoom = event.detail.zoom;
-    console.log("mapZoom", mapZoom);
-    mapCenter = [center.lat, center.lon];
+    console.log(event.detail.center);
     const bounds = {
       minLat: event.detail.bounds._southWest.lat,
       maxLat: event.detail.bounds._northEast.lat,
@@ -93,7 +86,6 @@
       maxLon: event.detail.bounds._northEast.lng,
     };
     const entries = await getGeoEntriesInBounds(bounds);
-    console.log(mapZoom, Math.max(1, Math.min(8, mapZoom / 2)));
     const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
     const uniqueEntries = getUniqueByGeoHash({
       entries,
@@ -101,7 +93,6 @@
       scoreField: "page_len",
     });
     addCosmeticsToEntries(uniqueEntries, hashlevel);
-    console.log("Unique entries:", uniqueEntries);
     markers = uniqueEntries;
   }
   onMount(async () => {
@@ -110,18 +101,6 @@
 </script>
 
 <main>
-  <div class="status-bar">
-    <span>Status: {dataStatus}</span>
-    <span>
-      Bounds: NE({mapBounds.northEast.lat.toFixed(4)},
-      {mapBounds.northEast.lon.toFixed(4)}) - SE({mapBounds.southWest.lat.toFixed(
-        4
-      )},
-      {mapBounds.southWest.lon.toFixed(4)})</span
-    >
-    <button on:click={() => openWikiPane("London")}>Open Wikipedia</button>
-  </div>
-
   <Map
     {markers}
     targetLocation={targetMapLocation}

@@ -64,7 +64,6 @@ export async function loadCsvGzFile(url) {
   try {
     // Make sure URL starts with correct path
     const fullUrl = url.startsWith('/') ? url : `/${url}`;
-    console.log(`Fetching from: ${fullUrl}`);
     
     // Fetch the gzipped CSV file
     const response = await fetch(fullUrl);
@@ -76,7 +75,6 @@ export async function loadCsvGzFile(url) {
     // Parse CSV directly from response text
     const csvText = await response.text();
     const rows = parseCsv(csvText);
-    console.log(`Loaded data from ${fullUrl} with ${rows.length} rows`);
     
     return rows;
   } catch (error) {
@@ -100,15 +98,8 @@ function parseCsv(csvText) {
     }
     
     const lines = csvText.trim().split('\n');
-    console.log(`CSV has ${lines.length} lines. First line: ${lines[0]}`);
     
     const headers = lines[0].split('\t').map(h => h.trim());
-    console.log(`Found headers: ${headers.join(', ')}`);
-    
-    if (lines.length === 1) {
-      console.warn("CSV only has a header line, no data");
-      return [];
-    }
     
     // Pre-allocate array for better performance
     const rows = new Array(lines.length - 1);
@@ -126,12 +117,6 @@ function parseCsv(csvText) {
       }
       
       rows[i-1] = row;
-    }
-    
-    const endTime = performance.now();
-    console.log(`Successfully parsed ${rows.length} rows from CSV in ${(endTime - startTime).toFixed(2)}ms`);
-    if (rows.length > 0) {
-      console.log(`Sample row: ${JSON.stringify(rows[0])}`);
     }
     
     return rows;
@@ -153,7 +138,6 @@ export async function addDataFromUrl(url) {
   // Add the new rows to the collection
   geoCollection.insert(newRows);
   
-  console.log(`Updated geodata collection now has ${geoCollection.count()} rows`);
   return newRows;
 }
 
@@ -165,7 +149,6 @@ export async function addDataFromUrl(url) {
 export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   // Handle possible null/undefined bounds  
   const geohashes_1 = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, 1);
-  console.log({geohashes_1})
   
   if (!Array.isArray(geohashes_1) || geohashes_1.length === 0) {
     console.warn("No geohashes found for the current bounds");
@@ -200,7 +183,6 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
     // Download and ingest any new geohash files that haven't been processed yet
     // Use consistent path format without leading dot or slash
     const needDownload = geohashes_1.filter(g => !ingestedFiles.includes(`_geodata/${g}.csv.gz`));
-    console.log({needDownload})
     
     if (needDownload.length > 0) {
       // needDownload all rows first before doing a single bulk insert
@@ -225,10 +207,7 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
 
       // Do a single bulk insert with all rows
       if (allRows.length > 0) {
-        console.time('bulk_insert');
         geoCollection.insert(allRows);
-        console.timeEnd('bulk_insert');
-        console.log('Collection size:', geoCollection.count());
       }
     }
     
