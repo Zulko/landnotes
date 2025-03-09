@@ -82,13 +82,8 @@ self.addEventListener('message', async (event) => {
   try {
     const { type, bounds, basePath } = event.data;
     
-    if (type === 'queryText') {
-      console.time('worker:load file');
-      const rows = await loadCsvGzFile(url);
-      console.timeEnd('worker:load file');
-      
-      // Send the processed data back to the main thread
-      self.postMessage({ type: 'fileProcessed', url, rows });
+    if (type === 'textSearch') {
+      console.log("bla")
     }
     else if (type === 'queryBounds') {
       // Handle bounds query
@@ -101,7 +96,7 @@ self.addEventListener('message', async (event) => {
       
       if (geohashes_1.length > 3) {
         table = tinyGeoCollection;
-        fileUrls = [`${basePath}geodata/geo2_unique.csv.gz`];
+        fileUrls = [`${basePath}geodata/geo3_unique.csv.gz`];
       } else {
         table = geoCollection;
         fileUrls = geohashes_1.map(g => `${basePath}geodata/${g}.csv.gz`);
