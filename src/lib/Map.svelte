@@ -5,7 +5,6 @@
   import { createEventDispatcher } from "svelte";
 
   const basePath = import.meta.env.BASE_URL;
-  console.log("basePath", basePath);
 
   // Props
   export let markers = [];

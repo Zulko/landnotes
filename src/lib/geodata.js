@@ -101,6 +101,7 @@ function parseCsv(csvText) {
     const lines = csvText.trim().split('\n');
     
     const headers = lines[0].split('\t').map(h => h.trim());
+    console.log("headers", headers);
     
     // Pre-allocate array for better performance
     const rows = new Array(lines.length - 1);
