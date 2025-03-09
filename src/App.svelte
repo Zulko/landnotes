@@ -5,33 +5,7 @@
   import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
   import { Mixin } from "leaflet";
 
-  let markers = [
-    {
-      lat: 51.508056,
-      lon: -0.076111,
-      name: "City with a very very long name",
-      type: "city",
-      pageTitle: "London",
-      sizeClass: "full",
-    },
-    {
-      lat: 48.8566,
-      lon: 2.3522,
-      name: "Paris",
-      type: "landmark",
-      pageTitle: "Paris",
-      sizeClass: "full",
-      isSelected: true,
-    },
-    {
-      lat: 40.7128,
-      lon: -74.006,
-      name: "New York",
-      type: "city",
-      pageTitle: "New York City",
-      sizeClass: "full",
-    },
-  ];
+  let markers = [];
 
   let dataStatus = "not started";
   let mapBounds = {
@@ -73,9 +47,40 @@
       zoom: Math.max(13, mapZoom), // Ensure zoom is at least 13
     };
 
-    openWikiPane(marker.pageTitle);
+    openWikiPane(marker.page_title);
   }
 
+  function addCosmeticsToEntries(entries, hashlevel) {
+    if (hashlevel > 7.5) {
+      for (const entry of entries) {
+        entry.sizeClass = "full";
+      }
+    } else {
+      for (const entry of entries) {
+        entry.sizeClass = "dot";
+      }
+      for (const entry of getUniqueByGeoHash({
+        entries,
+        hashLength: hashlevel - 0.5,
+        scoreField: "page_len",
+      })) {
+        entry.sizeClass = "reduced";
+      }
+      for (const entry of getUniqueByGeoHash({
+        entries,
+        hashLength: hashlevel - 1.5,
+        scoreField: "page_len",
+      })) {
+        entry.sizeClass = "full";
+      }
+    }
+    // Sort entries so "full" size class appears last
+    entries.sort((a, b) => {
+      if (a.sizeClass === "full" && b.sizeClass !== "full") return 1;
+      if (a.sizeClass !== "full" && b.sizeClass === "full") return -1;
+      return 0;
+    });
+  }
   async function handleBoundsChange(event) {
     const center = event.detail.center;
     mapZoom = event.detail.zoom;
@@ -88,12 +93,16 @@
       maxLon: event.detail.bounds._northEast.lng,
     };
     const entries = await getGeoEntriesInBounds(bounds);
+    console.log(mapZoom, Math.max(1, Math.min(8, mapZoom / 2)));
+    const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
     const uniqueEntries = getUniqueByGeoHash({
       entries,
-      hashLength: Math.min(8, mapZoom / 2),
+      hashLength: hashlevel,
       scoreField: "page_len",
     });
+    addCosmeticsToEntries(uniqueEntries, hashlevel);
     console.log("Unique entries:", uniqueEntries);
+    markers = uniqueEntries;
   }
   onMount(async () => {
     console.log("App starting");
@@ -120,7 +129,7 @@
     on:markerclick={handleMarkerClick}
   />
 
-  <SlidingPane bind:isOpen={isPaneOpen} title={wikiPage} pageTitle={wikiPage}>
+  <SlidingPane bind:isOpen={isPaneOpen} title={wikiPage} page_title={wikiPage}>
     <!-- Content will be handled by the iframe in SlidingPane -->
   </SlidingPane>
 </main>

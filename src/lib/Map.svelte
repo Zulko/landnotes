@@ -16,7 +16,7 @@
   let mapElement;
   let map;
   let markerLayer;
-
+  let startZoom = 0;
   // Use the traditional event dispatcher
   const dispatch = createEventDispatcher();
 
@@ -44,15 +44,26 @@
       mountain: "mountain-snow",
       other: "pin",
       railwaystation: "train-front",
-      river: "river",
+      river: "waves",
       school: "school",
       settlement: "city",
       town: "city",
       village: "city",
       waterbody: "waves",
     };
-    const icon = iconByType[marker.type] || iconByType.other;
-
+    const icon = iconByType[marker.category] || iconByType.other;
+    const unsanitized_page_title = marker.page_title.replaceAll("_", " ");
+    let label = marker.name;
+    if (!marker.name) {
+      label = unsanitized_page_title;
+    } else if (unsanitized_page_title.includes(marker.name)) {
+      label = unsanitized_page_title;
+    } else {
+      const fullLabel = marker.name + " - " + unsanitized_page_title;
+      if (fullLabel.length <= 30) {
+        label = fullLabel;
+      }
+    }
     return `
     <div class="map-marker marker-size-${marker.sizeClass} ${
       marker.isSelected ? "marker-selected" : ""
@@ -61,10 +72,8 @@
           <img src="/icons/${icon}.svg">
         </div>
         <div class="marker-text-container">
-          <div class="marker-text marker-text-outline">${
-            marker.name || marker.page
-          }</div>
-          <div class="marker-text">${marker.name || marker.page}</div>
+          <div class="marker-text marker-text-outline">${label}</div>
+          <div class="marker-text">${label}</div>
         </div>
       </div>
     `;
@@ -115,6 +124,10 @@
 
   function flyTo(targetLocation) {
     const { lat, lon, zoom: targetZoom } = targetLocation;
+    // If target zoom is less than current zoom, clear markers first
+    if (targetZoom < map.getZoom()) {
+      markerLayer.clearLayers();
+    }
     isFlying = true;
     map.flyTo([lat, lon], targetZoom, {
       animate: true,
