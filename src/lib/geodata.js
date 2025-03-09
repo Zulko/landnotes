@@ -13,7 +13,7 @@ const db = new Loki('geodata.db', {
 
 // Create a collection for geo data with optimized configuration
 const geoCollection = db.addCollection('geodata', {
-  indices: ['geo3', 'category'],
+  indices: ['geo2', 'category'],
   adaptiveBinaryIndices: false,  // Disable adaptive indices for bulk operations
   transactional: false,  // Disable transactions for better performance
   clone: false,  // Disable object cloning for better performance
@@ -21,7 +21,7 @@ const geoCollection = db.addCollection('geodata', {
 });
 
 const tinyGeoCollection = db.addCollection('tinygeodata', {
-  indices: ['geo3', 'category'],
+  indices: ['geo2', 'category'],
   adaptiveBinaryIndices: false,
   transactional: false,
   clone: false,
@@ -30,7 +30,7 @@ const tinyGeoCollection = db.addCollection('tinygeodata', {
 
 /**
  * @typedef {Object} GeoDocument
- * @property {string} geo3 - Geohash
+ * @property {string} geo2 - Geohash
  * @property {string} category - Category
  * @property {number} lat - Latitude
  * @property {number} lon - Longitude
@@ -51,7 +51,7 @@ function addLatLonToRows(rows) {
       const latLon = ngeohash.decode(row.geohash);
       row.lat = latLon.latitude;
       row.lon = latLon.longitude;
-      row.geo3 = row.geohash.substring(0, 3);
+      row.geo2 = row.geohash.substring(0, 2);
     }
   }
 }
@@ -145,7 +145,9 @@ async function downloadMissingData(urls) {
   const needDownload = urls.filter(url => !ingestedFiles.includes(url));
   if (needDownload.length > 0) {
     const loadResults = await Promise.all(needDownload.map(async (url) => {
+      console.time('load file');
       const rows = await loadCsvGzFile(url);
+      console.timeEnd('load file');
       ingestedFiles.push(url);
       console.time('add_latlon');
       addLatLonToRows(rows);
@@ -162,14 +164,14 @@ async function downloadMissingData(urls) {
 
 
 function queryGeoTable(table, minLat, maxLat, minLon, maxLon) {
-  const geohashes_3 = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, 3);
-  console.log("geohashes_3", geohashes_3);
-  // Use LokiJS chaining to filter by geo3 and lat first
+  const geohashes_2 = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, 2);
+  console.log("geohashes_2", geohashes_2);
+  // Use LokiJS chaining to filter by geo2 and lat first
   // const data = table.find()
   // console.log("data", data.length);
-  // console.log("geo3 only", data.filter(doc => geohashes_3.includes(doc.geo3)).length);
+  // console.log("geo2 only", data.filter(doc => geohashes_2.includes(doc.geo2)).length);
   return table.chain()
-  .find({ geo3: { '$in': geohashes_3 } })
+  .find({ geo2: { '$in': geohashes_2 }})
   .where(obj => obj.lat >= minLat && obj.lat <= maxLat && obj.lon >= minLon && obj.lon <= maxLon)
   .data();
 }
@@ -186,7 +188,7 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   let table = null;
   if (geohashes_1.length > 3) {
     table = tinyGeoCollection;
-    fileUrls = [`${basePath}geodata/geo3_unique.csv.gz`];
+    fileUrls = [`${basePath}geodata/geo2_unique.csv.gz`];
   } else {
     table = geoCollection;
     fileUrls = geohashes_1.map(g => `${basePath}geodata/${g}.csv.gz`);
