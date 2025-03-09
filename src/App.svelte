@@ -48,46 +48,39 @@
   }
 
   function addMarkerClasses(entries, hashlevel) {
-    for (const entry of entries) {
-      entry.isSelected = selectedMarker
-        ? entry.page_title === selectedMarker.page_title &&
-          entry.geohash === selectedMarker.geohash
-        : false;
-    }
     if (hashlevel > 7.5) {
       for (const entry of entries) {
-        entry.sizeClass = "full";
+        entry.displayClass = "full";
       }
     } else {
       for (const entry of entries) {
-        entry.sizeClass = "dot";
+        entry.displayClass = "dot";
       }
       for (const entry of getUniqueByGeoHash({
         entries,
         hashLength: hashlevel - 0.5,
         scoreField: "page_len",
       })) {
-        entry.sizeClass = "reduced";
+        entry.displayClass = "reduced";
       }
       for (const entry of getUniqueByGeoHash({
         entries,
         hashLength: hashlevel - 1.5,
         scoreField: "page_len",
       })) {
-        entry.sizeClass = "full";
+        entry.displayClass = "full";
       }
     }
-    // Sort entries so "full" size class appears last
-    // TODO: probably better done via the CSS classes
-    entries.sort((a, b) => {
-      if (a.isSelected) {
-        console.log("here");
-        return -1;
+    for (const entry of entries) {
+      if (selectedMarker) {
+        if (
+          entry.page_title === selectedMarker.page_title &&
+          entry.geohash === selectedMarker.geohash
+        ) {
+          entry.displayClass = "selected";
+        }
       }
-      if (a.sizeClass === "full" && b.sizeClass !== "full") return -1;
-      if (a.sizeClass !== "full" && b.sizeClass === "full") return 1;
-      return 0;
-    });
+    }
     return entries;
   }
   async function handleBoundsChange(event) {

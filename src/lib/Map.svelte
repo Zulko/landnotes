@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  import L from "leaflet";
+  import L, { marker } from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { createEventDispatcher } from "svelte";
 
@@ -11,15 +11,14 @@
 
   let mapElement;
   let map;
-  let markerLayer;
-  let startZoom = 0;
+  // Create a layers object to hold different marker type layers
+  let markerLayer = null;
   // Use the traditional event dispatcher
   const dispatch = createEventDispatcher();
 
   let isFlying = false; // Track if map is currently in flyTo animation
 
-  let selectedMarker = null;
-
+  let hoveredMarker = null;
   function computeMarkerHtml(marker) {
     const iconByType = {
       adm1st: "map",
@@ -63,9 +62,7 @@
       }
     }
     return `
-    <div class="map-marker marker-size-${marker.sizeClass} ${
-      marker.isSelected ? "marker-selected" : ""
-    }" >
+    <div class="map-marker marker-display-${marker.displayClass}" >
         <div class="marker-icon-circle">
           <img src="/icons/${icon}.svg">
         </div>
@@ -97,7 +94,18 @@
       })
       .addTo(map);
 
-    // Create a layer group for markers
+    // Create layer groups for different marker types
+    for (const layerType of [
+      { name: "tinydot", zIndex: 100 },
+      { name: "dot", zIndex: 200 },
+      { name: "reduced", zIndex: 300 },
+      { name: "full", zIndex: 400 },
+      { name: "selected", zIndex: 500 },
+    ]) {
+      map.createPane(layerType.name);
+      map.getPane(layerType.name).style.zIndex = layerType.zIndex;
+    }
+
     markerLayer = L.layerGroup().addTo(map);
 
     // Add initial markers
@@ -168,28 +176,50 @@
   // Function to update markers when the markers prop changes
   function updateMarkers() {
     if (!map || !markerLayer) return;
-
     // Clear existing markers
     markerLayer.clearLayers();
-
     // Add new markers
-    markers.forEach((marker) => {
-      // Set isSelected property based on selected marker
 
+    const iconSizesByDisplayClass = {
+      tinydot: [12, 12],
+      dot: [18, 18],
+      reduced: [28, 28],
+      full: [128, 32],
+      selected: [128, 32],
+    };
+    markers.forEach((marker) => {
       const markerHtml = computeMarkerHtml(marker);
+      let displayClass = marker.displayClass;
+      let pane = marker.displayClass;
+      if (hoveredMarker === marker) {
+        console.log("hovered");
+        displayClass = "full";
+        pane = "selected";
+      }
       const icon = L.divIcon({
         className: "custom-div-icon",
         html: markerHtml,
-        iconSize: [128, 32],
+        iconSize: iconSizesByDisplayClass[displayClass],
       });
+
       const mapMarker = L.marker([marker.lat, marker.lon], {
         icon: icon,
-      }).addTo(markerLayer);
+        pane: pane,
+      });
 
       // Add click handler to dispatch custom markerclick event
       mapMarker.on("click", () => {
         dispatch("markerclick", marker);
       });
+      mapMarker.on("mouseover", () => {
+        if (hoveredMarker !== marker) {
+          hoveredMarker = marker;
+          updateMarkers();
+        }
+      });
+
+      // Add marker to the appropriate layer based on its size class and selection state
+      mapMarker.addTo(markerLayer);
     });
   }
 
@@ -233,47 +263,47 @@
       z-index: 1000 !important; /* Ensure hovered markers appear above others */
     }
     &:hover > .marker-icon-circle,
-    &.marker-selected > .marker-icon-circle {
+    &.marker-display-selected > .marker-icon-circle {
       --circle-size: 32px !important;
       box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
       z-index: 1000 !important;
     }
 
-    &.marker-selected {
+    &.marker-display-selected {
       /* Ensure hovered markers appear above others */
       z-index: 1000 !important;
     }
 
     &:hover > .marker-text-container,
-    &.marker-selected > .marker-text-container {
+    &.marker-display-selected > .marker-text-container {
       visibility: visible;
       opacity: 1;
     }
 
-    &.marker-selected > .marker-icon-circle {
+    &.marker-display-selected > .marker-icon-circle {
       border: 6px solid #f00707;
       box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.95);
     }
 
-    &.marker-size-full > .marker-text-container {
+    &.marker-display-full > .marker-text-container {
       visibility: visible;
       opacity: 1;
     }
 
-    &.marker-size-full > .marker-icon-circle {
+    &.marker-display-full > .marker-icon-circle {
       --circle-size: 32px;
       box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
     }
 
-    &.marker-size-reduced > .marker-icon-circle {
+    &.marker-display-reduced > .marker-icon-circle {
       --circle-size: 24px;
     }
 
-    &.marker-size-dot > .marker-icon-circle {
+    &.marker-display-dot > .marker-icon-circle {
       --circle-size: 12px;
     }
 
-    &.marker-size-tinydot > .marker-icon-circle {
+    &.marker-display-tinydot > .marker-icon-circle {
       --circle-size: 4px;
     }
 
@@ -341,6 +371,8 @@
     color: white;
     -webkit-text-stroke: 6px white;
     text-stroke: 6px white;
+    -webkit-text-stroke-linejoin: round;
+    text-stroke-linejoin: round;
     z-index: 1;
   }
 </style>
