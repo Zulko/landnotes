@@ -109,6 +109,9 @@ function parseCsv(csvText) {
     
     const headers = lines[0].split('\t').map(h => h.trim());
     console.log("headers", headers);
+    if (headers.length < 5) {
+      throw new Error("Invalid CSV headers");
+    }
     
     // Pre-allocate array for better performance
     const rows = new Array(lines.length - 1);
