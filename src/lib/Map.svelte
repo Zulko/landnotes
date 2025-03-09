@@ -6,10 +6,6 @@
 
   // Props
   export let markers = [];
-  // export let zoom = 13;
-  // export let center = [51.508056, -0.076111]; // Default to London
-  export let onMarkerClick = null; // Function to call when marker is clicked
-
   // New props for controlled centering
   export let targetLocation = null; // Format: { lat, lon, zoom }
 
@@ -21,6 +17,8 @@
   const dispatch = createEventDispatcher();
 
   let isFlying = false; // Track if map is currently in flyTo animation
+
+  let selectedMarker = null;
 
   function computeMarkerHtml(marker) {
     const iconByType = {
@@ -147,7 +145,12 @@
 
   // Watch for changes to targetLocation and update the map view
   $: if (map && targetLocation) {
+    updateMarkers();
     flyTo(targetLocation);
+  }
+
+  $: if (markers && map) {
+    updateMarkers();
   }
 
   function handleBoundsChange() {
@@ -171,6 +174,8 @@
 
     // Add new markers
     markers.forEach((marker) => {
+      // Set isSelected property based on selected marker
+
       const markerHtml = computeMarkerHtml(marker);
       const icon = L.divIcon({
         className: "custom-div-icon",
@@ -189,9 +194,6 @@
   }
 
   // Watch for changes to markers
-  $: if (markers && map) {
-    updateMarkers();
-  }
 
   // Handle container size changes
   function handleResize() {
@@ -234,6 +236,12 @@
     &.marker-selected > .marker-icon-circle {
       --circle-size: 32px !important;
       box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
+      z-index: 1000 !important;
+    }
+
+    &.marker-selected {
+      /* Ensure hovered markers appear above others */
+      z-index: 1000 !important;
     }
 
     &:hover > .marker-text-container,

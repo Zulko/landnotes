@@ -3,10 +3,9 @@
   import Map from "./lib/Map.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
   import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
+  import { updateURLParams, readURLParams } from "./lib/urlState";
 
   let markers = [];
-
-  let dataStatus = "not started";
 
   // State to control the sliding pane
   let isPaneOpen = false;
@@ -23,6 +22,8 @@
     zoom: 1,
   };
 
+  // Track if we need to select a marker once data is loaded
+
   // Function to open the pane with a Wikipedia page
   function openWikiPane(page) {
     wikiPage = page;
@@ -30,21 +31,29 @@
   }
 
   // Function to handle marker clicks
-  function handleMarkerClick(event) {
+  async function handleMarkerClick(event) {
     const marker = event.detail;
     selectedMarker = marker;
-
-    // Set the target location instead of directly setting center/zoom
+    const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
+    markers = addMarkerClasses([...markers], hashlevel);
+    openWikiPane(marker.page_title);
     targetMapLocation = {
       lat: marker.lat,
       lon: marker.lon,
       zoom: Math.max(13, mapZoom), // Ensure zoom is at least 13
     };
 
-    openWikiPane(marker.page_title);
+    // Update URL only for user-initiated actions
+    updateURLParams(targetMapLocation, selectedMarker);
   }
 
-  function addCosmeticsToEntries(entries, hashlevel) {
+  function addMarkerClasses(entries, hashlevel) {
+    for (const entry of entries) {
+      entry.isSelected = selectedMarker
+        ? entry.page_title === selectedMarker.page_title &&
+          entry.geohash === selectedMarker.geohash
+        : false;
+    }
     if (hashlevel > 7.5) {
       for (const entry of entries) {
         entry.sizeClass = "full";
@@ -69,22 +78,37 @@
       }
     }
     // Sort entries so "full" size class appears last
+    // TODO: probably better done via the CSS classes
     entries.sort((a, b) => {
-      if (a.sizeClass === "full" && b.sizeClass !== "full") return 1;
-      if (a.sizeClass !== "full" && b.sizeClass === "full") return -1;
+      if (a.isSelected) {
+        console.log("here");
+        return -1;
+      }
+      if (a.sizeClass === "full" && b.sizeClass !== "full") return -1;
+      if (a.sizeClass !== "full" && b.sizeClass === "full") return 1;
       return 0;
     });
+    return entries;
   }
   async function handleBoundsChange(event) {
     const center = event.detail.center;
     mapZoom = event.detail.zoom;
-    console.log(event.detail.center);
+
+    // Update targetMapLocation with the new center and zoom
+    const urlTargetMapLocation = {
+      lat: center.lat,
+      lon: center.lng,
+      zoom: mapZoom,
+    };
+    updateURLParams(urlTargetMapLocation, selectedMarker);
+
     const bounds = {
       minLat: event.detail.bounds._southWest.lat,
       maxLat: event.detail.bounds._northEast.lat,
       minLon: event.detail.bounds._southWest.lng,
       maxLon: event.detail.bounds._northEast.lng,
     };
+
     const entries = await getGeoEntriesInBounds(bounds);
     const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
     const uniqueEntries = getUniqueByGeoHash({
@@ -92,11 +116,32 @@
       hashLength: hashlevel,
       scoreField: "page_len",
     });
-    addCosmeticsToEntries(uniqueEntries, hashlevel);
+    if (
+      selectedMarker &&
+      !uniqueEntries.some(
+        (entry) =>
+          entry.page_title === selectedMarker.page_title &&
+          entry.geohash === selectedMarker.geohash
+      )
+    ) {
+      uniqueEntries.push(selectedMarker);
+    }
+
+    addMarkerClasses(uniqueEntries, hashlevel);
     markers = uniqueEntries;
   }
   onMount(async () => {
     console.log("App starting");
+
+    // Read URL parameters when the app loads
+    const urlState = readURLParams();
+    if (urlState.targetLocation) {
+      targetMapLocation = urlState.targetLocation;
+    }
+    if (urlState.selectedMarker) {
+      selectedMarker = urlState.selectedMarker;
+      openWikiPane(selectedMarker.page_title);
+    }
   });
 </script>
 
