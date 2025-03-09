@@ -48,6 +48,7 @@
   }
 
   function addMarkerClasses(entries, hashlevel) {
+    console.log("selectedMarker", selectedMarker);
     if (hashlevel > 7.5) {
       for (const entry of entries) {
         entry.displayClass = "full";
@@ -72,13 +73,9 @@
       }
     }
     for (const entry of entries) {
-      if (selectedMarker) {
-        if (
-          entry.page_title === selectedMarker.page_title &&
-          entry.geohash === selectedMarker.geohash
-        ) {
-          entry.displayClass = "selected";
-        }
+      if (selectedMarker && entry.id == selectedMarker.id) {
+        console.log({ entry });
+        entry.displayClass = "selected";
       }
     }
     return entries;
@@ -111,11 +108,7 @@
     });
     if (
       selectedMarker &&
-      !uniqueEntries.some(
-        (entry) =>
-          entry.page_title === selectedMarker.page_title &&
-          entry.geohash === selectedMarker.geohash
-      )
+      !uniqueEntries.some((entry) => entry.id === selectedMarker.id)
     ) {
       uniqueEntries.push(selectedMarker);
     }

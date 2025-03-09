@@ -20,7 +20,10 @@
 
   let isFlying = false; // Track if map is currently in flyTo animation
 
-  let hoveredMarker = null;
+  let hoveredMarkerId = null;
+  // Track existing markers with a Map object for efficient lookups
+  let existingMapMarkers = new Map(); // key: marker.id, value: L.marker object
+
   function computeMarkerHtml(marker) {
     const iconByType = {
       adm1st: "map",
@@ -62,6 +65,9 @@
       if (fullLabel.length <= 30) {
         label = fullLabel;
       }
+    }
+    if (marker.displayClass === "selected") {
+      console.log("Found selected in icon generation", marker);
     }
     return `
     <div class="map-marker marker-display-${marker.displayClass}" >
@@ -117,6 +123,7 @@
     map.on("moveend", handleBoundsChange);
     map.on("zoomend", handleBoundsChange);
     map.on("resize", handleBoundsChange);
+    map.on("mouseover");
 
     // No need to return a cleanup function here as we're using onDestroy
   });
@@ -160,6 +167,7 @@
   }
 
   $: if (markers && map) {
+    console.log("markers changed");
     updateMarkers();
   }
 
@@ -183,13 +191,8 @@
     }, 200);
   }
 
-  // Function to update markers when the markers prop changes
-  function updateMarkers() {
-    if (!map || !markerLayer) return;
-    // Clear existing markers
-    markerLayer.clearLayers();
-    // Add new markers
-
+  function makeIcon(marker, displayClass) {
+    const markerHtml = computeMarkerHtml(marker);
     const iconSizesByDisplayClass = {
       tinydot: [12, 12],
       dot: [18, 18],
@@ -197,39 +200,94 @@
       full: [128, 32],
       selected: [128, 32],
     };
+    return L.divIcon({
+      className: "custom-div-icon",
+      html: markerHtml,
+      iconSize: iconSizesByDisplayClass[displayClass],
+    });
+  }
+
+  // Function to update markers when the markers prop changes
+  function updateMarkers() {
+    if (!map || !markerLayer) return;
+
+    // Track which markers we've processed to identify removals
+    const processedIds = new Set();
+    console.log("marker update");
+
+    // Update or add markers
     markers.forEach((marker) => {
-      const markerHtml = computeMarkerHtml(marker);
+      processedIds.add(marker.id);
       let displayClass = marker.displayClass;
       let pane = marker.displayClass;
-      if (hoveredMarker === marker) {
+      if (hoveredMarkerId === marker.id && displayClass !== "selected") {
         displayClass = "full";
         pane = "selected";
       }
-      const icon = L.divIcon({
-        className: "custom-div-icon",
-        html: markerHtml,
-        iconSize: iconSizesByDisplayClass[displayClass],
-      });
+      // Check if marker already exists
+      if (existingMapMarkers.has(marker.id)) {
+        const { existingMarker, existingClass } = existingMapMarkers.get(
+          marker.id
+        );
 
-      const mapMarker = L.marker([marker.lat, marker.lon], {
-        icon: icon,
-        pane: pane,
-      });
+        // Update existing marker if needed
 
-      // Add click handler to dispatch custom markerclick event
-      mapMarker.on("click", () => {
-        dispatch("markerclick", marker);
-      });
-      mapMarker.on("mouseover", () => {
-        if (hoveredMarker !== marker) {
-          hoveredMarker = marker;
-          updateMarkers();
+        if (
+          existingMarker._latlng.lat !== marker.lat ||
+          existingMarker._latlng.lng !== marker.lon
+        ) {
+          existingMarker.setLatLng([marker.lat, marker.lon]);
         }
-      });
+        if (existingMarker.options.pane !== pane) {
+          existingMarker.options.pane = pane;
+          // Force marker to use the new pane
+          existingMarker.removeFrom(map);
+          existingMarker.addTo(map);
+        }
 
-      // Add marker to the appropriate layer based on its size class and selection state
-      mapMarker.addTo(markerLayer);
+        if (existingClass !== displayClass) {
+          const icon = makeIcon(marker, displayClass);
+          existingMarker.setIcon(icon);
+        }
+      } else {
+        // Create new marker
+
+        const icon = makeIcon(marker, displayClass);
+        const mapMarker = L.marker([marker.lat, marker.lon], {
+          icon: icon,
+          pane: pane,
+        });
+
+        // Add click handler to dispatch custom markerclick event
+        mapMarker.on("click", () => {
+          dispatch("markerclick", marker);
+        });
+        mapMarker.on("mouseover", () => {
+          if (hoveredMarkerId !== marker.id) {
+            hoveredMarkerId = marker.id;
+            console.log("mouseover", marker);
+            updateMarkers();
+          }
+        });
+
+        // Store reference to the new marker
+        existingMapMarkers.set(marker.id, {
+          existingMarker: mapMarker,
+          displayClass: displayClass,
+        });
+
+        // Add marker to the map
+        mapMarker.addTo(markerLayer);
+      }
     });
+
+    // Remove markers that are no longer in the data
+    for (const [markerId, mapMarker] of existingMapMarkers.entries()) {
+      if (!processedIds.has(markerId)) {
+        markerLayer.removeLayer(mapMarker);
+        existingMapMarkers.delete(markerId);
+      }
+    }
   }
 
   // Watch for changes to markers

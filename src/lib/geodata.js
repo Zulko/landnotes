@@ -44,8 +44,7 @@ const tinyGeoCollection = db.addCollection('tinygeodata', {
  */
 function addLatLonToRows(rows) {
   // Process all rows in a single loop for better performance
-  const len = rows.length;
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     if (row.geohash) {
       // Use ngeohash decode which is optimized for performance
@@ -54,6 +53,12 @@ function addLatLonToRows(rows) {
       row.lon = latLon.longitude;
       row.geo2 = row.geohash.substring(0, 2);
     }
+  }
+}
+
+function addIdstoRows(rows) {
+  for (let i = 0; i < rows.length; i++) {
+    rows[i].id = `${rows[i].geohash}-${rows[i].page_title}`;
   }
 }
 
@@ -138,11 +143,16 @@ function parseCsv(csvText) {
 
 async function downloadMissingData(urls) {
   const needDownload = urls.filter(url => !ingestedFiles.includes(url));
-  console.log("needDownload", needDownload);
   if (needDownload.length > 0) {
     const loadResults = await Promise.all(needDownload.map(async (url) => {
       const rows = await loadCsvGzFile(url);
       ingestedFiles.push(url);
+      console.time('add_latlon');
+      addLatLonToRows(rows);
+      console.timeEnd('add_latlon');
+      console.time('add_ids');
+      addIdstoRows(rows);
+      console.timeEnd('add_ids');
       return rows;
     }));
     return loadResults.flat();
@@ -181,9 +191,6 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   
   const rows = await downloadMissingData(fileUrls);
   if (rows.length > 0) {
-    console.time('add_latlon');
-    addLatLonToRows(rows);
-    console.timeEnd('add_latlon');
     console.time('insert');
     table.insert(rows);
     console.timeEnd('insert');
