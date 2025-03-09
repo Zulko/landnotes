@@ -163,16 +163,24 @@
     updateMarkers();
   }
 
-  function handleBoundsChange() {
+  // Change from window.boundsChangeTimeout to a local variable
+  let boundsChangeTimeout = null;
+
+  function handleBoundsChange(evt) {
+    console.log("handleBoundsChange", evt);
     if (!map || isFlying) return; // Skip if map is flying
 
     const bounds = map.getBounds();
 
-    dispatch("boundschange", {
-      bounds: bounds,
-      center: bounds.getCenter(),
-      zoom: map.getZoom(),
-    });
+    // Debounce the dispatch to avoid too frequent updates
+    clearTimeout(boundsChangeTimeout);
+    boundsChangeTimeout = setTimeout(() => {
+      dispatch("boundschange", {
+        bounds: bounds,
+        center: bounds.getCenter(),
+        zoom: map.getZoom(),
+      });
+    }, 200);
   }
 
   // Function to update markers when the markers prop changes

@@ -107,7 +107,6 @@ function parseCsv(csvText) {
     const lines = csvText.trim().split('\n');
     
     const headers = lines[0].split('\t').map(h => h.trim());
-    console.log("headers", headers);
     if (headers.length < 5) {
       throw new Error("Invalid CSV headers");
     }
@@ -137,20 +136,30 @@ function parseCsv(csvText) {
   }
 }
 
-/**
- * Adds data from a CSV.gz file to the existing geodata collection
- * @param {string} url - URL of the CSV.gz file to load
- * @returns {Promise<Object>} Updated LokiJS collection
- */
-export async function addDataFromUrl(url) {
-  // Load the new data
-  const newRows = await loadCsvGzFile(url);
-  
-  // Add the new rows to the collection
-  geoCollection.insert(newRows);
-  
-  return newRows;
+async function downloadMissingData(urls) {
+  const needDownload = urls.filter(url => !ingestedFiles.includes(url));
+  console.log("needDownload", needDownload);
+  if (needDownload.length > 0) {
+    const loadResults = await Promise.all(needDownload.map(async (url) => {
+      const rows = await loadCsvGzFile(url);
+      ingestedFiles.push(url);
+      return rows;
+    }));
+    return loadResults.flat();
+  }
+  return [];
 }
+
+
+function queryGeoTable(table, minLat, maxLat, minLon, maxLon) {
+  const geohashes_2 = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, 2);
+    return table.find({geo2: { '$in': geohashes_2 }}).filter(doc => 
+      doc.lat > minLat && 
+      doc.lat < maxLat && 
+      doc.lon > minLon && 
+      doc.lon < maxLon
+    );
+  }
 
 /**
  * Get geo entries within bounds - optimized version
@@ -160,79 +169,29 @@ export async function addDataFromUrl(url) {
 export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   // Handle possible null/undefined bounds  
   const geohashes_1 = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, 1);
-  
-  if (!Array.isArray(geohashes_1) || geohashes_1.length === 0) {
-    console.warn("No geohashes found for the current bounds");
-    return [];
-  }
-  
+  let fileUrls = [];
+  let table = null;
   if (geohashes_1.length > 3) {
-    if (!ingestedFiles.includes("geodata/geo3_unique.csv.gz")) {
-      // Use consistent path format
-      const fileUrl = `${basePath}geodata/geo3_unique.csv.gz`;
-      try {
-        const rows = await loadCsvGzFile(fileUrl);
-        addLatLonToRows(rows);
-        tinyGeoCollection.insert(rows);
-        ingestedFiles.push(fileUrl);
-      } catch (error) {
-        console.error("Failed to load tiny geodata:", error);
-        return [];
-      }
-    }
-
-    // Type assertion for the filter method
-    /** @type {GeoDocument[]} */
-    const results = tinyGeoCollection.find();
-    return results.filter(
-      doc => doc.lat > minLat &&
-      doc.lat < maxLat &&
-      doc.lon > minLon &&
-      doc.lon < maxLon
-    );
+    table = tinyGeoCollection;
+    fileUrls = [`${basePath}geodata/geo3_unique.csv.gz`];
   } else {
-    // Download and ingest any new geohash files that haven't been processed yet
-    // Use consistent path format without leading dot or slash
-    const needDownload = geohashes_1.filter(g => !ingestedFiles.includes(`geodata/${g}.csv.gz`));
-    
-    if (needDownload.length > 0) {
-      // needDownload all rows first before doing a single bulk insert
-      
-      // Load all files in parallel but collect results before inserting
-      const loadResults = await Promise.all(needDownload.map(async (g) => {
-        const url = `${basePath}geodata/${g}.csv.gz`;
-        try {
-          const rows = await loadCsvGzFile(url);
-          ingestedFiles.push(url);
-          return rows;
-        } catch (error) {
-          console.warn(`Failed to load data for geohash ${g}:`, error);
-          return [];
-        }
-      }));
-      const allRows = loadResults.flat();
-         
-      console.time('add_latlon');
-      addLatLonToRows(allRows);
-      console.timeEnd('add_latlon');
-
-      // Do a single bulk insert with all rows
-      if (allRows.length > 0) {
-        geoCollection.insert(allRows);
-      }
-    }
-    
-    const geohashes_2 = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, 2);
-    
-    const results = geoCollection.find({geo2: { '$in': geohashes_2 }});
-    
-    return results.filter(doc => 
-      doc.lat > minLat && 
-      doc.lat < maxLat && 
-      doc.lon > minLon && 
-      doc.lon < maxLon
-    );
+    table = geoCollection;
+    fileUrls = geohashes_1.map(g => `${basePath}geodata/${g}.csv.gz`);
   }
+  
+  const rows = await downloadMissingData(fileUrls);
+  if (rows.length > 0) {
+    console.time('add_latlon');
+    addLatLonToRows(rows);
+    console.timeEnd('add_latlon');
+    console.time('insert');
+    table.insert(rows);
+    console.timeEnd('insert');
+  }
+  console.time('query');
+  const results = queryGeoTable(table, minLat, maxLat, minLon, maxLon);
+  console.timeEnd('query');
+  return results;
 }
 
 /**
