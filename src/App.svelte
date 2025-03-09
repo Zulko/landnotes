@@ -100,18 +100,24 @@
     };
 
     const entries = await getGeoEntriesInBounds(bounds);
-    const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
-    const uniqueEntries = getUniqueByGeoHash({
+    let hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
+    let uniqueEntries = getUniqueByGeoHash({
       entries,
       hashLength: hashlevel,
       scoreField: "page_len",
     });
+    if (uniqueEntries.length > 400) {
+      console.log("uniqueEntries", uniqueEntries.length, "so reducing");
+      uniqueEntries.sort((a, b) => b.page_len - a.page_len);
+      uniqueEntries = uniqueEntries.slice(0, 400);
+    }
     if (
       selectedMarker &&
       !uniqueEntries.some((entry) => entry.id === selectedMarker.id)
     ) {
       uniqueEntries.push(selectedMarker);
     }
+    console.log("nMarkers", uniqueEntries.length);
 
     addMarkerClasses(uniqueEntries, hashlevel);
     markers = uniqueEntries;

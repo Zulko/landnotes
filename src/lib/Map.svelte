@@ -66,9 +66,6 @@
         label = fullLabel;
       }
     }
-    if (marker.displayClass === "selected") {
-      console.log("Found selected in icon generation", marker);
-    }
     return `
     <div class="map-marker marker-display-${marker.displayClass}" >
         <div class="marker-icon-circle">
@@ -167,15 +164,13 @@
   }
 
   $: if (markers && map) {
-    console.log("markers changed");
     updateMarkers();
   }
 
   // Change from window.boundsChangeTimeout to a local variable
   let boundsChangeTimeout = null;
 
-  function handleBoundsChange(evt) {
-    console.log("handleBoundsChange", evt);
+  function handleBoundsChange() {
     if (!map || isFlying) return; // Skip if map is flying
 
     const bounds = map.getBounds();
@@ -213,7 +208,6 @@
 
     // Track which markers we've processed to identify removals
     const processedIds = new Set();
-    console.log("marker update");
 
     // Update or add markers
     markers.forEach((marker) => {
@@ -265,7 +259,6 @@
         mapMarker.on("mouseover", () => {
           if (hoveredMarkerId !== marker.id) {
             hoveredMarkerId = marker.id;
-            console.log("mouseover", marker);
             updateMarkers();
           }
         });
@@ -282,9 +275,9 @@
     });
 
     // Remove markers that are no longer in the data
-    for (const [markerId, mapMarker] of existingMapMarkers.entries()) {
+    for (const [markerId, entry] of existingMapMarkers.entries()) {
       if (!processedIds.has(markerId)) {
-        markerLayer.removeLayer(mapMarker);
+        markerLayer.removeLayer(entry.existingMarker);
         existingMapMarkers.delete(markerId);
       }
     }
