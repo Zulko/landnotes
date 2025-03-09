@@ -1,5 +1,6 @@
 import Loki from 'lokijs';
 import ngeohash from 'ngeohash'; // Import ngeohash for better performance
+import pako from 'pako';
 const basePath = import.meta.env.BASE_URL;
 // Initialize a LokiJS database
 
@@ -74,16 +75,14 @@ export async function loadCsvGzFile(url) {
     }
 
     // Parse CSV directly from response text
+    const buffer = await response.arrayBuffer();
     try {
-      const csvText = await response.text();
-      const rows = parseCsv(csvText);
-      return rows;
-    } catch {
-      // If text parsing fails, try gzip
-      const blob = await response.blob();
-      const decompressed = await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).text();
-      const rows = parseCsv(decompressed);
-      return rows;
+      const decompressed = pako.inflate(new Uint8Array(buffer), { to: 'string' });
+      return parseCsv(decompressed);
+    } catch (err) {
+      // If decompression fails, treat as plain text
+      const text = new TextDecoder().decode(buffer);
+      return parseCsv(text);
     }
   } catch (error) {
     console.error(`Error loading data from ${url}:`, error);
