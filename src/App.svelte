@@ -124,7 +124,7 @@
     markers = uniqueEntries;
   }
   onMount(async () => {
-    console.log("App starting");
+    console.log("App starting!");
 
     // Read URL parameters when the app loads
     const urlState = readURLParams();
