@@ -6,6 +6,7 @@
 import pako from 'pako';
 import ngeohash from 'ngeohash';
 import Loki from 'lokijs';
+import Fuse from 'fuse.js';
 
 // Initialize the database in the worker
 const db = new Loki('geodata.db', {
@@ -33,6 +34,29 @@ const tinyGeoCollection = db.addCollection('tinygeodata', {
 
 // Keep track of ingested files
 const ingestedFiles = [];
+
+// Initialize Fuse instance for search
+let fuseIndex = null
+let searchableData = [];
+
+// Function to build or rebuild the search index
+function buildSearchIndex() {
+  // Collect all items from both collections for searching
+  searchableData = geoCollection.chain().data();
+  
+  // Configure Fuse options for searching
+  const fuseOptions = {
+    keys: ['page_title', 'name', 'category'],
+    threshold: 0.3,
+    ignoreLocation: false,
+    includeScore: true,
+    shouldSort: true,
+    minMatchCharLength: 2
+  };
+  
+  // Create new Fuse index
+  fuseIndex = new Fuse(searchableData, fuseOptions);
+}
 
 // Function to process a CSV file from gzipped data
 async function loadCsvGzFile(url) {
@@ -80,10 +104,30 @@ function queryGeoTable(table, minLat, maxLat, minLon, maxLon) {
 // Set up event listener for messages from the main thread
 self.addEventListener('message', async (event) => {
   try {
-    const { type, bounds, basePath } = event.data;
+    const { type, bounds, basePath, searchQuery, requestId } = event.data;
     
-    if (type === 'textSearch') {
-      console.log("bla")
+    if (type === 'textSearch') {      
+      // Perform search if we have an index
+      if (fuseIndex) {
+        
+        const results = fuseIndex.search(searchQuery, {
+          threshold: 0.2,
+          minMatchCharLength: 3,
+          distance: 10
+        })
+        self.postMessage({
+          type: 'queryResults',
+          requestId,
+          results: results.map(result => result.item)
+        });
+      } else {
+        // Return empty result if no index available
+        self.postMessage({
+          type: 'queryResults',
+          requestId,
+          results: []
+        });
+      }
     }
     else if (type === 'queryBounds') {
       // Handle bounds query
@@ -109,7 +153,6 @@ self.addEventListener('message', async (event) => {
         table.insert(rows);
         ingestedFiles.push(url);
       }
-      
       // Query the data
       const results = queryGeoTable(table, minLat, maxLat, minLon, maxLon);
       
@@ -119,6 +162,10 @@ self.addEventListener('message', async (event) => {
         requestId: event.data.requestId,
         results 
       });
+
+      if (needDownload.length > 0) {
+        buildSearchIndex();
+      }
     }
   } catch (error) {
     self.postMessage({ 

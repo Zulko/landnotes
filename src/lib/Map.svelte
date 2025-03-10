@@ -83,7 +83,7 @@
     map = L.map(mapElement, {
       zoomControl: false, // Disable default zoom control
       worldCopyJump: true,
-    }).setView([0, 0], 1);
+    }).setView([0, 0], 3);
     flyTo(targetLocation);
 
     // Add tile layer (OpenStreetMap)

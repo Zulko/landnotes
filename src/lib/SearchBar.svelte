@@ -1,40 +1,58 @@
 <script>
-  import { createEventDispatcher } from "svelte";
-
-  export let entries = [];
-  export let searchText = "";
+  import { createEventDispatcher, onMount, onDestroy } from "svelte";
+  import { getEntriesfromText } from "./geodata";
+  export let searchQuery = "";
 
   const dispatch = createEventDispatcher();
 
-  let filteredEntries = [];
+  let searchResults = [];
   let isActive = false;
+  let isLoading = false;
+  let debounceTimer = null;
 
+  // Debounced search function
+  function debouncedSearch() {
+    isLoading = true;
+
+    // Clear any existing timer
+    if (debounceTimer) clearTimeout(debounceTimer);
+
+    // Set a new timer
+    debounceTimer = setTimeout(async () => {
+      if (searchQuery && searchQuery.length > 1) {
+        searchResults = await getEntriesfromText(searchQuery);
+        isActive = true;
+      } else {
+        searchResults = [];
+        isActive = false;
+      }
+      isLoading = false;
+    }, 300); // 0.3 seconds debounce
+  }
+
+  // Search text reactive statement
   $: {
-    if (searchText && searchText.length > 1) {
-      const searchLower = searchText.toLowerCase();
-      filteredEntries = entries
-        .filter((entry) => entry.page_title.toLowerCase().includes(searchLower))
-        .sort((a, b) => {
-          // Sort by whether the title starts with the search text, then by length
-          const aStarts = a.page_title.toLowerCase().startsWith(searchLower);
-          const bStarts = b.page_title.toLowerCase().startsWith(searchLower);
-
-          if (aStarts && !bStarts) return -1;
-          if (!aStarts && bStarts) return 1;
-
-          return a.page_title.length - b.page_title.length;
-        })
-        .slice(0, 10); // Limit to 10 results
-      isActive = true;
+    if (searchQuery && searchQuery.length > 1) {
+      isLoading = true;
+      searchResults = [];
+      debouncedSearch();
     } else {
-      filteredEntries = [];
+      searchResults = [];
       isActive = false;
+      isLoading = false;
+      // Clear any pending search
+      if (debounceTimer) clearTimeout(debounceTimer);
     }
   }
 
+  onDestroy(() => {
+    // Clean up any pending timers when component is destroyed
+    if (debounceTimer) clearTimeout(debounceTimer);
+  });
+
   function handleSelect(entry) {
     dispatch("select", entry);
-    searchText = "";
+    searchQuery = "";
     isActive = false;
   }
 
@@ -46,7 +64,7 @@
   }
 
   function handleFocus() {
-    if (searchText && searchText.length > 1) {
+    if (searchQuery && searchQuery.length > 1) {
       isActive = true;
     }
   }
@@ -56,17 +74,17 @@
   <div class="search-input-wrapper">
     <input
       type="text"
-      placeholder="Search locations..."
-      bind:value={searchText}
+      placeholder="Search locations (regions already visited only)"
+      bind:value={searchQuery}
       on:focus={handleFocus}
       on:blur={handleBlur}
       class="search-input"
     />
-    {#if searchText}
+    {#if searchQuery}
       <button
         class="clear-button"
         on:click={() => {
-          searchText = "";
+          searchQuery = "";
           isActive = false;
         }}
       >
@@ -78,9 +96,9 @@
     </div>
   </div>
 
-  {#if isActive && filteredEntries.length > 0}
+  {#if isActive && searchResults.length > 0}
     <div class="suggestions" role="listbox">
-      {#each filteredEntries as entry}
+      {#each searchResults as entry}
         <div
           class="suggestion-item"
           on:mousedown={() => handleSelect(entry)}
@@ -96,10 +114,14 @@
         </div>
       {/each}
     </div>
-  {:else if isActive && searchText.length > 1}
+  {:else if isActive && searchQuery.length > 1}
     <div class="suggestions" role="listbox">
       <div class="no-results" role="presentation">
-        No matching locations found
+        {#if isLoading}
+          Searching...
+        {:else}
+          No matching locations found
+        {/if}
       </div>
     </div>
   {/if}

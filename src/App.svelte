@@ -15,12 +15,13 @@
   // State for selected marker
   let selectedMarker = null;
   let mapZoom = 1;
+  let mapCenter = null;
 
   // Add a target location state
   let targetMapLocation = {
     lat: 51.508056,
     lon: -0.076111,
-    zoom: 1,
+    zoom: 3,
   };
 
   // Search state
@@ -73,7 +74,6 @@
   }
 
   function addMarkerClasses(entries, hashlevel) {
-    console.log("selectedMarker", selectedMarker);
     if (hashlevel > 7.5) {
       for (const entry of entries) {
         entry.displayClass = "full";
@@ -99,7 +99,6 @@
     }
     for (const entry of entries) {
       if (selectedMarker && entry.id == selectedMarker.id) {
-        console.log({ entry });
         entry.displayClass = "selected";
       }
     }
@@ -108,14 +107,13 @@
 
   async function handleBoundsChange(event) {
     const center = event.detail.center;
-    mapZoom = event.detail.zoom;
-
-    // Update targetMapLocation with the new center and zoom
-    const urlTargetMapLocation = {
+    mapCenter = {
       lat: center.lat,
       lon: center.lng,
-      zoom: mapZoom,
     };
+    mapZoom = event.detail.zoom;
+    // Update targetMapLocation with the new center and zoom
+    const urlTargetMapLocation = { ...mapCenter, zoom: mapZoom };
     updateURLParams(urlTargetMapLocation, selectedMarker);
 
     const bounds = {
@@ -133,7 +131,6 @@
       scoreField: "page_len",
     });
     if (uniqueEntries.length > 400) {
-      console.log("uniqueEntries", uniqueEntries.length, "so reducing");
       uniqueEntries.sort((a, b) => b.page_len - a.page_len);
       uniqueEntries = uniqueEntries.slice(0, 400);
     }
@@ -143,7 +140,6 @@
     ) {
       uniqueEntries.push(selectedMarker);
     }
-    console.log("nMarkers", uniqueEntries.length);
 
     addMarkerClasses(uniqueEntries, hashlevel);
     markers = uniqueEntries;
@@ -189,11 +185,7 @@
         on:markerclick={handleMarkerClick}
       />
       <div class="search-wrapper">
-        <SearchBar
-          entries={allEntriesInRegion}
-          bind:searchText
-          on:select={handleSearchSelect}
-        />
+        <SearchBar on:select={handleSearchSelect} />
       </div>
     </div>
   </div>

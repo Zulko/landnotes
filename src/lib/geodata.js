@@ -37,6 +37,31 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   return await queryPromise;
 }
 
+export async function getEntriesfromText(searchQuery) {
+  // Make sure worker is initialized
+  if (!window.geodataWorker) {
+    initWorker();
+  }
+
+  // Create a unique request ID
+  const requestId = `query_${Date.now()}_${Math.random()}`;
+  
+  // Create a promise that will be resolved when the worker returns results
+  const queryPromise = new Promise((resolve, reject) => {
+    window.geodataWorkerPromises[requestId] = { resolve, reject };
+  });
+
+  // Send query to worker
+  window.geodataWorker.postMessage({
+    type: 'textSearch',
+    requestId,
+    searchQuery
+  });
+
+  // Wait for worker to return results
+  return await queryPromise;
+}
+
 // Initialize the worker once
 function initWorker() {
   window.geodataWorker = new Worker(new URL('./geodataWorker.js', import.meta.url), { type: 'module' });
