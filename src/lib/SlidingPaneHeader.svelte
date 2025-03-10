@@ -3,7 +3,6 @@
   // Props
   export let title = "";
   export let expanded = false;
-  export let isMobile = false;
 
   // Events
   export let onClose = () => {};
@@ -12,7 +11,7 @@
 </script>
 
 <div class="pane-header">
-  <h2>{title}</h2>
+  <h2>{title.replaceAll("_", " ")}</h2>
   <div class="header-buttons">
     <button
       class="icon-button external-link-button"

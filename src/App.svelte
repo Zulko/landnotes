@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import Map from "./lib/Map.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
+  import SearchBar from "./lib/SearchBar.svelte";
   import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
   import { updateURLParams, readURLParams } from "./lib/urlState";
 
@@ -22,10 +23,14 @@
     zoom: 1,
   };
 
-  // Track if we need to select a marker once data is loaded
+  // Search state
+  let searchText = "";
 
   // Detect mobile view
   let isMobile = false;
+
+  // all the entries found for the region (not just the ones displayed)
+  let allEntriesInRegion = [];
 
   // Function to open the pane with a Wikipedia page
   function openWikiPane(page) {
@@ -47,6 +52,23 @@
     };
 
     // Update URL only for user-initiated actions
+    updateURLParams(targetMapLocation, selectedMarker);
+  }
+
+  // Handle search selection
+  function handleSearchSelect(event) {
+    const selectedEntry = event.detail;
+    selectedMarker = selectedEntry;
+    const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
+    markers = addMarkerClasses([...markers], hashlevel);
+    openWikiPane(selectedEntry.page_title);
+    targetMapLocation = {
+      lat: selectedEntry.lat,
+      lon: selectedEntry.lon,
+      zoom: Math.max(13, mapZoom), // Ensure zoom is at least 13
+    };
+
+    // Update URL
     updateURLParams(targetMapLocation, selectedMarker);
   }
 
@@ -83,6 +105,7 @@
     }
     return entries;
   }
+
   async function handleBoundsChange(event) {
     const center = event.detail.center;
     mapZoom = event.detail.zoom;
@@ -102,10 +125,10 @@
       maxLon: event.detail.bounds._northEast.lng,
     };
 
-    const entries = await getGeoEntriesInBounds(bounds);
+    allEntriesInRegion = await getGeoEntriesInBounds(bounds);
     let hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
     let uniqueEntries = getUniqueByGeoHash({
-      entries,
+      entries: allEntriesInRegion,
       hashLength: hashlevel,
       scoreField: "page_len",
     });
@@ -165,6 +188,13 @@
         on:boundschange={handleBoundsChange}
         on:markerclick={handleMarkerClick}
       />
+      <div class="search-wrapper">
+        <SearchBar
+          entries={allEntriesInRegion}
+          bind:searchText
+          on:select={handleSearchSelect}
+        />
+      </div>
     </div>
   </div>
 </main>
@@ -177,12 +207,15 @@
     margin: 0;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .content-container {
     display: flex;
     width: 100%;
     height: 100%;
+    flex: 1;
   }
 
   .wiki-pane-container {
@@ -196,6 +229,7 @@
     flex: 1;
     height: 100%;
     z-index: 50;
+    position: relative;
   }
 
   /* When pane is open on desktop */
@@ -220,5 +254,24 @@
   main.is-mobile .map-container {
     order: 1; /* Put map at the top */
     flex: 1;
+  }
+
+  /* Mobile adjustments for search bar */
+  main.is-mobile .search-wrapper {
+    top: 10px;
+    width: 90%;
+  }
+
+  .search-wrapper {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 500px;
+    z-index: 1000;
+    background-color: none;
+    border-radius: 20px;
+    padding: 5px;
   }
 </style>
