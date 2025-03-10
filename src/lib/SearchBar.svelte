@@ -92,7 +92,7 @@
       </button>
     {/if}
     <div class="search-icon">
-      <img src="/icons/search.svg" alt="Search" />
+      <img src={`${import.meta.env.BASE_URL}icons/search.svg`} alt="Search" />
     </div>
   </div>
 
