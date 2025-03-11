@@ -16,7 +16,6 @@ export async function getGeoEntriesInBounds(bounds, hashlevel) {
   if (!window.geodataWorker) {
     initWorker();
   }
-  console.log("getting entries in bounds", bounds, hashlevel);
   
   // Create a unique request ID
   const requestId = `query_${Date.now()}_${Math.random()}`;

@@ -138,7 +138,6 @@
 
     let hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
     let entries = await getGeoEntriesInBounds(bounds, hashlevel);
-    console.log("entries", entries.length);
     if (
       selectedMarker &&
       !entries.some((entry) => entry.id === selectedMarker.id)

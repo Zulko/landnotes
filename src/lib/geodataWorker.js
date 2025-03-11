@@ -63,7 +63,8 @@ function buildSearchIndex() {
 
 
 // Function to process a CSV file from gzipped data
-async function loadCsvGzFile(url, table) {
+async function loadCsvGzFile(url) {
+  let rows = [];
   const response = await fetch(url);
   const buffer = await response.arrayBuffer();
   try {
@@ -72,8 +73,7 @@ async function loadCsvGzFile(url, table) {
   } catch (err) {
     // If decompression fails, treat as plain text
     const text = new TextDecoder().decode(buffer);
-    const rows = parseCsv(text);
-    table.insert(rows);
+    return parseCsv(text);
   }
 }
 
@@ -168,8 +168,10 @@ self.addEventListener('message', async (event) => {
           // Create and store download promise
           const downloadPromise = (async () => {
             try {
-              await loadCsvGzFile(url, table);
+              const rows = await loadCsvGzFile(url);
+              table.insert(rows);
               ingestedFiles.set(url, true);
+              return rows;
             } catch (error) {
               // In case of error, reset status so it can be tried again
               ingestedFiles.set(url, null);
@@ -196,12 +198,6 @@ self.addEventListener('message', async (event) => {
       
       // Query the data
       const allResults = queryGeoTable(table, minLat, maxLat, minLon, maxLon)
-      console.log("================================================")
-      console.log("geohashes_1", geohashes_1)
-      console.log("bounds",minLat, maxLat, minLon, maxLon)
-      console.log("ingestedFiles", ingestedFiles)
-      console.log("in table", table.count());
-      console.log("allResults", allResults.length);
 
 
       let results = getUniqueByGeoHash({
@@ -209,14 +205,10 @@ self.addEventListener('message', async (event) => {
         hashLength: hashlevel,
         scoreField: "page_len",
       });
-      console.log("results", results.length);
       if (results.length > 400) {
         results.sort((a, b) => b.page_len - a.page_len);
         results = results.slice(0, 400);
       }
-      console.log("results", results.length);
-      console.log("================================================")
-      
       
       // Return results to main thread
       self.postMessage({ 
