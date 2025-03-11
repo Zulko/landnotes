@@ -214,6 +214,7 @@ self.addEventListener('message', async (event) => {
       }
       
       // Return results to main thread
+      console.log("posting results", results.length);
       self.postMessage({ 
         type: 'queryResults', 
         requestId: event.data.requestId,
