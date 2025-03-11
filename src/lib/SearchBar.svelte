@@ -98,11 +98,12 @@
 
   {#if isActive && searchResults.length > 0}
     <div class="suggestions" role="listbox">
-      {#each searchResults as entry}
+      {#each searchResults as entry, i}
         <div
           class="suggestion-item"
           on:mousedown={() => handleSelect(entry)}
           role="option"
+          aria-selected="false"
           tabindex="0"
         >
           <span class="suggestion-title"

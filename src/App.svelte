@@ -177,11 +177,7 @@
 <main class:has-open-pane={isPaneOpen} class:is-mobile={isMobile}>
   <div class="content-container">
     <div class="wiki-pane-container">
-      <SlidingPane
-        bind:isOpen={isPaneOpen}
-        title={wikiPage}
-        page_title={wikiPage}
-      />
+      <SlidingPane bind:isOpen={isPaneOpen} page_title={wikiPage} />
     </div>
 
     <div class="map-container">

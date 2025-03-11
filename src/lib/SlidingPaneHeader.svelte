@@ -1,7 +1,6 @@
 <script>
   const basePath = import.meta.env.BASE_URL;
   // Props
-  export let title = "";
   export let expanded = false;
 
   // Events
@@ -73,14 +72,6 @@
     top: 0;
     background: white;
     z-index: 1;
-  }
-
-  .pane-header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .header-buttons {

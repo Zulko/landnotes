@@ -3,7 +3,6 @@
 
   // Props
   export let isOpen = false;
-  export let title = "";
   export let page_title = ""; // Wikipedia page name
   export let width = "400px"; // Default width for desktop
   export let height = "70vh"; // Default height for mobile
@@ -86,9 +85,7 @@
 <div class="pane-container" class:is-open={isOpen}>
   <div class="pane" style="width: {actualWidth}; height: {actualHeight};">
     <SlidingPaneHeader
-      {title}
       {expanded}
-      {isMobile}
       onClose={close}
       onToggleExpand={toggleExpand}
       onOpenExternal={openInNewTab}
