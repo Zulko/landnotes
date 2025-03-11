@@ -64,7 +64,6 @@ function buildSearchIndex() {
 
 // Function to process a CSV file from gzipped data
 async function loadCsvGzFile(url, table) {
-  const startTime = performance.now();
   const response = await fetch(url);
   const buffer = await response.arrayBuffer();
   try {
@@ -170,10 +169,6 @@ self.addEventListener('message', async (event) => {
           const downloadPromise = (async () => {
             try {
               await loadCsvGzFile(url, table);
-              self.postMessage({
-                type: 'info',
-                message: "downloaded " + url
-              });
               ingestedFiles.set(url, true);
             } catch (error) {
               // In case of error, reset status so it can be tried again
@@ -201,6 +196,12 @@ self.addEventListener('message', async (event) => {
       
       // Query the data
       const allResults = queryGeoTable(table, minLat, maxLat, minLon, maxLon)
+      console.log("================================================")
+      console.log("geohashes_1", geohashes_1)
+      console.log("bounds",minLat, maxLat, minLon, maxLon)
+      console.log("ingestedFiles", ingestedFiles)
+      console.log("in table", table.count());
+      console.log("allResults", allResults.length);
 
 
       let results = getUniqueByGeoHash({
@@ -208,13 +209,16 @@ self.addEventListener('message', async (event) => {
         hashLength: hashlevel,
         scoreField: "page_len",
       });
+      console.log("results", results.length);
       if (results.length > 400) {
         results.sort((a, b) => b.page_len - a.page_len);
         results = results.slice(0, 400);
       }
+      console.log("results", results.length);
+      console.log("================================================")
+      
       
       // Return results to main thread
-      console.log("posting results", results.length);
       self.postMessage({ 
         type: 'queryResults', 
         requestId: event.data.requestId,
