@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, afterUpdate } from "svelte";
   import Map from "./lib/Map.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
   import SearchBar from "./lib/SearchBar.svelte";
@@ -33,11 +33,27 @@
   // all the entries found for the region (not just the ones displayed)
   let allEntriesInRegion = [];
 
+  let mapComponent; // Reference to the Map component
+
+  // Previous pane state to detect changes
+  let previousPaneState = false;
+
   // Function to open the pane with a Wikipedia page
   function openWikiPane(page) {
     wikiPage = page;
     isPaneOpen = true;
   }
+
+  // After each update, check if the pane state changed
+  afterUpdate(() => {
+    if (previousPaneState !== isPaneOpen && mapComponent) {
+      // Small delay to allow CSS transitions to start
+      setTimeout(() => {
+        mapComponent.invalidateMapSize();
+      }, 50);
+      previousPaneState = isPaneOpen;
+    }
+  });
 
   // Function to handle marker clicks
   async function handleMarkerClick(event) {
@@ -123,26 +139,17 @@
       maxLon: event.detail.bounds._northEast.lng,
     };
 
-    allEntriesInRegion = await getGeoEntriesInBounds(bounds);
     let hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
-    let uniqueEntries = getUniqueByGeoHash({
-      entries: allEntriesInRegion,
-      hashLength: hashlevel,
-      scoreField: "page_len",
-    });
-    if (uniqueEntries.length > 400) {
-      uniqueEntries.sort((a, b) => b.page_len - a.page_len);
-      uniqueEntries = uniqueEntries.slice(0, 400);
-    }
+    let entries = await getGeoEntriesInBounds(bounds, hashlevel);
     if (
       selectedMarker &&
-      !uniqueEntries.some((entry) => entry.id === selectedMarker.id)
+      !entries.some((entry) => entry.id === selectedMarker.id)
     ) {
-      uniqueEntries.push(selectedMarker);
+      entries.push(selectedMarker);
     }
 
-    addMarkerClasses(uniqueEntries, hashlevel);
-    markers = uniqueEntries;
+    addMarkerClasses(entries, hashlevel);
+    markers = entries;
   }
 
   function handleResize() {
@@ -179,6 +186,7 @@
 
     <div class="map-container">
       <Map
+        bind:this={mapComponent}
         {markers}
         targetLocation={targetMapLocation}
         on:boundschange={handleBoundsChange}

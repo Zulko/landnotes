@@ -11,7 +11,6 @@
 </script>
 
 <div class="pane-header">
-  <h2>{title.replaceAll("_", " ")}</h2>
   <div class="header-buttons">
     <button
       class="icon-button external-link-button"
@@ -68,7 +67,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 0.2rem;
     border-bottom: 1px solid #eee;
     position: sticky;
     top: 0;
@@ -87,7 +86,8 @@
   .header-buttons {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    margin-left: auto;
   }
 
   .icon-button,
@@ -95,7 +95,9 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 0.5rem;
+    min-width: 36px;
+    height: 36px;
     border-radius: 4px;
     display: flex;
     align-items: center;

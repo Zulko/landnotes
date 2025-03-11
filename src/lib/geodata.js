@@ -11,7 +11,7 @@ const basePath = import.meta.env.BASE_URL;
  * @param {Object} bounds - Object with minLat, maxLat, minLon, maxLon
  * @returns {Promise<Array>} Array of geo entries within bounds
  */
-export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
+export async function getGeoEntriesInBounds(bounds, hashlevel) {
   // Make sure worker is initialized
   if (!window.geodataWorker) {
     initWorker();
@@ -29,7 +29,8 @@ export async function getGeoEntriesInBounds({minLat, maxLat, minLon, maxLon}) {
   window.geodataWorker.postMessage({
     type: 'queryBounds',
     requestId,
-    bounds: { minLat, maxLat, minLon, maxLon },
+    hashlevel,
+    bounds,
     basePath: import.meta.env.BASE_URL
   });
   
@@ -62,32 +63,6 @@ export async function getEntriesfromText(searchQuery) {
   return await queryPromise;
 }
 
-// Initialize the worker once
-function initWorker() {
-  window.geodataWorker = new Worker(new URL('./geodataWorker.js', import.meta.url), { type: 'module' });
-  window.geodataWorkerPromises = {};
-  
-  window.geodataWorker.addEventListener('message', (event) => {
-    const { type, url, results, error, requestId } = event.data;
-    
-    if (type === 'fileProcessed' && window.geodataWorkerPromises[url]) {
-      window.geodataWorkerPromises[url].resolve(results);
-      delete window.geodataWorkerPromises[url];
-    } 
-    else if (type === 'queryResults' && window.geodataWorkerPromises[requestId]) {
-      window.geodataWorkerPromises[requestId].resolve(results);
-      delete window.geodataWorkerPromises[requestId];
-    }
-    else if (type === 'error') {
-      const promiseKey = url || requestId;
-      if (window.geodataWorkerPromises[promiseKey]) {
-        window.geodataWorkerPromises[promiseKey].reject(new Error(error));
-        delete window.geodataWorkerPromises[promiseKey];
-      }
-    }
-  });
-}
-
 /**
  * Get unique entries by geohash with optimized algorithm
  * @param {Object} params - Object with entries, hashLength, and scoreField
@@ -107,6 +82,28 @@ export function getUniqueByGeoHash({entries, hashLength, scoreField}) {
   }
   
   return Array.from(hashMap.values());
+}
+
+// Initialize the worker once
+function initWorker() {
+  window.geodataWorker = new Worker(new URL('./geodataWorker.js', import.meta.url), { type: 'module' });
+  window.geodataWorkerPromises = {};
+  
+  window.geodataWorker.addEventListener('message', (event) => {
+    const { type, url, results, error, requestId } = event.data;
+    
+    if (type === 'queryResults' && window.geodataWorkerPromises[requestId]) {
+      window.geodataWorkerPromises[requestId].resolve(results);
+      delete window.geodataWorkerPromises[requestId];
+    }
+    else if (type === 'error') {
+      const promiseKey = url || requestId;
+      if (window.geodataWorkerPromises[promiseKey]) {
+        window.geodataWorkerPromises[promiseKey].reject(new Error(error));
+        delete window.geodataWorkerPromises[promiseKey];
+      }
+    }
+  });
 }
 
 // Additional utility functions for working with the geodata can be added here 

@@ -24,6 +24,8 @@
   // Track existing markers with a Map object for efficient lookups
   let existingMapMarkers = new Map(); // key: marker.id, value: L.marker object
 
+  let resizeObserver; // Add a ResizeObserver
+
   function computeMarkerHtml(marker) {
     const iconByType = {
       adm1st: "map",
@@ -120,7 +122,14 @@
     map.on("moveend", handleBoundsChange);
     map.on("zoomend", handleBoundsChange);
     map.on("resize", handleBoundsChange);
-    map.on("mouseover");
+
+    // Initialize ResizeObserver
+    resizeObserver = new ResizeObserver(() => {
+      if (map) {
+        map.invalidateSize();
+      }
+    });
+    resizeObserver.observe(mapElement);
 
     // No need to return a cleanup function here as we're using onDestroy
   });
@@ -132,6 +141,9 @@
       map.off("resize", handleBoundsChange);
       map.remove();
       map = null; // Set to null to prevent double cleanup
+    }
+    if (resizeObserver) {
+      resizeObserver.disconnect();
     }
   });
 
@@ -184,6 +196,23 @@
         zoom: map.getZoom(),
       });
     }, 200);
+  }
+
+  // Improved resize handling to work with transitions
+  function handleResize() {
+    if (map) {
+      // Use a small timeout to ensure the resize happens after CSS transitions complete
+      setTimeout(() => {
+        map.invalidateSize({ animate: true });
+        // Trigger a bounds change to update markers if needed
+        handleBoundsChange();
+      }, 300); // Match this with your CSS transition duration
+    }
+  }
+
+  // Add a method to explicitly invalidate the map size
+  export function invalidateMapSize() {
+    handleResize();
   }
 
   function makeIcon(marker, displayClass) {
@@ -280,15 +309,6 @@
         markerLayer.removeLayer(entry.existingMarker);
         existingMapMarkers.delete(markerId);
       }
-    }
-  }
-
-  // Watch for changes to markers
-
-  // Handle container size changes
-  function handleResize() {
-    if (map) {
-      map.invalidateSize();
     }
   }
 </script>

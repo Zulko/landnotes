@@ -7,7 +7,7 @@ import pako from 'pako';
 import ngeohash from 'ngeohash';
 import Loki from 'lokijs';
 import Fuse from 'fuse.js';
-
+import { getUniqueByGeoHash } from './geodata';
 // Initialize the database in the worker
 const db = new Loki('geodata.db', {
   autoload: true,
@@ -32,8 +32,9 @@ const tinyGeoCollection = db.addCollection('tinygeodata', {
   disableMeta: true
 });
 
-// Keep track of ingested files
-const ingestedFiles = [];
+// Keep track of ingested files with their download state
+// null = never downloaded, Promise = downloading, true = downloaded
+const ingestedFiles = new Map();
 
 // Initialize Fuse instance for search
 let fuseIndex = null
@@ -58,8 +59,12 @@ function buildSearchIndex() {
   fuseIndex = new Fuse(searchableData, fuseOptions);
 }
 
+
+
+
 // Function to process a CSV file from gzipped data
-async function loadCsvGzFile(url) {
+async function loadCsvGzFile(url, table) {
+  const startTime = performance.now();
   const response = await fetch(url);
   const buffer = await response.arrayBuffer();
   try {
@@ -68,7 +73,8 @@ async function loadCsvGzFile(url) {
   } catch (err) {
     // If decompression fails, treat as plain text
     const text = new TextDecoder().decode(buffer);
-    return parseCsv(text);
+    const rows = parseCsv(text);
+    table.insert(rows);
   }
 }
 
@@ -101,10 +107,12 @@ function queryGeoTable(table, minLat, maxLat, minLon, maxLon) {
     .data();
 }
 
+
+
 // Set up event listener for messages from the main thread
 self.addEventListener('message', async (event) => {
   try {
-    const { type, bounds, basePath, searchQuery, requestId } = event.data;
+    const { type, bounds, basePath, searchQuery, requestId, hashlevel } = event.data;
     
     if (type === 'textSearch') {      
       // Perform search if we have an index
@@ -147,14 +155,63 @@ self.addEventListener('message', async (event) => {
       }
       
       // Load missing data
-      const needDownload = fileUrls.filter(url => !ingestedFiles.includes(url));
-      for (const url of needDownload) {
-        const rows = await loadCsvGzFile(url);
-        table.insert(rows);
-        ingestedFiles.push(url);
+      
+      const downloadPromises = [];
+      
+      for (const url of fileUrls) {
+        // Initialize entries for files we've never seen before
+        if (!ingestedFiles.has(url)) {
+          ingestedFiles.set(url, null);
+        }
+        
+        // If file is not downloaded and not currently downloading
+        if (ingestedFiles.get(url) === null) {
+          // Create and store download promise
+          const downloadPromise = (async () => {
+            try {
+              await loadCsvGzFile(url, table);
+              self.postMessage({
+                type: 'info',
+                message: "downloaded " + url
+              });
+              ingestedFiles.set(url, true);
+            } catch (error) {
+              // In case of error, reset status so it can be tried again
+              ingestedFiles.set(url, null);
+              throw error;
+            }
+          })();
+          
+          ingestedFiles.set(url, downloadPromise);
+          downloadPromises.push(downloadPromise);
+        } 
+        // If file is currently downloading, add the existing promise
+        else if (ingestedFiles.get(url) instanceof Promise) {
+          downloadPromises.push(ingestedFiles.get(url));
+        }
+        // Otherwise file is already downloaded, nothing to do
       }
+      
+      // Wait for all downloads to complete
+      if (downloadPromises.length > 0) {
+        
+        await Promise.all(downloadPromises);
+        
+      }
+      
       // Query the data
-      const results = queryGeoTable(table, minLat, maxLat, minLon, maxLon);
+      const allResults = queryGeoTable(table, minLat, maxLat, minLon, maxLon)
+
+
+      let results = getUniqueByGeoHash({
+        entries: allResults,
+        hashLength: hashlevel,
+        scoreField: "page_len",
+      });
+      if (results.length > 400) {
+        results.sort((a, b) => b.page_len - a.page_len);
+        results = results.slice(0, 400);
+      }
       
       // Return results to main thread
       self.postMessage({ 
@@ -162,8 +219,7 @@ self.addEventListener('message', async (event) => {
         requestId: event.data.requestId,
         results 
       });
-
-      if (needDownload.length > 0) {
+      if (downloadPromises.length > 0) {
         buildSearchIndex();
       }
     }
