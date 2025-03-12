@@ -1,31 +1,162 @@
 <script>
   import { onMount, onDestroy } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-  import { createEventDispatcher } from "svelte";
 
   const basePath = import.meta.env.BASE_URL;
-
-  // Props
-  export let markers = [];
-  // New props for controlled centering
-  export let targetLocation = null; // Format: { lat, lon, zoom }
-
-  let mapElement;
-  let map;
-  // Create a layers object to hold different marker type layers
-  let markerLayer = null;
-  // Use the traditional event dispatcher
   const dispatch = createEventDispatcher();
 
-  let isFlying = false; // Track if map is currently in flyTo animation
+  // ===== PROPS =====
+  export let markers = [];
+  export let targetLocation = null; // Format: { lat, lon, zoom }
 
+  // ===== STATE VARIABLES =====
+  let mapElement;
+  let map;
+  let markerLayer = null;
+  let isFlying = false;
   let hoveredMarkerId = null;
-  // Track existing markers with a Map object for efficient lookups
   let existingMapMarkers = new Map(); // key: marker.id, value: L.marker object
+  let resizeObserver;
+  let boundsChangeTimeout = null;
 
-  let resizeObserver; // Add a ResizeObserver
+  // ===== LIFECYCLE METHODS =====
+  onMount(() => {
+    initializeMap();
+    updateMarkers();
 
+    // Initialize ResizeObserver
+    resizeObserver = new ResizeObserver(() => {
+      if (map) map.invalidateSize();
+    });
+    resizeObserver.observe(mapElement);
+  });
+
+  onDestroy(() => {
+    if (map) {
+      map.off("moveend", handleBoundsChange);
+      map.off("zoomend", handleBoundsChange);
+      map.off("resize", handleBoundsChange);
+      map.remove();
+      map = null;
+    }
+
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+    }
+  });
+
+  // ===== REACTIVE DECLARATIONS =====
+  $: if (map && targetLocation) {
+    updateMarkers();
+    flyTo(targetLocation);
+  }
+
+  $: if (markers && map) {
+    updateMarkers();
+  }
+
+  // ===== MAP INITIALIZATION =====
+  function initializeMap() {
+    // Initialize the map
+    map = L.map(mapElement, {
+      zoomControl: false,
+      worldCopyJump: true,
+    }).setView([0, 0], 3);
+
+    if (targetLocation) {
+      flyTo(targetLocation);
+    }
+
+    // Add tile layer (OpenStreetMap)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    // Add zoom control to bottom right
+    L.control
+      .zoom({
+        position: "bottomright",
+      })
+      .addTo(map);
+
+    // Create layer groups for different marker types
+    const markerLayers = [
+      { name: "dot", zIndex: 200 },
+      { name: "reduced", zIndex: 300 },
+      { name: "full", zIndex: 400 },
+      { name: "selected", zIndex: 500 },
+    ];
+
+    markerLayers.forEach((layer) => {
+      map.createPane(layer.name);
+      map.getPane(layer.name).style.zIndex = layer.zIndex;
+    });
+
+    markerLayer = L.layerGroup().addTo(map);
+
+    // Add event listeners
+    map.on("moveend", handleBoundsChange);
+    map.on("zoomend", handleBoundsChange);
+    map.on("resize", handleBoundsChange);
+  }
+
+  // ===== MAP CONTROL FUNCTIONS =====
+  function flyTo(targetLocation) {
+    const { lat, lon, zoom: targetZoom } = targetLocation;
+
+    // If target zoom is less than current zoom, clear markers first
+    if (targetZoom < map.getZoom()) {
+      markerLayer.clearLayers();
+    }
+
+    isFlying = true;
+    map.flyTo([lat, lon], targetZoom, {
+      animate: true,
+      duration: 1, // Duration in seconds
+    });
+
+    // Set isFlying back to false after animation completes
+    setTimeout(() => {
+      isFlying = false;
+      // Dispatch a single boundschange event after flying completes
+      handleBoundsChange();
+    }, 1100); // Slightly longer than animation duration
+
+    targetLocation = null;
+  }
+
+  // ===== EVENT HANDLERS =====
+  function handleBoundsChange() {
+    if (!map || isFlying) return;
+
+    const bounds = map.getBounds();
+
+    // Debounce the dispatch to avoid too frequent updates
+    clearTimeout(boundsChangeTimeout);
+    boundsChangeTimeout = setTimeout(() => {
+      dispatch("boundschange", {
+        bounds: bounds,
+        center: bounds.getCenter(),
+        zoom: map.getZoom(),
+      });
+    }, 200);
+  }
+
+  function handleResize() {
+    if (map) {
+      // Use a small timeout to ensure the resize happens after CSS transitions complete
+      setTimeout(() => {
+        map.invalidateSize({ animate: true });
+        // Trigger a bounds change to update markers if needed
+        handleBoundsChange();
+      }, 300); // Match this with your CSS transition duration
+    }
+  }
+
+  // ===== MARKER MANAGEMENT =====
   function computeMarkerHtml(marker) {
     const iconByType = {
       adm1st: "map",
@@ -55,8 +186,10 @@
       village: "city",
       waterbody: "waves",
     };
+
     const icon = iconByType[marker.category] || iconByType.other;
     const unsanitized_page_title = marker.page_title.replaceAll("_", " ");
+
     let label = marker.name;
     if (!marker.name) {
       label = unsanitized_page_title;
@@ -68,6 +201,7 @@
         label = fullLabel;
       }
     }
+
     return `
     <div class="map-marker marker-display-${marker.displayClass}" >
         <div class="marker-icon-circle">
@@ -80,148 +214,17 @@
       </div>
     `;
   }
-  onMount(() => {
-    // Initialize the map
-    map = L.map(mapElement, {
-      zoomControl: false, // Disable default zoom control
-      worldCopyJump: true,
-    }).setView([0, 0], 3);
-    flyTo(targetLocation);
-
-    // Add tile layer (OpenStreetMap)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
-
-    // Add zoom control to bottom right
-    L.control
-      .zoom({
-        position: "bottomright",
-      })
-      .addTo(map);
-
-    // Create layer groups for different marker types
-    for (const layerType of [
-      { name: "dot", zIndex: 200 },
-      { name: "reduced", zIndex: 300 },
-      { name: "full", zIndex: 400 },
-      { name: "selected", zIndex: 500 },
-    ]) {
-      map.createPane(layerType.name);
-      map.getPane(layerType.name).style.zIndex = layerType.zIndex;
-    }
-
-    markerLayer = L.layerGroup().addTo(map);
-
-    // Add initial markers
-    updateMarkers();
-
-    // Add event listeners for bounds changes
-    map.on("moveend", handleBoundsChange);
-    map.on("zoomend", handleBoundsChange);
-    map.on("resize", handleBoundsChange);
-
-    // Initialize ResizeObserver
-    resizeObserver = new ResizeObserver(() => {
-      if (map) {
-        map.invalidateSize();
-      }
-    });
-    resizeObserver.observe(mapElement);
-
-    // No need to return a cleanup function here as we're using onDestroy
-  });
-
-  onDestroy(() => {
-    if (map) {
-      map.off("moveend", handleBoundsChange);
-      map.off("zoomend", handleBoundsChange);
-      map.off("resize", handleBoundsChange);
-      map.remove();
-      map = null; // Set to null to prevent double cleanup
-    }
-    if (resizeObserver) {
-      resizeObserver.disconnect();
-    }
-  });
-
-  function flyTo(targetLocation) {
-    const { lat, lon, zoom: targetZoom } = targetLocation;
-    // If target zoom is less than current zoom, clear markers first
-    if (targetZoom < map.getZoom()) {
-      markerLayer.clearLayers();
-    }
-    isFlying = true;
-    map.flyTo([lat, lon], targetZoom, {
-      animate: true,
-      duration: 1, // Duration in seconds
-    });
-
-    // Set isFlying back to false after animation completes
-    setTimeout(() => {
-      isFlying = false;
-      // Dispatch a single boundschange event after flying completes
-      handleBoundsChange();
-    }, 1100); // Slightly longer than animation duration to ensure it's complete
-
-    targetLocation = null;
-  }
-
-  // Watch for changes to targetLocation and update the map view
-  $: if (map && targetLocation) {
-    updateMarkers();
-    flyTo(targetLocation);
-  }
-
-  $: if (markers && map) {
-    updateMarkers();
-  }
-
-  // Change from window.boundsChangeTimeout to a local variable
-  let boundsChangeTimeout = null;
-
-  function handleBoundsChange() {
-    if (!map || isFlying) return; // Skip if map is flying
-
-    const bounds = map.getBounds();
-
-    // Debounce the dispatch to avoid too frequent updates
-    clearTimeout(boundsChangeTimeout);
-    boundsChangeTimeout = setTimeout(() => {
-      dispatch("boundschange", {
-        bounds: bounds,
-        center: bounds.getCenter(),
-        zoom: map.getZoom(),
-      });
-    }, 200);
-  }
-
-  // Improved resize handling to work with transitions
-  function handleResize() {
-    if (map) {
-      // Use a small timeout to ensure the resize happens after CSS transitions complete
-      setTimeout(() => {
-        map.invalidateSize({ animate: true });
-        // Trigger a bounds change to update markers if needed
-        handleBoundsChange();
-      }, 300); // Match this with your CSS transition duration
-    }
-  }
-
-  // Add a method to explicitly invalidate the map size
-  export function invalidateMapSize() {
-    handleResize();
-  }
 
   function makeIcon(marker, displayClass) {
     const markerHtml = computeMarkerHtml(marker);
+
     const iconSizesByDisplayClass = {
       dot: [18, 18],
       reduced: [28, 28],
       full: [128, 32],
       selected: [128, 32],
     };
+
     return L.divIcon({
       className: "custom-div-icon",
       html: markerHtml,
@@ -229,7 +232,6 @@
     });
   }
 
-  // Function to update markers when the markers prop changes
   function updateMarkers() {
     if (!map || !markerLayer) return;
 
@@ -239,75 +241,100 @@
     // Update or add markers
     markers.forEach((marker) => {
       processedIds.add(marker.id);
+
       let displayClass = marker.displayClass;
       let pane = marker.displayClass;
+
       if (hoveredMarkerId === marker.id && displayClass !== "selected") {
         displayClass = "full";
         pane = "selected";
       }
+
       // Check if marker already exists
       if (existingMapMarkers.has(marker.id)) {
-        const { existingMarker, existingClass } = existingMapMarkers.get(
-          marker.id
-        );
-
-        // Update existing marker if needed
-
-        if (
-          existingMarker._latlng.lat !== marker.lat ||
-          existingMarker._latlng.lng !== marker.lon
-        ) {
-          existingMarker.setLatLng([marker.lat, marker.lon]);
-        }
-        if (existingMarker.options.pane !== pane) {
-          existingMarker.options.pane = pane;
-          // Force marker to use the new pane
-          existingMarker.removeFrom(map);
-          existingMarker.addTo(map);
-        }
-
-        if (existingClass !== displayClass) {
-          const icon = makeIcon(marker, displayClass);
-          existingMarker.setIcon(icon);
-        }
+        updateExistingMarker(marker, displayClass, pane);
       } else {
-        // Create new marker
-
-        const icon = makeIcon(marker, displayClass);
-        const mapMarker = L.marker([marker.lat, marker.lon], {
-          icon: icon,
-          pane: pane,
-        });
-
-        // Add click handler to dispatch custom markerclick event
-        mapMarker.on("click", () => {
-          dispatch("markerclick", marker);
-        });
-        mapMarker.on("mouseover", () => {
-          if (hoveredMarkerId !== marker.id) {
-            hoveredMarkerId = marker.id;
-            updateMarkers();
-          }
-        });
-
-        // Store reference to the new marker
-        existingMapMarkers.set(marker.id, {
-          existingMarker: mapMarker,
-          displayClass: displayClass,
-        });
-
-        // Add marker to the map
-        mapMarker.addTo(markerLayer);
+        createNewMarker(marker, displayClass, pane);
       }
     });
 
     // Remove markers that are no longer in the data
+    removeStaleMarkers(processedIds);
+  }
+
+  function updateExistingMarker(marker, displayClass, pane) {
+    const { existingMarker, existingClass } = existingMapMarkers.get(marker.id);
+
+    // Update position if needed
+    if (
+      existingMarker._latlng.lat !== marker.lat ||
+      existingMarker._latlng.lng !== marker.lon
+    ) {
+      existingMarker.setLatLng([marker.lat, marker.lon]);
+    }
+
+    // Update pane if needed
+    if (existingMarker.options.pane !== pane) {
+      existingMarker.options.pane = pane;
+      // Force marker to use the new pane
+      existingMarker.removeFrom(map);
+      existingMarker.addTo(map);
+    }
+
+    // Update icon if display class changed
+    if (existingClass !== displayClass) {
+      const icon = makeIcon(marker, displayClass);
+      existingMarker.setIcon(icon);
+
+      // Update the stored display class
+      existingMapMarkers.set(marker.id, {
+        existingMarker,
+        displayClass,
+      });
+    }
+  }
+
+  function createNewMarker(marker, displayClass, pane) {
+    const icon = makeIcon(marker, displayClass);
+    const mapMarker = L.marker([marker.lat, marker.lon], {
+      icon: icon,
+      pane: pane,
+    });
+
+    // Add event handlers
+    mapMarker.on("click", () => {
+      dispatch("markerclick", marker);
+    });
+
+    mapMarker.on("mouseover", () => {
+      if (hoveredMarkerId !== marker.id) {
+        hoveredMarkerId = marker.id;
+        updateMarkers();
+      }
+    });
+
+    // Store reference to the new marker
+    existingMapMarkers.set(marker.id, {
+      existingMarker: mapMarker,
+      displayClass: displayClass,
+    });
+
+    // Add marker to the map
+    mapMarker.addTo(markerLayer);
+  }
+
+  function removeStaleMarkers(processedIds) {
     for (const [markerId, entry] of existingMapMarkers.entries()) {
       if (!processedIds.has(markerId)) {
         markerLayer.removeLayer(entry.existingMarker);
         existingMapMarkers.delete(markerId);
       }
     }
+  }
+
+  // ===== EXPORTED FUNCTIONS =====
+  export function invalidateMapSize() {
+    handleResize();
   }
 </script>
 
