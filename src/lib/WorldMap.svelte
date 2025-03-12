@@ -103,7 +103,6 @@
 
     // Create layer groups for different marker types
     for (const layerType of [
-      { name: "tinydot", zIndex: 100 },
       { name: "dot", zIndex: 200 },
       { name: "reduced", zIndex: 300 },
       { name: "full", zIndex: 400 },
@@ -218,7 +217,6 @@
   function makeIcon(marker, displayClass) {
     const markerHtml = computeMarkerHtml(marker);
     const iconSizesByDisplayClass = {
-      tinydot: [12, 12],
       dot: [18, 18],
       reduced: [28, 28],
       full: [128, 32],
@@ -380,11 +378,11 @@
     }
 
     &.marker-display-dot > .marker-icon-circle {
-      --circle-size: 12px;
+      --circle-size: 18px;
     }
-
-    &.marker-display-tinydot > .marker-icon-circle {
-      --circle-size: 4px;
+    &.marker-display-dot > .marker-icon-circle > img {
+      width: calc(var(--circle-size) * 0.8);
+      height: calc(var(--circle-size) * 0.8);
     }
 
     & > .marker-icon-circle {

@@ -17,7 +17,6 @@
     "fuse.js": "^7.1.0",
     "latlon-geohash": "^2.0.0",
     "leaflet": "^1.9.4",
-    "lokijs": "^1.5.12",
     "ngeohash": "^0.6.3",
     "pako": "^2.1.0"
   }

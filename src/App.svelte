@@ -1,6 +1,6 @@
 <script>
   import { onMount, afterUpdate } from "svelte";
-  import Map from "./lib/Map.svelte";
+  import WorldMap from "./lib/WorldMap.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
   import SearchBar from "./lib/SearchBar.svelte";
   import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
@@ -62,7 +62,7 @@
     targetMapLocation = {
       lat: marker.lat,
       lon: marker.lon,
-      zoom: Math.max(13, mapZoom), // Ensure zoom is at least 13
+      zoom: Math.max(12, mapZoom), // Ensure zoom is at least 13
     };
 
     // Update URL only for user-initiated actions
@@ -79,7 +79,7 @@
     targetMapLocation = {
       lat: selectedEntry.lat,
       lon: selectedEntry.lon,
-      zoom: Math.max(13, mapZoom), // Ensure zoom is at least 13
+      zoom: Math.max(12, mapZoom), // Ensure zoom is at least 13
     };
 
     // Update URL
@@ -87,34 +87,40 @@
   }
 
   function addMarkerClasses(entries, hashlevel) {
-    if (hashlevel > 7.5) {
-      for (const entry of entries) {
-        entry.displayClass = "full";
-      }
-    } else {
-      for (const entry of entries) {
-        entry.displayClass = "dot";
-      }
-      for (const entry of getUniqueByGeoHash({
-        entries,
-        hashLength: hashlevel - 0.5,
-        scoreField: "page_len",
-      })) {
-        entry.displayClass = "reduced";
-      }
-      for (const entry of getUniqueByGeoHash({
-        entries,
-        hashLength: hashlevel - 1.5,
-        scoreField: "page_len",
-      })) {
-        entry.displayClass = "full";
+    // Sort entries by page length in descending order
+    // Create a map of entries by ID for quick lookup
+    entries.sort((a, b) => b.page_len - a.page_len);
+    const dotCount = Math.floor(entries.length * 0.5);
+
+    // Assign display classes based on the sorted order
+    for (let i = 0; i < entries.length; i++) {
+      if (i >= entries.length - dotCount) {
+        entries[i].displayClass = "dot";
+      } else {
+        entries[i].displayClass = "reduced";
       }
     }
     for (const entry of entries) {
       if (selectedMarker && entry.id == selectedMarker.id) {
         entry.displayClass = "selected";
+      } else if (hashlevel == 8) {
+        entry.displayClass = "full";
       }
     }
+    // Get unique entries by geohash at a lower level to reduce density
+    const uniqueEntries = getUniqueByGeoHash({
+      entries,
+      hashLength: hashlevel - 1,
+      scoreField: "page_len",
+    });
+
+    // Mark these unique entries with 'full' class
+    uniqueEntries.forEach((entry) => {
+      if (entry.displayClass != "selected") {
+        entry.displayClass = "full";
+      }
+    });
+
     return entries;
   }
 
@@ -127,6 +133,7 @@
     mapZoom = event.detail.zoom;
     // Update targetMapLocation with the new center and zoom
     const urlTargetMapLocation = { ...mapCenter, zoom: mapZoom };
+
     updateURLParams(urlTargetMapLocation, selectedMarker);
 
     const bounds = {
@@ -136,7 +143,8 @@
       maxLon: event.detail.bounds._northEast.lng,
     };
 
-    let hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
+    let hashlevel = Math.max(1, Math.min(8, 1 + Math.floor(0.42 * mapZoom)));
+
     let entries = await getGeoEntriesInBounds(bounds, hashlevel);
     if (
       selectedMarker &&
@@ -178,7 +186,7 @@
     </div>
 
     <div class="map-container">
-      <Map
+      <WorldMap
         bind:this={mapComponent}
         {markers}
         targetLocation={targetMapLocation}

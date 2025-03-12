@@ -29,9 +29,11 @@ export async function getGeoEntriesInBounds(bounds, hashlevel) {
   window.geodataWorker.postMessage({
     type: 'queryBounds',
     requestId,
-    hashlevel,
-    bounds,
-    basePath: import.meta.env.BASE_URL
+    params: {
+      hashlevel,
+      bounds,
+      basePath: import.meta.env.BASE_URL
+    }
   });
   
   // Wait for worker to return results
@@ -56,7 +58,10 @@ export async function getEntriesfromText(searchQuery) {
   window.geodataWorker.postMessage({
     type: 'textSearch',
     requestId,
-    searchQuery
+    params: {
+      searchQuery,
+      basePath: import.meta.env.BASE_URL
+    }
   });
 
   // Wait for worker to return results
