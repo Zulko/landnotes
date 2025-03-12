@@ -1,10 +1,3 @@
-import Loki from 'lokijs';
-import ngeohash from 'ngeohash'; // Import ngeohash for better performance
-import pako from 'pako';
-const basePath = import.meta.env.BASE_URL;
-// Initialize a LokiJS database
-
-
 
 /**
  * Get geo entries within bounds - optimized version
