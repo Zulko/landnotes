@@ -4,7 +4,11 @@
   import SlidingPane from "./lib/SlidingPane.svelte";
   import SearchBar from "./lib/SearchBar.svelte";
   import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
-  import { updateURLParams, readURLParams } from "./lib/urlState";
+  import {
+    updateURLParams,
+    readURLParams,
+    createHistoryStateHandler,
+  } from "./lib/urlState";
 
   // ---------------
   // STATE VARIABLES
@@ -48,6 +52,25 @@
       selectedMarker = urlState.selectedMarker;
       openWikiPane(selectedMarker.page_title);
     }
+
+    // Add history navigation handler
+    window.addEventListener(
+      "popstate",
+      createHistoryStateHandler((state) => {
+        if (state.targetLocation) {
+          targetMapLocation = state.targetLocation;
+        }
+
+        if (state.selectedMarker) {
+          selectedMarker = state.selectedMarker;
+          openWikiPane(selectedMarker.page_title);
+        } else {
+          // Close the pane if no marker is selected
+          isPaneOpen = false;
+          wikiPage = "";
+        }
+      })
+    );
   });
 
   // Check if the pane state changed and invalidate map size if needed
@@ -140,8 +163,8 @@
       zoom: Math.max(12, mapZoom), // Ensure zoom is at least 12
     };
 
-    // Update URL
-    updateURLParams(targetMapLocation, selectedMarker);
+    // Update URL - use true to add to browser history when selecting a marker
+    updateURLParams(targetMapLocation, selectedMarker, true);
   }
 
   // Classify markers for display based on importance and zoom level
