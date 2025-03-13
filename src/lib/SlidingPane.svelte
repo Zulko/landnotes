@@ -1,17 +1,18 @@
 <script>
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
 
-  // Props
+  // ===== PROPS =====
   export let isOpen = false;
   export let page_title = ""; // Wikipedia page name
   export let width = "400px"; // Default width for desktop
   export let height = "70vh"; // Default height for mobile
 
-  // Single expansion state for all devices
+  // ===== STATE VARIABLES =====
   let expanded = false;
   let normalWidth = width;
   let normalHeight = height;
 
+  // ===== COMPUTED VALUES =====
   // Detect mobile view
   $: isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 
@@ -21,8 +22,17 @@
     : expanded
       ? `${parseInt(normalWidth) * 2}px`
       : normalWidth;
+
   $: actualHeight = isMobile ? (expanded ? "100vh" : normalHeight) : "100vh";
 
+  // Generate Wikipedia URL based on device and width
+  $: wikiUrl = page_title
+    ? isMobile || parseInt(actualWidth) < 768
+      ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(page_title)}`
+      : `https://en.wikipedia.org/wiki/${encodeURIComponent(page_title)}`
+    : "about:blank";
+
+  // ===== EVENT HANDLERS =====
   // Handle close events
   function close() {
     isOpen = false;
@@ -34,13 +44,6 @@
     expanded = !expanded;
   }
 
-  // Generate Wikipedia URL
-  $: wikiUrl = page_title
-    ? isMobile || parseInt(actualWidth) < 768
-      ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(page_title)}`
-      : `https://en.wikipedia.org/wiki/${encodeURIComponent(page_title)}`
-    : "about:blank";
-
   // Open in new tab
   function openInNewTab() {
     if (page_title) {
@@ -48,6 +51,15 @@
     }
   }
 
+  // Handle window resize
+  function handleResize() {
+    if (typeof window !== "undefined") {
+      // Update mobile detection
+      isMobile = window.innerWidth <= 768;
+    }
+  }
+
+  // ===== TRANSITIONS =====
   // Custom transition for desktop and mobile
   function slideTransition(node, { duration }) {
     const isMobile = window.innerWidth <= 768;
@@ -66,14 +78,6 @@
         `;
       },
     };
-  }
-
-  // Handle window resize
-  function handleResize() {
-    if (typeof window !== "undefined") {
-      // Update mobile detection
-      isMobile = window.innerWidth <= 768;
-    }
   }
 </script>
 
