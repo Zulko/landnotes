@@ -223,7 +223,7 @@ async function downloadAndProcessGeodataFiles(fileUrls) {
 function selectEntries(bounds, hashlevel) {
   const { minLat, maxLat, minLon, maxLon } = bounds;
 
-  const geohashes = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, hashlevel+1);
+  const geohashes = ngeohash.bboxes(minLat, minLon, maxLat, maxLon, Math.min(hashlevel+1, 8));
   let results = geohashes.map(g => geoTrie.getBestEntry(g));
   
   // Filter out null entries and entries outside the bounds
