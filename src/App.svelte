@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount, afterUpdate } from "svelte";
   import WorldMap from "./lib/WorldMap.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
@@ -54,35 +54,31 @@
     }
 
     // Add history navigation handler
-    window.addEventListener(
-      "popstate",
-      createHistoryStateHandler((state) => {
-        if (state.targetLocation) {
-          targetMapLocation = state.targetLocation;
-        }
+    window.addEventListener("popstate", ((ev: PopStateEvent) => {
+      const state = ev.state || {};
+      if (state.targetLocation) {
+        targetMapLocation = state.targetLocation;
+      }
 
-        if (state.selectedMarker) {
-          selectedMarker = state.selectedMarker;
-          openWikiPane(selectedMarker.page_title);
-        } else {
-          // Close the pane if no marker is selected
-          isPaneOpen = false;
-          wikiPage = "";
-        }
-      })
-    );
+      if (state.selectedMarker) {
+        selectedMarker = state.selectedMarker;
+        openWikiPane(selectedMarker.page_title);
+      } else {
+        // Close the pane if no marker is selected
+        isPaneOpen = false;
+        wikiPage = "";
+      }
+    }) as EventListener);
   });
 
   // Check if the pane state changed and invalidate map size if needed
-  afterUpdate(() => {
-    if (previousPaneState !== isPaneOpen && mapComponent) {
-      // Small delay to allow CSS transitions to start
-      setTimeout(() => {
-        mapComponent.invalidateMapSize();
-      }, 50);
-      previousPaneState = isPaneOpen;
-    }
-  });
+  $: if (previousPaneState !== isPaneOpen && mapComponent) {
+    // Small delay to allow CSS transitions to start
+    setTimeout(() => {
+      mapComponent.invalidateMapSize();
+    }, 50);
+    previousPaneState = isPaneOpen;
+  }
 
   // ----------------
   // EVENT HANDLERS
@@ -101,6 +97,7 @@
       lon: center.lng,
     };
     mapZoom = event.detail.zoom;
+    console.log("mapZoom", mapZoom);
 
     // Update URL with new location
     const urlTargetMapLocation = { ...mapCenter, zoom: mapZoom };
