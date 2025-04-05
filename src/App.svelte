@@ -1,20 +1,29 @@
 <script lang="ts">
+  // -------------------------
+  // IMPORTS
+  // -------------------------
+  // Svelte lifecycle
   import { onMount, afterUpdate } from "svelte";
+
+  // Components
   import WorldMap from "./lib/WorldMap.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
   import SearchBar from "./lib/SearchBar.svelte";
-  import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
+
+  // Utilities
   import {
     updateURLParams,
     readURLParams,
     createHistoryStateHandler,
   } from "./lib/urlState";
 
-  // ---------------
-  // STATE VARIABLES
-  // ---------------
+  // -------------------------
+  // STATE MANAGEMENT
+  // -------------------------
 
-  // Map state
+  /**
+   * Map configuration and state
+   */
   let mapComponent;
   let mapZoom = 1;
   let mapCenter = null;
@@ -24,20 +33,25 @@
     zoom: 3,
   };
   let markers = [];
-  let allEntriesInRegion = [];
 
-  // UI state
+  let cachedMarkers = new Map();
+
+  /**
+   * UI state
+   */
   let isMobile = false;
   let isPaneOpen = false;
   let previousPaneState = false;
 
-  // Content state
+  /**
+   * Content state
+   */
   let wikiPage = "";
   let selectedMarker = null;
 
-  // ----------------
+  // -------------------------
   // LIFECYCLE HOOKS
-  // ----------------
+  // -------------------------
 
   onMount(async () => {
     console.log("App starting!");
@@ -54,42 +68,49 @@
     }
 
     // Add history navigation handler
-    window.addEventListener("popstate", ((ev: PopStateEvent) => {
-      const state = ev.state || {};
-      if (state.targetLocation) {
-        targetMapLocation = state.targetLocation;
-      }
-
-      if (state.selectedMarker) {
-        selectedMarker = state.selectedMarker;
-        openWikiPane(selectedMarker.page_title);
-      } else {
-        // Close the pane if no marker is selected
-        isPaneOpen = false;
-        wikiPage = "";
-      }
-    }) as EventListener);
+    window.addEventListener("popstate", handlePopState);
   });
 
-  // Check if the pane state changed and invalidate map size if needed
+  // When pane state changes, update map size after a slight delay to allow transitions
   $: if (previousPaneState !== isPaneOpen && mapComponent) {
-    // Small delay to allow CSS transitions to start
-    setTimeout(() => {
-      mapComponent.invalidateMapSize();
-    }, 50);
+    setTimeout(() => mapComponent.invalidateMapSize(), 50);
     previousPaneState = isPaneOpen;
   }
 
-  // ----------------
+  // -------------------------
   // EVENT HANDLERS
-  // ----------------
+  // -------------------------
 
-  // Handle window resize events
+  /**
+   * Handle browser history navigation
+   */
+  function handlePopState(ev: PopStateEvent) {
+    const state = ev.state || {};
+
+    if (state.targetLocation) {
+      targetMapLocation = state.targetLocation;
+    }
+
+    if (state.selectedMarker) {
+      selectedMarker = state.selectedMarker;
+      openWikiPane(selectedMarker.page_title);
+    } else {
+      // Close the pane if no marker is selected
+      isPaneOpen = false;
+      wikiPage = "";
+    }
+  }
+
+  /**
+   * Update mobile status based on window size
+   */
   function handleResize() {
     isMobile = window.innerWidth <= 768;
   }
 
-  // Handle map bounds changing
+  /**
+   * Process map bounds changes and fetch new markers
+   */
   async function handleBoundsChange(event) {
     const center = event.detail.center;
     mapCenter = {
@@ -97,7 +118,6 @@
       lon: center.lng,
     };
     mapZoom = event.detail.zoom;
-    console.log("mapZoom", mapZoom);
 
     // Update URL with new location
     const urlTargetMapLocation = { ...mapCenter, zoom: mapZoom };
@@ -109,11 +129,32 @@
       maxLat: event.detail.bounds._northEast.lat,
       minLon: event.detail.bounds._southWest.lng,
       maxLon: event.detail.bounds._northEast.lng,
+      zoomLevel: mapZoom,
     };
 
-    let hashlevel = Math.max(1, Math.min(8, 1 + Math.floor(0.42 * mapZoom)));
+    // Fetch geodata for the current bounds
+    const entries = await getGeodataFromRange(bounds);
 
-    let entries = await getGeoEntriesInBounds(bounds, hashlevel);
+    // Update markers with display classes
+    addMarkerClasses(entries, mapZoom);
+    markers = entries;
+  }
+
+  /**
+   * Fetch geodata for the specified map bounds
+   */
+  async function getGeodataFromRange(bounds) {
+    // Fetch geo entries from the server
+    const query = await fetch("/geo", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bounds),
+    });
+
+    const queryJSON = await query.json();
+    let entries = queryJSON.results;
 
     // Make sure the selected marker stays visible
     if (
@@ -123,31 +164,42 @@
       entries.push(selectedMarker);
     }
 
-    addMarkerClasses(entries, hashlevel);
-    markers = entries;
+    entries.forEach((entry) => {
+      cachedMarkers.set(entry.id, entry);
+    });
+
+    return entries;
   }
 
-  // Handle marker click events
-  async function handleMarkerClick(event) {
+  /**
+   * Handle marker click events
+   */
+  function handleMarkerClick(event) {
     focusOnEntry(event.detail);
   }
 
-  // Handle search selection
+  /**
+   * Handle search selection
+   */
   function handleSearchSelect(event) {
     focusOnEntry(event.detail);
   }
 
-  // ----------------
+  // -------------------------
   // HELPER FUNCTIONS
-  // ----------------
+  // -------------------------
 
-  // Function to open the pane with a Wikipedia page
+  /**
+   * Opens the wiki pane with the specified page
+   */
   function openWikiPane(page) {
     wikiPage = page;
     isPaneOpen = true;
   }
 
-  // Common function to handle focusing on a map entry (from search or marker click)
+  /**
+   * Focus the map on an entry and open its wiki page
+   */
   function focusOnEntry(entry) {
     selectedMarker = entry;
     const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
@@ -164,10 +216,11 @@
     updateURLParams(targetMapLocation, selectedMarker, true);
   }
 
-  // Classify markers for display based on importance and zoom level
-  function addMarkerClasses(entries, hashlevel) {
+  /**
+   * Classify markers for display based on importance and zoom level
+   */
+  function addMarkerClasses(entries, zoomLevel) {
     // Sort entries by page length in descending order
-    entries.sort((a, b) => b.page_len - a.page_len);
     const dotCount = Math.floor(entries.length * 0.5);
 
     // Assign default display classes based on the sorted order
@@ -180,24 +233,10 @@
     for (const entry of entries) {
       if (selectedMarker && entry.id == selectedMarker.id) {
         entry.displayClass = "selected";
-      } else if (hashlevel == 8) {
+      } else if (zoomLevel >= 16) {
         entry.displayClass = "full";
       }
     }
-
-    // Get unique entries by geohash at a lower level to reduce density
-    const uniqueEntries = getUniqueByGeoHash({
-      entries,
-      hashLength: hashlevel - 1,
-      scoreField: "page_len",
-    });
-
-    // Mark these unique entries with 'full' class
-    uniqueEntries.forEach((entry) => {
-      if (entry.displayClass != "selected") {
-        entry.displayClass = "full";
-      }
-    });
 
     return entries;
   }
