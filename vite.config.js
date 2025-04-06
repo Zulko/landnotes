@@ -8,8 +8,7 @@ export default defineConfig({
     proxy:
       process.env.NODE_ENV === "development"
         ? {
-            "/geo": "http://localhost:8787",
-            "/events": "http://localhost:8787",
+            "/query": "http://localhost:8787",
           }
         : {},
   },

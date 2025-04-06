@@ -34,8 +34,6 @@
   };
   let markers = [];
 
-  let cachedMarkers = new Map();
-
   /**
    * UI state
    */
@@ -145,7 +143,7 @@
    */
   async function getGeodataFromRange(bounds) {
     // Fetch geo entries from the server
-    const query = await fetch("/geo", {
+    const query = await fetch("query/geo", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -163,10 +161,6 @@
     ) {
       entries.push(selectedMarker);
     }
-
-    entries.forEach((entry) => {
-      cachedMarkers.set(entry.id, entry);
-    });
 
     return entries;
   }
