@@ -16,6 +16,8 @@
     readURLParams,
     createHistoryStateHandler,
   } from "./lib/urlState";
+  import { enrichPrefixTreeWithBounds, findNodesInBounds } from "./lib/geodata";
+  import JSZip from "jszip";
 
   // -------------------------
   // STATE MANAGEMENT
@@ -33,6 +35,8 @@
     zoom: 3,
   };
   let markers = [];
+  let hotSpotsTree = null;
+  let hotSpotAreasInBounds = [];
 
   /**
    * UI state
@@ -67,6 +71,43 @@
 
     // Add history navigation handler
     window.addEventListener("popstate", handlePopState);
+
+    // Load and process hot spots data
+    try {
+      // Fetch the zip file
+      const response = await fetch("/geodata/hot_spots_tree.zip");
+      if (!response.ok) {
+        throw new Error(`Failed to load hot spots data: ${response.status}`);
+      }
+
+      // Get the zip file as array buffer
+      const zipData = await response.arrayBuffer();
+
+      // Use JSZip to extract the contents
+      const zip = await JSZip.loadAsync(zipData);
+
+      // Find the JSON file in the zip (assuming there's only one JSON file)
+      let jsonFile;
+      zip.forEach((relativePath, zipEntry) => {
+        if (relativePath.endsWith(".json")) {
+          jsonFile = zipEntry;
+        }
+      });
+
+      if (!jsonFile) {
+        throw new Error("No JSON file found in the zip archive");
+      }
+
+      // Extract and parse the JSON file
+      const jsonContent = await jsonFile.async("string");
+      const prefixTree = JSON.parse(jsonContent);
+
+      // Enrich the prefix tree with bounds
+      hotSpotsTree = enrichPrefixTreeWithBounds(prefixTree);
+      console.log("Hot spots tree loaded and processed");
+    } catch (error) {
+      console.error("Error loading hot spots data:", error);
+    }
   });
 
   // When pane state changes, update map size after a slight delay to allow transitions
@@ -131,11 +172,28 @@
     };
 
     // Fetch geodata for the current bounds
-    const entries = await getGeodataFromRange(bounds);
+    try {
+      const entries = await getGeodataFromRange(bounds);
 
-    // Update markers with display classes
-    addMarkerClasses(entries, mapZoom);
-    markers = entries;
+      // Update markers with display classes
+      addMarkerClasses(entries, mapZoom);
+      markers = entries;
+    } catch (error) {
+      console.error("Error fetching geodata:", error);
+    }
+
+    console.log(mapZoom);
+
+    // Fetch hot spot areas in bounds
+    console.time("findNodesInBounds");
+    hotSpotAreasInBounds = findNodesInBounds(
+      hotSpotsTree,
+      bounds,
+      mapZoom + 3,
+      "",
+      []
+    );
+    console.timeEnd("findNodesInBounds");
   }
 
   /**
@@ -248,6 +306,7 @@
       <WorldMap
         bind:this={mapComponent}
         {markers}
+        hotSpots={hotSpotAreasInBounds}
         targetLocation={targetMapLocation}
         on:boundschange={handleBoundsChange}
         on:markerclick={handleMarkerClick}

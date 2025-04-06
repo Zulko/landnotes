@@ -9,12 +9,14 @@
 
   // ===== PROPS =====
   export let markers = [];
+  export let hotSpots = [];
   export let targetLocation = null; // Format: { lat, lon, zoom }
 
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
   let markerLayer = null;
+  let hotSpotLayer = null;
   let isFlying = false;
   let hoveredMarkerId = null;
   let existingMapMarkers = new Map(); // key: marker.id, value: L.marker object
@@ -25,6 +27,7 @@
   onMount(() => {
     initializeMap();
     updateMarkers();
+    updateHotSpots();
 
     // Initialize ResizeObserver
     resizeObserver = new ResizeObserver(() => {
@@ -55,6 +58,10 @@
 
   $: if (markers && map) {
     updateMarkers();
+  }
+
+  $: if (hotSpots && map) {
+    updateHotSpots();
   }
 
   // ===== MAP INITIALIZATION =====
@@ -97,12 +104,15 @@
       })
       .addTo(map);
 
+    // Create a custom pane for hotspots with z-index lower than markers but higher than tiles
+
     // Create layer groups for different marker types
     const markerLayers = [
       { name: "dot", zIndex: 200 },
       { name: "reduced", zIndex: 300 },
       { name: "full", zIndex: 400 },
       { name: "selected", zIndex: 500 },
+      { name: "hotspot", zIndex: 100 },
     ];
 
     markerLayers.forEach((layer) => {
@@ -111,6 +121,7 @@
     });
 
     markerLayer = L.layerGroup().addTo(map);
+    hotSpotLayer = L.layerGroup().addTo(map);
 
     // Add event listeners
     map.on("moveend", handleBoundsChange);
@@ -248,6 +259,8 @@
   }
 
   function updateMarkers() {
+    console.time("updateMarkers");
+    console.log(markers.length);
     if (!map || !markerLayer) return;
 
     // Track which markers we've processed to identify removals
@@ -275,6 +288,8 @@
 
     // Remove markers that are no longer in the data
     removeStaleMarkers(processedIds);
+
+    console.timeEnd("updateMarkers");
   }
 
   function updateExistingMarker(marker, displayClass, pane) {
@@ -345,6 +360,33 @@
         existingMapMarkers.delete(markerId);
       }
     }
+  }
+
+  // Add this new function for handling hotspots
+  function updateHotSpots() {
+    console.time("updateHotSpots");
+    if (!map || !hotSpotLayer) return;
+    // Clear existing hotspots
+    hotSpotLayer.clearLayers();
+
+    // Create all rectangles first, then add them as a group
+    const rectangles = hotSpots.map((hotSpot) => {
+      const bounds = [
+        [hotSpot.minLat, hotSpot.minLon],
+        [hotSpot.maxLat, hotSpot.maxLon],
+      ];
+      return L.rectangle(bounds, {
+        color: null,
+        weight: 1,
+        fillColor: "orange",
+        fillOpacity: map ? (map.getZoom() < 8 ? 0.3 : 0.6) : 0.3,
+      });
+    });
+
+    // Add all rectangles to the layer at once
+    L.featureGroup(rectangles).addTo(hotSpotLayer);
+
+    console.timeEnd("updateHotSpots");
   }
 
   // ===== EXPORTED FUNCTIONS =====
