@@ -11,12 +11,17 @@
   import SearchBar from "./lib/SearchBar.svelte";
 
   // Utilities
+  import { updateURLParams, readURLParams } from "./lib/urlState";
   import {
-    updateURLParams,
-    readURLParams,
-    createHistoryStateHandler,
-  } from "./lib/urlState";
-  import { enrichPrefixTreeWithBounds, findNodesInBounds } from "./lib/geodata";
+    enrichPrefixTreeWithBounds,
+    findNodesInBounds,
+    getGeodataFromBounds,
+  } from "./lib/geodata";
+  import {
+    smoothenGeoSquares,
+    getConnectedPolylinesAndIsolated,
+    smoothPolyline,
+  } from "./lib/polylines";
   import JSZip from "jszip";
 
   // -------------------------
@@ -35,6 +40,7 @@
     zoom: 3,
   };
   let markers = [];
+  let cachedEntries = new Map();
   let hotSpotsTree = null;
   let hotSpotAreasInBounds = [];
 
@@ -168,12 +174,24 @@
       maxLat: event.detail.bounds._northEast.lat,
       minLon: event.detail.bounds._southWest.lng,
       maxLon: event.detail.bounds._northEast.lng,
-      zoomLevel: mapZoom,
     };
 
     // Fetch geodata for the current bounds
     try {
-      const entries = await getGeodataFromRange(bounds);
+      const entries = await getGeodataFromBounds(
+        bounds,
+        mapZoom - 1,
+        cachedEntries
+      );
+      if (
+        selectedMarker &&
+        !entries.some((entry) => entry.geokey === selectedMarker.geokey)
+      ) {
+        entries.push(selectedMarker);
+      }
+      entries.forEach((entry) => {
+        cachedEntries.set(entry.geokey, entry);
+      });
 
       // Update markers with display classes
       addMarkerClasses(entries, mapZoom);
@@ -182,45 +200,21 @@
       console.error("Error fetching geodata:", error);
     }
 
-    console.log(mapZoom);
-
     // Fetch hot spot areas in bounds
     console.time("findNodesInBounds");
-    hotSpotAreasInBounds = findNodesInBounds(
+    const rawHotSpotAreasInBounds = findNodesInBounds(
       hotSpotsTree,
       bounds,
       mapZoom + 3,
       "",
       []
     );
+    console.log({ rawHotSpotAreasInBounds });
+
+    hotSpotAreasInBounds = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
+    console.log({ hotSpotAreasInBounds });
+
     console.timeEnd("findNodesInBounds");
-  }
-
-  /**
-   * Fetch geodata for the specified map bounds
-   */
-  async function getGeodataFromRange(bounds) {
-    // Fetch geo entries from the server
-    const query = await fetch("query/geo", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(bounds),
-    });
-
-    const queryJSON = await query.json();
-    let entries = queryJSON.results;
-
-    // Make sure the selected marker stays visible
-    if (
-      selectedMarker &&
-      !entries.some((entry) => entry.id === selectedMarker.id)
-    ) {
-      entries.push(selectedMarker);
-    }
-
-    return entries;
   }
 
   /**
@@ -254,8 +248,6 @@
    */
   function focusOnEntry(entry) {
     selectedMarker = entry;
-    const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
-    markers = addMarkerClasses([...markers], hashlevel);
     openWikiPane(entry.page_title);
 
     targetMapLocation = {
@@ -273,20 +265,18 @@
    */
   function addMarkerClasses(entries, zoomLevel) {
     // Sort entries by page length in descending order
-    const dotCount = Math.floor(entries.length * 0.5);
 
     // Assign default display classes based on the sorted order
-    for (let i = 0; i < entries.length; i++) {
-      entries[i].displayClass =
-        i >= entries.length - dotCount ? "dot" : "reduced";
-    }
-
     // Handle selected and high-zoom markers
     for (const entry of entries) {
-      if (selectedMarker && entry.id == selectedMarker.id) {
+      if (selectedMarker && entry.geokey == selectedMarker.geokey) {
         entry.displayClass = "selected";
-      } else if (zoomLevel >= 16) {
+      } else if (entry.geokey.length <= zoomLevel - 2) {
         entry.displayClass = "full";
+      } else if (entry.geokey.length <= zoomLevel - 1) {
+        entry.displayClass = "reduced";
+      } else {
+        entry.displayClass = "dot";
       }
     }
 

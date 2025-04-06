@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
+  import { getEntriesfromText } from "./geodata";
   export let searchQuery = "";
 
   const dispatch = createEventDispatcher();
