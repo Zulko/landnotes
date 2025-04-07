@@ -183,6 +183,7 @@
         mapZoom - 1,
         cachedEntries
       );
+      console.log({ entries });
       if (
         selectedMarker &&
         !entries.some((entry) => entry.geokey === selectedMarker.geokey)
@@ -209,11 +210,8 @@
       "",
       []
     );
-    console.log({ rawHotSpotAreasInBounds });
 
     hotSpotAreasInBounds = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
-    console.log({ hotSpotAreasInBounds });
-
     console.timeEnd("findNodesInBounds");
   }
 

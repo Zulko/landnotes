@@ -391,7 +391,6 @@
           pane: "overlayPane",
         });
       } else {
-        console.log(hotSpot);
         const points = hotSpot.map((point) => [point.lat, point.lon]);
         return L.polygon(points, {
           color: "black",
