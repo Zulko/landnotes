@@ -22,6 +22,7 @@
     getConnectedPolylinesAndIsolated,
     smoothPolyline,
   } from "./lib/polylines";
+  import { latlonSquaresToPolylines } from "./lib/polylines";
   import JSZip from "jszip";
 
   // -------------------------
@@ -202,17 +203,20 @@
     }
 
     // Fetch hot spot areas in bounds
-    console.time("findNodesInBounds");
     const rawHotSpotAreasInBounds = findNodesInBounds(
       hotSpotsTree,
       bounds,
-      mapZoom + 3,
+      Math.max(mapZoom + 3, 6),
       "",
       []
     );
-
-    hotSpotAreasInBounds = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
-    console.timeEnd("findNodesInBounds");
+    // const polylines = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
+    console.time("latlonSquaresToPolylines");
+    const { polylines, dots } = latlonSquaresToPolylines(
+      rawHotSpotAreasInBounds
+    );
+    hotSpotAreasInBounds = [...polylines, ...dots].slice(0, 200);
+    console.timeEnd("latlonSquaresToPolylines");
   }
 
   /**
