@@ -390,6 +390,8 @@ function addLatLonToEntry(entry) {
       cachedEntries.get(geoKey)
     );
 
+    geoKeysNotInCachedEntries.sort()
+
     const query = await fetch("query/geo", {
       method: "POST",
       headers: {

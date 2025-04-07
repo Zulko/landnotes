@@ -17,11 +17,6 @@
     findNodesInBounds,
     getGeodataFromBounds,
   } from "./lib/geodata";
-  import {
-    smoothenGeoSquares,
-    getConnectedPolylinesAndIsolated,
-    smoothPolyline,
-  } from "./lib/polylines";
   import { latlonSquaresToPolylines } from "./lib/polylines";
   import JSZip from "jszip";
 
