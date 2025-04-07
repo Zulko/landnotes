@@ -1,20 +1,32 @@
-<script>
+<script lang="ts">
+  // -------------------------
+  // IMPORTS
+  // -------------------------
+  // Svelte lifecycle
   import { onMount, afterUpdate } from "svelte";
+
+  // Components
   import WorldMap from "./lib/WorldMap.svelte";
   import SlidingPane from "./lib/SlidingPane.svelte";
   import SearchBar from "./lib/SearchBar.svelte";
-  import { getGeoEntriesInBounds, getUniqueByGeoHash } from "./lib/geodata";
+
+  // Utilities
+  import { updateURLParams, readURLParams } from "./lib/urlState";
   import {
-    updateURLParams,
-    readURLParams,
-    createHistoryStateHandler,
-  } from "./lib/urlState";
+    enrichPrefixTreeWithBounds,
+    findNodesInBounds,
+    getGeodataFromBounds,
+  } from "./lib/geodata";
+  import { latlonSquaresToPolylines } from "./lib/polylines";
+  import JSZip from "jszip";
 
-  // ---------------
-  // STATE VARIABLES
-  // ---------------
+  // -------------------------
+  // STATE MANAGEMENT
+  // -------------------------
 
-  // Map state
+  /**
+   * Map configuration and state
+   */
   let mapComponent;
   let mapZoom = 1;
   let mapCenter = null;
@@ -24,20 +36,26 @@
     zoom: 3,
   };
   let markers = [];
-  let allEntriesInRegion = [];
+  let cachedEntries = new Map();
+  let hotSpotsTree = null;
+  let hotSpotAreasInBounds = [];
 
-  // UI state
+  /**
+   * UI state
+   */
   let isMobile = false;
   let isPaneOpen = false;
   let previousPaneState = false;
 
-  // Content state
+  /**
+   * Content state
+   */
   let wikiPage = "";
   let selectedMarker = null;
 
-  // ----------------
+  // -------------------------
   // LIFECYCLE HOOKS
-  // ----------------
+  // -------------------------
 
   onMount(async () => {
     console.log("App starting!");
@@ -54,46 +72,86 @@
     }
 
     // Add history navigation handler
-    window.addEventListener(
-      "popstate",
-      createHistoryStateHandler((state) => {
-        if (state.targetLocation) {
-          targetMapLocation = state.targetLocation;
-        }
+    window.addEventListener("popstate", handlePopState);
 
-        if (state.selectedMarker) {
-          selectedMarker = state.selectedMarker;
-          openWikiPane(selectedMarker.page_title);
-        } else {
-          // Close the pane if no marker is selected
-          isPaneOpen = false;
-          wikiPage = "";
-        }
-      })
-    );
-  });
+    // Load and process hot spots data
+    try {
+      // Fetch the zip file
+      const response = await fetch("/geodata/hot_spots_tree.zip");
+      if (!response.ok) {
+        throw new Error(`Failed to load hot spots data: ${response.status}`);
+      }
 
-  // Check if the pane state changed and invalidate map size if needed
-  afterUpdate(() => {
-    if (previousPaneState !== isPaneOpen && mapComponent) {
-      // Small delay to allow CSS transitions to start
-      setTimeout(() => {
-        mapComponent.invalidateMapSize();
-      }, 50);
-      previousPaneState = isPaneOpen;
+      // Get the zip file as array buffer
+      const zipData = await response.arrayBuffer();
+
+      // Use JSZip to extract the contents
+      const zip = await JSZip.loadAsync(zipData);
+
+      // Find the JSON file in the zip (assuming there's only one JSON file)
+      let jsonFile;
+      zip.forEach((relativePath, zipEntry) => {
+        if (relativePath.endsWith(".json")) {
+          jsonFile = zipEntry;
+        }
+      });
+
+      if (!jsonFile) {
+        throw new Error("No JSON file found in the zip archive");
+      }
+
+      // Extract and parse the JSON file
+      const jsonContent = await jsonFile.async("string");
+      const prefixTree = JSON.parse(jsonContent);
+
+      // Enrich the prefix tree with bounds
+      hotSpotsTree = enrichPrefixTreeWithBounds(prefixTree);
+      console.log("Hot spots tree loaded and processed");
+    } catch (error) {
+      console.error("Error loading hot spots data:", error);
     }
   });
 
-  // ----------------
-  // EVENT HANDLERS
-  // ----------------
+  // When pane state changes, update map size after a slight delay to allow transitions
+  $: if (previousPaneState !== isPaneOpen && mapComponent) {
+    setTimeout(() => mapComponent.invalidateMapSize(), 50);
+    previousPaneState = isPaneOpen;
+  }
 
-  // Handle window resize events
+  // -------------------------
+  // EVENT HANDLERS
+  // -------------------------
+
+  /**
+   * Handle browser history navigation
+   */
+  function handlePopState(ev: PopStateEvent) {
+    const state = ev.state || {};
+
+    if (state.targetLocation) {
+      targetMapLocation = state.targetLocation;
+    }
+
+    if (state.selectedMarker) {
+      selectedMarker = state.selectedMarker;
+      openWikiPane(selectedMarker.page_title);
+    } else {
+      // Close the pane if no marker is selected
+      isPaneOpen = false;
+      wikiPage = "";
+    }
+  }
+
+  /**
+   * Update mobile status based on window size
+   */
   function handleResize() {
     isMobile = window.innerWidth <= 768;
   }
 
-  // Handle map bounds changing
+  /**
+   * Process map bounds changes and fetch new markers
+   */
   async function handleBoundsChange(event) {
     const center = event.detail.center;
     mapCenter = {
@@ -114,47 +172,79 @@
       maxLon: event.detail.bounds._northEast.lng,
     };
 
-    let hashlevel = Math.max(1, Math.min(8, 1 + Math.floor(0.42 * mapZoom)));
+    // Fetch geodata for the current bounds
+    try {
+      const entries = await getGeodataFromBounds(
+        bounds,
+        mapZoom - 1,
+        cachedEntries
+      );
+      console.log({ entries });
+      if (
+        selectedMarker &&
+        !entries.some((entry) => entry.geokey === selectedMarker.geokey)
+      ) {
+        entries.push(selectedMarker);
+      }
+      entries.forEach((entry) => {
+        cachedEntries.set(entry.geokey, entry);
+      });
 
-    let entries = await getGeoEntriesInBounds(bounds, hashlevel);
-
-    // Make sure the selected marker stays visible
-    if (
-      selectedMarker &&
-      !entries.some((entry) => entry.id === selectedMarker.id)
-    ) {
-      entries.push(selectedMarker);
+      // Update markers with display classes
+      addMarkerClasses(entries, mapZoom);
+      markers = entries;
+    } catch (error) {
+      console.error("Error fetching geodata:", error);
     }
 
-    addMarkerClasses(entries, hashlevel);
-    markers = entries;
+    // Fetch hot spot areas in bounds
+    const rawHotSpotAreasInBounds = findNodesInBounds(
+      hotSpotsTree,
+      bounds,
+      Math.max(mapZoom + 3, 6),
+      "",
+      []
+    );
+    // const polylines = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
+    console.time("latlonSquaresToPolylines");
+    const { polylines, dots } = latlonSquaresToPolylines(
+      rawHotSpotAreasInBounds
+    );
+    hotSpotAreasInBounds = [...polylines, ...dots].slice(0, 200);
+    console.timeEnd("latlonSquaresToPolylines");
   }
 
-  // Handle marker click events
-  async function handleMarkerClick(event) {
+  /**
+   * Handle marker click events
+   */
+  function handleMarkerClick(event) {
     focusOnEntry(event.detail);
   }
 
-  // Handle search selection
+  /**
+   * Handle search selection
+   */
   function handleSearchSelect(event) {
     focusOnEntry(event.detail);
   }
 
-  // ----------------
+  // -------------------------
   // HELPER FUNCTIONS
-  // ----------------
+  // -------------------------
 
-  // Function to open the pane with a Wikipedia page
+  /**
+   * Opens the wiki pane with the specified page
+   */
   function openWikiPane(page) {
     wikiPage = page;
     isPaneOpen = true;
   }
 
-  // Common function to handle focusing on a map entry (from search or marker click)
+  /**
+   * Focus the map on an entry and open its wiki page
+   */
   function focusOnEntry(entry) {
     selectedMarker = entry;
-    const hashlevel = Math.max(1, Math.min(8, mapZoom / 2));
-    markers = addMarkerClasses([...markers], hashlevel);
     openWikiPane(entry.page_title);
 
     targetMapLocation = {
@@ -167,40 +257,25 @@
     updateURLParams(targetMapLocation, selectedMarker, true);
   }
 
-  // Classify markers for display based on importance and zoom level
-  function addMarkerClasses(entries, hashlevel) {
+  /**
+   * Classify markers for display based on importance and zoom level
+   */
+  function addMarkerClasses(entries, zoomLevel) {
     // Sort entries by page length in descending order
-    entries.sort((a, b) => b.page_len - a.page_len);
-    const dotCount = Math.floor(entries.length * 0.5);
 
     // Assign default display classes based on the sorted order
-    for (let i = 0; i < entries.length; i++) {
-      entries[i].displayClass =
-        i >= entries.length - dotCount ? "dot" : "reduced";
-    }
-
     // Handle selected and high-zoom markers
     for (const entry of entries) {
-      if (selectedMarker && entry.id == selectedMarker.id) {
+      if (selectedMarker && entry.geokey == selectedMarker.geokey) {
         entry.displayClass = "selected";
-      } else if (hashlevel == 8) {
+      } else if (entry.geokey.length <= zoomLevel - 2) {
         entry.displayClass = "full";
+      } else if (entry.geokey.length <= zoomLevel - 1) {
+        entry.displayClass = "reduced";
+      } else {
+        entry.displayClass = "dot";
       }
     }
-
-    // Get unique entries by geohash at a lower level to reduce density
-    const uniqueEntries = getUniqueByGeoHash({
-      entries,
-      hashLength: hashlevel - 1,
-      scoreField: "page_len",
-    });
-
-    // Mark these unique entries with 'full' class
-    uniqueEntries.forEach((entry) => {
-      if (entry.displayClass != "selected") {
-        entry.displayClass = "full";
-      }
-    });
 
     return entries;
   }
@@ -218,6 +293,7 @@
       <WorldMap
         bind:this={mapComponent}
         {markers}
+        hotSpots={hotSpotAreasInBounds}
         targetLocation={targetMapLocation}
         on:boundschange={handleBoundsChange}
         on:markerclick={handleMarkerClick}

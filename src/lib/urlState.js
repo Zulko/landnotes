@@ -100,10 +100,10 @@ export function readURLParams() {
  * @param {Function} stateUpdateCallback - Function to call with new state
  * @returns {Function} - Event handler function for popstate event
  */
-export function createHistoryStateHandler(stateUpdateCallback) {
-  return () => {
-    const state = readURLParams();
-    stateUpdateCallback(state);
+export function createHistoryStateHandler(callback) {
+  return function(ev) {
+    const state = ev.state || {};
+    callback(state);
   };
 }
 

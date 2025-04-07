@@ -1,5 +1,5 @@
 {
-  "name": "world_of_wikipedia",
+  "name": "landnotes",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -14,10 +14,7 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
-    "fuse.js": "^7.1.0",
-    "latlon-geohash": "^2.0.0",
-    "leaflet": "^1.9.4",
-    "ngeohash": "^0.6.3",
-    "pako": "^2.1.0"
+    "jszip": "^3.10.1",
+    "leaflet": "^1.9.4"
   }
 }
