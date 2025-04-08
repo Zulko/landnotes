@@ -10,13 +10,3 @@ This is a study in making as slick an experience as possible with no servers, ju
 The geodata is retrieved with [this notebook](./geodata_curation/geodata_curation.ipynb)) and overlaid in front of OpenStreetMap in the app built on these great libraries:
 - Svelte for the components and interactions
 - LeafletJS for the Open Street Map interface
-- ngeohash for geohash operations
-- FuseJS for text searches
-- ViteJS for bundling, Pako for gzip decompression.
-
-For development, start the server with:
-
-```
-npm install
-npm run dev
-```
