@@ -268,7 +268,7 @@
     for (const entry of entries) {
       if (selectedMarker && entry.geokey == selectedMarker.geokey) {
         entry.displayClass = "selected";
-      } else if (entry.geokey.length <= zoomLevel - 2) {
+      } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
         entry.displayClass = "full";
       } else if (entry.geokey.length <= zoomLevel - 1) {
         entry.displayClass = "reduced";
