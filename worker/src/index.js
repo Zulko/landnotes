@@ -36,11 +36,17 @@ export default {
 					allResults = await executeGeoBatch(env.geoDB, geokeys);
 			    } else {
 			        // Process in batches of 80
-			        for (let i = 0; i < geokeys.length; i += BATCH_SIZE) {
-			            const batch = geokeys.slice(i, i + BATCH_SIZE);
-			            const batchResult = await executeGeoBatch(env.geoDB, batch);
-						allResults.rowsRead += batchResult.rowsRead;
-						allResults.results = allResults.results.concat(batchResult.results);
+			        const batchPromises = [];
+			        // Use array chunking pattern for more elegant batch processing
+			        const batches = Array.from(
+			            { length: Math.ceil(geokeys.length / BATCH_SIZE) },
+			            (_, i) => geokeys.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
+			        );
+			        batches.forEach(batch => batchPromises.push(executeGeoBatch(env.geoDB, batch)));
+			        const batchResults = await Promise.all(batchPromises);
+			        for (const batchResult of batchResults) {
+			            allResults.rowsRead += batchResult.rowsRead;
+			            allResults.results = allResults.results.concat(batchResult.results);
 			        }
 			    }
 				return new Response(JSON.stringify(allResults), { headers: { "Content-Type": "application/json" } });
