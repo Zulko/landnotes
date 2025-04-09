@@ -65,7 +65,8 @@ export default {
 					"      LIMIT 10) AS top_matches " +
 					"ON geodata.rowid = top_matches.rowid "
 				);
-				result = await stmt.bind(escapedSearchText).all();
+				result = await stmt.bind(escapedSearchText + (escapedSearchText.length > 2 ?  "*" : "")).all();
+				console.log(result);
 				return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
 			case '/message':
 				return new Response('Hello, World!');
