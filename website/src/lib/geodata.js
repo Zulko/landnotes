@@ -1,4 +1,3 @@
-
 /**
  * Decodes a hybrid geohash to its center latitude and longitude coordinates
  * 
@@ -368,45 +367,191 @@ function addLatLonToEntry(entry) {
 }
 
 
-  /**
-   * Fetch geodata for the specified map bounds
-   */
-  export async function getGeodataFromBounds(bounds, maxZoomLevel, cachedEntries) {
-    // Fetch geo entries from the server
+/**
+ * Encodes latitude and longitude coordinates into a standard base-32 geohash
+ * 
+ * @param {number} lat - Latitude coordinate (-90 to 90)
+ * @param {number} lon - Longitude coordinate (-180 to 180)
+ * @param {number} precision - Length of the geohash to generate (default: 9)
+ * @returns {string} - The geohash string
+ */
+export function latLonToGeohash(lat, lon, precision = 9) {
+  if (lat < -90 || lat > 90) {
+    throw new Error("Latitude must be between -90 and 90");
+  }
+  if (lon < -180 || lon > 180) {
+    throw new Error("Longitude must be between -180 and 180");
+  }
+  
+  const base32 = "0123456789bcdefghjkmnpqrstuvwxyz";
+  let geohash = "";
+  
+  // Start with full ranges
+  let latRange = [-90, 90];
+  let lonRange = [-180, 180];
+  
+  // Each character encodes 5 bits (2.5 iterations of lat/lon)
+  let isEven = true;
+  let bit = 0;
+  let charIndex = 0;
+  
+  while (geohash.length < precision) {
+    if (isEven) {
+      // Longitude
+      const mid = (lonRange[0] + lonRange[1]) / 2;
+      if (lon >= mid) {
+        charIndex = (charIndex << 1) + 1;
+        lonRange[0] = mid;
+      } else {
+        charIndex = (charIndex << 1) + 0;
+        lonRange[1] = mid;
+      }
+    } else {
+      // Latitude
+      const mid = (latRange[0] + latRange[1]) / 2;
+      if (lat >= mid) {
+        charIndex = (charIndex << 1) + 1;
+        latRange[0] = mid;
+      } else {
+        charIndex = (charIndex << 1) + 0;
+        latRange[1] = mid;
+      }
+    }
+    
+    isEven = !isEven;
+    bit++;
+    
+    // Every 5 bits, append a character
+    if (bit === 5) {
+      geohash += base32.charAt(charIndex);
+      bit = 0;
+      charIndex = 0;
+    }
+  }
+  
+  return geohash;
+}
 
-    // Collect geokeys for all zoom levels up to maxZoomLevel
-    const geoKeys = Array.from(
-      { length: maxZoomLevel },
-      (_, i) => i + 1
-    ).flatMap((zoomLevel) => getOverlappingGeoEncodings(bounds, zoomLevel));
-
-    const geoKeysInCachedEntries = geoKeys.filter((geoKey) =>
-      cachedEntries.has(geoKey)
-    );
-    const geoKeysNotInCachedEntries = geoKeys.filter(
-      (geoKey) => !cachedEntries.has(geoKey)
-    );
-    const cachedEntriesResults = geoKeysInCachedEntries.map((geoKey) =>
-      cachedEntries.get(geoKey)
-    );
-
-    geoKeysNotInCachedEntries.sort()
-
-    const query = await fetch("query/geo", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(geoKeysNotInCachedEntries),
-    });
-
-    const queryJSON = await query.json();
-    console.log({ rowsRead: queryJSON.rowsRead });
-    const entries = queryJSON.results
-    entries.forEach(addLatLonToEntry)
-    return [...cachedEntriesResults, ...entries];
+/**
+ * Converts a geohash string to latitude and longitude coordinates
+ * 
+ * @param {string} geohash - The geohash string to decode
+ * @returns {Object} - Object containing {lat, lon} coordinates of the geohash center
+ */
+export function geohashToLatLon(geohash) {
+  if (!geohash || geohash.length === 0) {
+    throw new Error("Invalid geohash: empty string");
   }
 
+  const base32 = "0123456789bcdefghjkmnpqrstuvwxyz";
+  
+  // Start with full ranges
+  let latRange = [-90, 90];
+  let lonRange = [-180, 180];
+  
+  let isEven = true; // longitude first
+  
+  for (let i = 0; i < geohash.length; i++) {
+    const char = geohash.charAt(i);
+    const charIndex = base32.indexOf(char);
+    
+    if (charIndex === -1) {
+      throw new Error(`Invalid geohash character: ${char}`);
+    }
+    
+    // Each character encodes 5 bits
+    for (let bit = 0; bit < 5; bit++) {
+      const bitValue = (charIndex >> (4 - bit)) & 1;
+      
+      if (isEven) {
+        // Longitude
+        const mid = (lonRange[0] + lonRange[1]) / 2;
+        if (bitValue === 1) {
+          lonRange[0] = mid;
+        } else {
+          lonRange[1] = mid;
+        }
+      } else {
+        // Latitude
+        const mid = (latRange[0] + latRange[1]) / 2;
+        if (bitValue === 1) {
+          latRange[0] = mid;
+        } else {
+          latRange[1] = mid;
+        }
+      }
+      
+      isEven = !isEven;
+    }
+  }
+  
+  // Return the center of the bounding box
+  const lat = (latRange[0] + latRange[1]) / 2;
+  const lon = (lonRange[0] + lonRange[1]) / 2;
+  
+  return { lat, lon };
+}
+
+/**
+ * Fetches geodata for a list of geokeys, using cached entries when available
+ * 
+ * @param {Array<string>} geoKeys - Array of geokeys to fetch
+ * @param {Map} cachedEntries - Map of already cached entries
+ * @returns {Promise<Array>} - Combined array of cached and newly fetched entries
+ */
+export async function getGeodataFromGeokeys(geoKeys, cachedEntries) {
+  // Filter geokeys that are already in the cache
+  const geoKeysInCachedEntries = geoKeys.filter((geoKey) =>
+    cachedEntries.has(geoKey)
+  );
+  const geoKeysNotInCachedEntries = geoKeys.filter(
+    (geoKey) => !cachedEntries.has(geoKey)
+  );
+  
+  // Get entries from cache
+  const cachedEntriesResults = geoKeysInCachedEntries.map((geoKey) =>
+    cachedEntries.get(geoKey)
+  );
+
+  // If all geokeys were in cache, return early
+  if (geoKeysNotInCachedEntries.length === 0) {
+    return cachedEntriesResults;
+  }
+
+  // Sort geokeys for consistent query patterns
+  geoKeysNotInCachedEntries.sort();
+
+  // Fetch entries that aren't in the cache
+  const query = await fetch("query/geo", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(geoKeysNotInCachedEntries),
+  });
+
+  const queryJSON = await query.json();
+  console.log({ rowsRead: queryJSON.rowsRead });
+  const entries = queryJSON.results;
+  entries.forEach(addLatLonToEntry);
+  
+  // Return combined results
+  return [...cachedEntriesResults, ...entries];
+}
+
+/**
+ * Fetch geodata for the specified map bounds
+ */
+export async function getGeodataFromBounds(bounds, maxZoomLevel, cachedEntries) {
+  // Collect geokeys for all zoom levels up to maxZoomLevel
+  const geoKeys = Array.from(
+    { length: maxZoomLevel },
+    (_, i) => i + 1
+  ).flatMap((zoomLevel) => getOverlappingGeoEncodings(bounds, zoomLevel));
+
+  // Use the new function to fetch entries
+  return await getGeodataFromGeokeys(geoKeys, cachedEntries);
+}
 
 export async function getEntriesfromText(searchText) {
     try {

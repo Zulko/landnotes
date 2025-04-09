@@ -16,6 +16,7 @@
     enrichPrefixTreeWithBounds,
     findNodesInBounds,
     getGeodataFromBounds,
+    getGeodataFromGeokeys
   } from "./lib/geodata";
   import { latlonSquaresToPolylines } from "./lib/polylines";
   import JSZip from "jszip";
@@ -51,7 +52,7 @@
    * Content state
    */
   let wikiPage = "";
-  let selectedMarker = null;
+  let selectedMarkerId = null;
 
   // -------------------------
   // LIFECYCLE HOOKS
@@ -66,9 +67,10 @@
     if (urlState.targetLocation) {
       targetMapLocation = urlState.targetLocation;
     }
-    if (urlState.selectedMarker) {
-      selectedMarker = urlState.selectedMarker;
-      openWikiPane(selectedMarker.page_title);
+    if (urlState.selectedMarkerId) {
+      selectedMarkerId = urlState.selectedMarkerId;
+      const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
+      openWikiPane(selectedMarker[0].page_title);
     }
 
     // Add history navigation handler
@@ -133,8 +135,8 @@
     }
 
     if (state.selectedMarker) {
-      selectedMarker = state.selectedMarker;
-      openWikiPane(selectedMarker.page_title);
+      selectedMarkerId = state.selectedMarker;
+      openWikiPane(selectedMarkerId.page_title);
     } else {
       // Close the pane if no marker is selected
       isPaneOpen = false;
@@ -162,7 +164,7 @@
 
     // Update URL with new location
     const urlTargetMapLocation = { ...mapCenter, zoom: mapZoom };
-    updateURLParams(urlTargetMapLocation, selectedMarker);
+    updateURLParams(urlTargetMapLocation, selectedMarkerId);
 
     // Get entries for the visible map area
     const bounds = {
@@ -181,10 +183,11 @@
       );
       console.log({ entries });
       if (
-        selectedMarker &&
-        !entries.some((entry) => entry.geokey === selectedMarker.geokey)
+        selectedMarkerId &&
+        !entries.some((entry) => entry.geokey === selectedMarkerId)
       ) {
-        entries.push(selectedMarker);
+        const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
+        entries.push(selectedMarker[0]);
       }
       entries.forEach((entry) => {
         cachedEntries.set(entry.geokey, entry);
@@ -244,7 +247,7 @@
    * Focus the map on an entry and open its wiki page
    */
   function focusOnEntry(entry) {
-    selectedMarker = entry;
+    selectedMarkerId = entry.geokey;
     openWikiPane(entry.page_title);
 
     targetMapLocation = {
@@ -254,7 +257,7 @@
     };
 
     // Update URL - use true to add to browser history when selecting a marker
-    updateURLParams(targetMapLocation, selectedMarker, true);
+    updateURLParams(targetMapLocation, selectedMarkerId, true);
   }
 
   /**
@@ -266,7 +269,7 @@
     // Assign default display classes based on the sorted order
     // Handle selected and high-zoom markers
     for (const entry of entries) {
-      if (selectedMarker && entry.geokey == selectedMarker.geokey) {
+      if (selectedMarkerId && entry.geokey == selectedMarkerId) {
         entry.displayClass = "selected";
       } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
         entry.displayClass = "full";

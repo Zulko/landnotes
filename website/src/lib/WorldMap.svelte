@@ -143,6 +143,8 @@
       animate: true,
       duration: 1, // Duration in seconds
     });
+    // this fixes a bug in leaflet where it looses track of the zoom level after a flyto
+    setTimeout(function(){ map.setZoom(targetZoom);}, 1100);
 
     // Set isFlying back to false after animation completes
     setTimeout(() => {
