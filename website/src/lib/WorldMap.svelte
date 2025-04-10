@@ -262,7 +262,6 @@
 
   function updateMarkers() {
     console.time("updateMarkers");
-    console.log(markers.length);
     if (!map || !markerLayer) return;
 
     // Track which markers we've processed to identify removals
@@ -329,7 +328,6 @@
   }
 
   function createNewMarker(marker, displayClass, pane) {
-    console.log(displayClass);
     const icon = makeIcon(marker, displayClass);
     const mapMarker = L.marker([marker.lat, marker.lon], {
       icon: icon,

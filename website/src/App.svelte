@@ -181,7 +181,6 @@
         mapZoom - 1,
         cachedEntries
       );
-      console.log({ entries });
       if (
         selectedMarkerId &&
         !entries.some((entry) => entry.geokey === selectedMarkerId)
@@ -189,9 +188,7 @@
         const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
         entries.push(selectedMarker[0]);
       }
-      entries.forEach((entry) => {
-        cachedEntries.set(entry.geokey, entry);
-      });
+
 
       // Update markers with display classes
       addMarkerClasses(entries, mapZoom);

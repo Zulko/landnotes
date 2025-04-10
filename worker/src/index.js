@@ -28,6 +28,7 @@ export default {
                         `SELECT * from geodata WHERE geokey IN (${placeholders})`
                     );
                     const result = await stmt.bind(...keys).all();
+					console.log(result.meta.rows_read);
 					return {results: result.results, rowsRead: result.meta.rows_read}
                 }
                 
@@ -49,6 +50,7 @@ export default {
 			            allResults.results = allResults.results.concat(batchResult.results);
 			        }
 			    }
+     			
 				return new Response(JSON.stringify(allResults), { headers: { "Content-Type": "application/json" } });
 			case '/query/geo-text-search':
 				// Text-based search using the fts5 table - optimized version
@@ -66,7 +68,6 @@ export default {
 					"ON geodata.rowid = top_matches.rowid "
 				);
 				result = await stmt.bind(escapedSearchText + (escapedSearchText.length > 2 ?  "*" : "")).all();
-				console.log(result);
 				return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
 			case '/message':
 				return new Response('Hello, World!');

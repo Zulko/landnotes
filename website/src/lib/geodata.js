@@ -511,8 +511,7 @@ export async function getGeodataFromGeokeys(geoKeys, cachedEntries) {
   // Get entries from cache
   const cachedEntriesResults = geoKeysInCachedEntries.map((geoKey) =>
     cachedEntries.get(geoKey)
-  );
-
+  ).filter((entry) => entry !== null);
   // If all geokeys were in cache, return early
   if (geoKeysNotInCachedEntries.length === 0) {
     return cachedEntriesResults;
@@ -531,9 +530,16 @@ export async function getGeodataFromGeokeys(geoKeys, cachedEntries) {
   });
 
   const queryJSON = await query.json();
-  console.log({ rowsRead: queryJSON.rowsRead });
   const entries = queryJSON.results;
   entries.forEach(addLatLonToEntry);
+
+  // Update the cache
+  geoKeysNotInCachedEntries.forEach((geokey) => {
+    cachedEntries.set(geokey, null);
+  });
+  entries.forEach((entry) => {
+    cachedEntries.set(entry.geokey, entry);
+  });
   
   // Return combined results
   return [...cachedEntriesResults, ...entries];
