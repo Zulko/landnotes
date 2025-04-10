@@ -37,6 +37,10 @@
   function close() {
     isOpen = false;
     expanded = false;
+    // Emit a close event so parent components can deselect the marker
+    console.log("closing pane")
+    const closeEvent = new CustomEvent('close');
+    dispatchEvent(closeEvent);
   }
 
   // Toggle expanded mode (works for both desktop and mobile)

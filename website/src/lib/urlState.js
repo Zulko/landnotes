@@ -3,17 +3,19 @@ import { geohashToLatLon, latLonToGeohash } from './geodata';
 /**
  * Updates the URL with current application state without reloading the page
  * 
- * @param {Object} targetLocation - The map location {lat, lon, zoom}
- * @param {Object|null} selectedMarkerId - Currently selected marker, if any
+ * @param {Object} params - The parameters object
+ * @param {Object} params.location - The map location {lat, lon}
+ * @param {number} params.zoom - The map zoom level
+ * @param {Object|null} params.selectedMarkerId - Currently selected marker, if any
  * @param {boolean} [addToHistory=false] - Whether to add this state to browser history
  */
-export function updateURLParams(targetLocation, selectedMarkerId, addToHistory = false) {
+export function updateURLParams({location, zoom, selectedMarkerId}, addToHistory = false) {
   const params = new URLSearchParams();
   
   // Add map position parameters if they exist
-  if (targetLocation) {
-    const geohash = latLonToGeohash(targetLocation.lat, targetLocation.lon, 8);
-    params.set('location', `${geohash}-${targetLocation.zoom}`);
+  if (location) {
+    const geohash = latLonToGeohash(location.lat, location.lon, 8);
+    params.set('location', `${geohash}-${zoom}`);
   }
   if (selectedMarkerId) {
     params.set('selected', selectedMarkerId);
@@ -42,8 +44,8 @@ export function readURLParams() {
   const location = params.get('location');
   if (location) {
     const [geohash, zoom] = location.split('-');
-    const { lat, lon } = geohashToLatLon(geohash);
-    result.targetLocation = {lat, lon, zoom}
+    result.location = geohashToLatLon(geohash);
+    result.zoom = parseInt(zoom)
   }
   result.selectedMarkerId = params.get('selected');
   return result;

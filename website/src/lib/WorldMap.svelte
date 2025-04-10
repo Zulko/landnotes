@@ -10,7 +10,6 @@
   // ===== PROPS =====
   export let markers = [];
   export let hotSpots = [];
-  export let targetLocation = null; // Format: { lat, lon, zoom }
 
   // ===== STATE VARIABLES =====
   let mapElement;
@@ -51,10 +50,6 @@
   });
 
   // ===== REACTIVE DECLARATIONS =====
-  $: if (map && targetLocation) {
-    updateMarkers();
-    flyTo(targetLocation);
-  }
 
   $: if (markers && map) {
     updateMarkers();
@@ -70,11 +65,7 @@
     map = L.map(mapElement, {
       zoomControl: false,
       worldCopyJump: true,
-    }).setView([0, 0], 3);
-
-    if (targetLocation) {
-      flyTo(targetLocation);
-    }
+    }).setView([0, 0], 8);
 
     // Add tile layer (OpenStreetMap)
     // L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -94,6 +85,7 @@
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 18,
+        minZoom: 2,
       }
     ).addTo(map);
 
@@ -130,30 +122,37 @@
   }
 
   // ===== MAP CONTROL FUNCTIONS =====
-  function flyTo(targetLocation) {
-    const { lat, lon, zoom: targetZoom } = targetLocation;
+  export function goTo({location, zoom, flyDuration}) {
+    const { lat, lon } = location;
 
     // If target zoom is less than current zoom, clear markers first
-    if (targetZoom < map.getZoom()) {
+    if (zoom < map.getZoom()) {
       markerLayer.clearLayers();
     }
 
-    isFlying = true;
-    map.flyTo([lat, lon], targetZoom, {
-      animate: true,
-      duration: 1, // Duration in seconds
-    });
-    // this fixes a bug in leaflet where it looses track of the zoom level after a flyto
-    setTimeout(function(){ map.setZoom(targetZoom);}, 1100);
+    if (flyDuration == 0) {
+      map.setView([lat, lon], zoom, {
+        animate: false,
+        duration: 0
+      });
+    } else {
+      isFlying = true;
+      map.flyTo([lat, lon], zoom, {
+        animate: true,
+        duration: flyDuration, // Duration in seconds
+      });
+      // this fixes a bug in leaflet where it looses track of the zoom level after a flyto
+      setTimeout(function(){ map.setZoom(zoom);}, 1000*flyDuration + 100);
 
-    // Set isFlying back to false after animation completes
-    setTimeout(() => {
-      isFlying = false;
-      // Dispatch a single boundschange event after flying completes
-      handleBoundsChange();
-    }, 1100); // Slightly longer than animation duration
+      // Set isFlying back to false after animation completes
+      setTimeout(() => {
+        isFlying = false;
+        // Dispatch a single boundschange event after flying completes
+        handleBoundsChange();
+      }, 1000*flyDuration + 100); // Slightly longer than animation duration
+    }
 
-    targetLocation = null;
+    
   }
 
   // ===== EVENT HANDLERS =====

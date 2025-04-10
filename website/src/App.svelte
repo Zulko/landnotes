@@ -29,13 +29,9 @@
    * Map configuration and state
    */
   let mapComponent;
-  let mapZoom = 1;
-  let mapCenter = null;
-  let targetMapLocation = {
-    lat: 51.508056,
-    lon: -0.076111,
-    zoom: 3,
-  };
+  let zoom = 1;
+  let location = null;
+  let targetMapLocation = null;
   let markers = [];
   let cachedEntries = new Map();
   let hotSpotsTree = null;
@@ -47,7 +43,7 @@
   let isMobile = false;
   let isPaneOpen = false;
   let previousPaneState = false;
-
+  let previousSelectedMarkerId = null;
   /**
    * Content state
    */
@@ -64,14 +60,19 @@
 
     // Read URL parameters when the app loads
     const urlState = readURLParams();
-    if (urlState.targetLocation) {
-      targetMapLocation = urlState.targetLocation;
-    }
     if (urlState.selectedMarkerId) {
       selectedMarkerId = urlState.selectedMarkerId;
-      const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
-      openWikiPane(selectedMarker[0].page_title);
     }
+    let {location, zoom} = urlState;
+    if (!location) {
+      location = {
+        lat: 51.508056,
+        lon: -0.076111,
+      };
+      zoom = 3;
+    }
+    mapComponent.goTo({location, zoom, flyDuration: 0})
+    
 
     // Add history navigation handler
     window.addEventListener("popstate", handlePopState);
@@ -117,12 +118,42 @@
   // When pane state changes, update map size after a slight delay to allow transitions
   $: if (previousPaneState !== isPaneOpen && mapComponent) {
     setTimeout(() => mapComponent.invalidateMapSize(), 50);
+    if (!isPaneOpen) {
+      selectedMarkerId = null;
+    }
     previousPaneState = isPaneOpen;
+
   }
 
+  $: if (previousSelectedMarkerId !== selectedMarkerId) {
+    handleNewSelectedMarker(selectedMarkerId)
+  }
   // -------------------------
   // EVENT HANDLERS
   // -------------------------
+
+  async function handleNewSelectedMarker(selectedMarkerId) {
+    console.log("handleNewSelectedMarker", selectedMarkerId)
+    let newMarkers;
+    if (selectedMarkerId) {
+      const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
+      openWikiPane(selectedMarker[0].page_title);
+      if (!markers.some(marker => marker.geokey === selectedMarkerId)) {
+        newMarkers = [...markers, selectedMarker[0]];
+      } else {
+        newMarkers = [...markers];
+      }
+    }
+    else {
+      closeWikiPane();
+      newMarkers = [...markers];
+      
+    }
+    addMarkerClasses(newMarkers, zoom)
+    markers = newMarkers
+    updateURLParams({location, zoom, selectedMarkerId})
+    previousSelectedMarkerId = selectedMarkerId
+  }
 
   /**
    * Handle browser history navigation
@@ -156,15 +187,11 @@
    */
   async function handleBoundsChange(event) {
     const center = event.detail.center;
-    mapCenter = {
-      lat: center.lat,
-      lon: center.lng,
-    };
-    mapZoom = event.detail.zoom;
 
     // Update URL with new location
-    const urlTargetMapLocation = { ...mapCenter, zoom: mapZoom };
-    updateURLParams(urlTargetMapLocation, selectedMarkerId);
+    zoom = event.detail.zoom;
+    location = {lat: center.lat, lon: center.lng}
+    updateURLParams({location, zoom, selectedMarkerId});
 
     // Get entries for the visible map area
     const bounds = {
@@ -178,7 +205,7 @@
     try {
       const entries = await getGeodataFromBounds(
         bounds,
-        mapZoom - 1,
+        zoom - 1,
         cachedEntries
       );
       if (
@@ -189,9 +216,8 @@
         entries.push(selectedMarker[0]);
       }
 
-
       // Update markers with display classes
-      addMarkerClasses(entries, mapZoom);
+      addMarkerClasses(entries, zoom);
       markers = entries;
     } catch (error) {
       console.error("Error fetching geodata:", error);
@@ -201,7 +227,7 @@
     const rawHotSpotAreasInBounds = findNodesInBounds(
       hotSpotsTree,
       bounds,
-      Math.max(mapZoom + 3, 6),
+      Math.max(zoom + 3, 6),
       "",
       []
     );
@@ -218,14 +244,26 @@
    * Handle marker click events
    */
   function handleMarkerClick(event) {
-    focusOnEntry(event.detail);
+    if (selectedMarkerId !== event.detail.geokey) {
+      selectedMarkerId = event.detail.geokey
+      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom, flyDuration: 1})
+    } else {
+      const newZoom = Math.min(17, Math.max(12, zoom + 2))
+      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: newZoom, flyDuration: 1})
+    }
   }
 
   /**
    * Handle search selection
    */
   function handleSearchSelect(event) {
-    focusOnEntry(event.detail);
+    selectedMarkerId = event.detail.geokey;
+    targetMapLocation = {
+      lat: event.detail.lat,
+      lon: event.detail.lon,
+      zoom: Math.max(12, zoom), // Ensure zoom is at least 12
+    };
+    mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: Math.max(12, zoom), flyDuration: 1})
   }
 
   // -------------------------
@@ -240,23 +278,10 @@
     isPaneOpen = true;
   }
 
-  /**
-   * Focus the map on an entry and open its wiki page
-   */
-  function focusOnEntry(entry) {
-    selectedMarkerId = entry.geokey;
-    openWikiPane(entry.page_title);
-
-    targetMapLocation = {
-      lat: entry.lat,
-      lon: entry.lon,
-      zoom: Math.max(12, mapZoom), // Ensure zoom is at least 12
-    };
-
-    // Update URL - use true to add to browser history when selecting a marker
-    updateURLParams(targetMapLocation, selectedMarkerId, true);
+  function closeWikiPane() {
+    wikiPage = "";
+    isPaneOpen = false;
   }
-
   /**
    * Classify markers for display based on importance and zoom level
    */
@@ -294,7 +319,6 @@
         bind:this={mapComponent}
         {markers}
         hotSpots={hotSpotAreasInBounds}
-        targetLocation={targetMapLocation}
         on:boundschange={handleBoundsChange}
         on:markerclick={handleMarkerClick}
       />
