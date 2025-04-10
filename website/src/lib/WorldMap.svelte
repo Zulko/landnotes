@@ -260,7 +260,6 @@
   }
 
   function updateMarkers() {
-    console.time("updateMarkers");
     if (!map || !markerLayer) return;
 
     // Track which markers we've processed to identify removals
@@ -288,8 +287,6 @@
 
     // Remove markers that are no longer in the data
     removeStaleMarkers(processedIds);
-
-    console.timeEnd("updateMarkers");
   }
 
   function updateExistingMarker(marker, displayClass, pane) {
@@ -366,7 +363,6 @@
 
   // Add this new function for handling hotspots
   function updateHotSpots() {
-    console.time("updateHotSpots");
     if (!map || !hotSpotLayer) return;
     // Clear existing hotspots
     hotSpotLayer.clearLayers();
@@ -406,8 +402,6 @@
 
     // Add all rectangles to the layer at once
     L.featureGroup(vectors).addTo(hotSpotLayer);
-
-    console.timeEnd("updateHotSpots");
   }
 
   // ===== EXPORTED FUNCTIONS =====

@@ -147,7 +147,10 @@ function testTraceContour() {
     [1, 2],
   ];
   const contour = traceContour(grid, cells);
-  console.log({contour}) // This should return [[1, 1], [1, 2], [1, 3], [2, 3], [2, 2], [2, 1], [1, 1]]
+  const expected = [[1, 1], [1, 2], [1, 3], [2, 3], [2, 2], [2, 1], [1, 1]]
+  if (contour !== expected) {
+    console.log("contour mismatch", contour)
+  }
 }
 testTraceContour();
 

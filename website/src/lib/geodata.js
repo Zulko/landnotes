@@ -1,3 +1,5 @@
+import JSZip from "jszip";
+
 /**
  * Decodes a hybrid geohash to its center latitude and longitude coordinates
  * 
@@ -582,3 +584,46 @@ export async function getEntriesfromText(searchText) {
       return [];
     }
   }
+
+/**
+ * Loads and processes hot spots data from a zipped JSON file
+ * @param {string} url - URL of the zipped JSON file
+ * @returns {Promise<object>} - The processed hot spots tree
+ */
+export async function loadHotSpotsData(url = "/geodata/hot_spots_tree.zip") {
+  try {
+    // Fetch the zip file
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to load hot spots data: ${response.status}`);
+    }
+
+    // Get the zip file as array buffer
+    const zipData = await response.arrayBuffer();
+
+    // Use JSZip to extract the contents
+    const zip = await JSZip.loadAsync(zipData);
+
+    // Find the JSON file in the zip (assuming there's only one JSON file)
+    let jsonFile;
+    zip.forEach((relativePath, zipEntry) => {
+      if (relativePath.endsWith(".json")) {
+        jsonFile = zipEntry;
+      }
+    });
+
+    if (!jsonFile) {
+      throw new Error("No JSON file found in the zip archive");
+    }
+
+    // Extract and parse the JSON file
+    const jsonContent = await jsonFile.async("string");
+    const prefixTree = JSON.parse(jsonContent);
+
+    // Enrich the prefix tree with bounds
+    return enrichPrefixTreeWithBounds(prefixTree);
+  } catch (error) {
+    console.error("Error loading hot spots data:", error);
+    throw error;
+  }
+}

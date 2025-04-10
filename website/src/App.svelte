@@ -16,10 +16,10 @@
     enrichPrefixTreeWithBounds,
     findNodesInBounds,
     getGeodataFromBounds,
-    getGeodataFromGeokeys
+    getGeodataFromGeokeys,
+    loadHotSpotsData
   } from "./lib/geodata";
   import { latlonSquaresToPolylines } from "./lib/polylines";
-  import JSZip from "jszip";
 
   // -------------------------
   // STATE MANAGEMENT
@@ -57,62 +57,27 @@
   onMount(async () => {
     console.log("App starting!");
     handleResize(); // Initialize mobile detection
+    
 
     // Read URL parameters when the app loads
     const urlState = readURLParams();
     if (urlState.selectedMarkerId) {
       selectedMarkerId = urlState.selectedMarkerId;
     }
-    let {location, zoom} = urlState;
-    if (!location) {
-      location = {
-        lat: 51.508056,
-        lon: -0.076111,
-      };
-      zoom = 3;
+    hotSpotsTree = await loadHotSpotsData();
+    if (urlState.location) {
+      mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0})
+    } else {
+      mapComponent.goTo({location: {lat: 0, lon: 0}, zoom: 3, flyDuration: 0})
     }
-    mapComponent.goTo({location, zoom, flyDuration: 0})
+    
     
 
     // Add history navigation handler
     window.addEventListener("popstate", handlePopState);
 
     // Load and process hot spots data
-    try {
-      // Fetch the zip file
-      const response = await fetch("/geodata/hot_spots_tree.zip");
-      if (!response.ok) {
-        throw new Error(`Failed to load hot spots data: ${response.status}`);
-      }
-
-      // Get the zip file as array buffer
-      const zipData = await response.arrayBuffer();
-
-      // Use JSZip to extract the contents
-      const zip = await JSZip.loadAsync(zipData);
-
-      // Find the JSON file in the zip (assuming there's only one JSON file)
-      let jsonFile;
-      zip.forEach((relativePath, zipEntry) => {
-        if (relativePath.endsWith(".json")) {
-          jsonFile = zipEntry;
-        }
-      });
-
-      if (!jsonFile) {
-        throw new Error("No JSON file found in the zip archive");
-      }
-
-      // Extract and parse the JSON file
-      const jsonContent = await jsonFile.async("string");
-      const prefixTree = JSON.parse(jsonContent);
-
-      // Enrich the prefix tree with bounds
-      hotSpotsTree = enrichPrefixTreeWithBounds(prefixTree);
-      console.log("Hot spots tree loaded and processed");
-    } catch (error) {
-      console.error("Error loading hot spots data:", error);
-    }
+    
   });
 
   // When pane state changes, update map size after a slight delay to allow transitions
@@ -133,7 +98,6 @@
   // -------------------------
 
   async function handleNewSelectedMarker(selectedMarkerId) {
-    console.log("handleNewSelectedMarker", selectedMarkerId)
     let newMarkers;
     if (selectedMarkerId) {
       const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
@@ -186,6 +150,7 @@
    * Process map bounds changes and fetch new markers
    */
   async function handleBoundsChange(event) {
+    console.log("handleBoundsChange", event)
     const center = event.detail.center;
 
     // Update URL with new location
@@ -232,12 +197,11 @@
       []
     );
     // const polylines = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
-    console.time("latlonSquaresToPolylines");
+
     const { polylines, dots } = latlonSquaresToPolylines(
       rawHotSpotAreasInBounds
     );
     hotSpotAreasInBounds = [...polylines, ...dots].slice(0, 200);
-    console.timeEnd("latlonSquaresToPolylines");
   }
 
   /**
