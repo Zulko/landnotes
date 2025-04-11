@@ -333,9 +333,7 @@
     order: 2; /* Put wiki pane at the bottom */
   }
 
-  main.is-mobile.has-open-pane .wiki-pane-container {
-    flex: 0 0 70vh; /* Default height, will be adjusted by SlidingPane component */
-  }
+
 
   main.is-mobile .map-container {
     order: 1; /* Put map at the top */
@@ -344,8 +342,9 @@
 
   /* Mobile adjustments for search bar */
   main.is-mobile .search-wrapper {
-    top: 10px;
+    top: 3px;
     width: 90%;
+    padding: 0;
   }
 
   .search-wrapper {

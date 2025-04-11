@@ -5,7 +5,7 @@
   export let isOpen = false;
   export let page_title = ""; // Wikipedia page name
   export let width = "400px"; // Default width for desktop
-  export let height = "70vh"; // Default height for mobile
+  export let height = "35vh"; // Default height for mobile
 
   // ===== STATE VARIABLES =====
   let expanded = false;
@@ -118,7 +118,6 @@
 <style>
   .pane-container {
     display: none;
-    height: 100%;
   }
 
   .pane-container.is-open {

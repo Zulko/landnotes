@@ -9,6 +9,7 @@
   let isActive = false;
   let isLoading = false;
   let debounceTimer = null;
+  let selectedIndex = -1; // Track the currently selected suggestion
 
   // Debounced search function
   function debouncedSearch() {
@@ -50,23 +51,48 @@
     if (debounceTimer) clearTimeout(debounceTimer);
   });
 
+  function handleKeydown(event) {
+    if (!isActive || searchResults.length === 0) return;
+    
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      selectedIndex = (selectedIndex + 1) % searchResults.length;
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      selectedIndex = selectedIndex <= 0 ? searchResults.length - 1 : selectedIndex - 1;
+    } else if (event.key === 'Enter' && selectedIndex >= 0) {
+      event.preventDefault();
+      handleSelect(searchResults[selectedIndex]);
+    } else if (event.key === 'Escape') {
+      isActive = false;
+    }
+  }
+
   function handleSelect(entry) {
     dispatch("select", entry);
     searchQuery = "";
     isActive = false;
+    selectedIndex = -1;
   }
 
   function handleBlur() {
     // Small delay to allow click events on suggestions to fire
     setTimeout(() => {
       isActive = false;
+      selectedIndex = -1;
     }, 200);
   }
 
   function handleFocus() {
     if (searchQuery && searchQuery.length > 1) {
       isActive = true;
+      selectedIndex = -1;
     }
+  }
+
+  // Reset selected index when search results change
+  $: if (searchResults) {
+    selectedIndex = -1;
   }
 </script>
 
@@ -78,6 +104,7 @@
       bind:value={searchQuery}
       on:focus={handleFocus}
       on:blur={handleBlur}
+      on:keydown={handleKeydown}
       class="search-input"
     />
     {#if searchQuery}
@@ -100,10 +127,10 @@
     <div class="suggestions" role="listbox">
       {#each searchResults as entry, i}
         <div
-          class="suggestion-item"
+          class="suggestion-item {i === selectedIndex ? 'selected' : ''}"
           on:mousedown={() => handleSelect(entry)}
           role="option"
-          aria-selected="false"
+          aria-selected={i === selectedIndex}
           tabindex="0"
         >
           <span class="suggestion-title"
@@ -209,6 +236,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .suggestion-item.selected {
+    background-color: #f0f7ff;
   }
 
   .suggestion-item:last-child {
