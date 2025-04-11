@@ -3,8 +3,7 @@
   import { createEventDispatcher } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-
-  const basePath = import.meta.env.BASE_URL;
+  import { createGeoMarker, createGeoDivIcon } from "./markers";
   const dispatch = createEventDispatcher();
 
   // ===== PROPS =====
@@ -21,6 +20,8 @@
   let existingMapMarkers = new Map(); // key: marker.geokey, value: L.marker object
   let resizeObserver;
   let boundsChangeTimeout = null;
+  let handleBoundChangesAfterFlyToTimeOut = null;
+  let fixZoomAfterFlyToTimeOut = null;
 
   // ===== LIFECYCLE METHODS =====
   onMount(() => {
@@ -124,6 +125,8 @@
   // ===== MAP CONTROL FUNCTIONS =====
   export function goTo({location, zoom, flyDuration}) {
     const { lat, lon } = location;
+    clearTimeout(handleBoundChangesAfterFlyToTimeOut);
+    clearTimeout(fixZoomAfterFlyToTimeOut);
 
     // If target zoom is less than current zoom, clear markers first
     if (zoom < map.getZoom()) {
@@ -142,10 +145,10 @@
         duration: flyDuration, // Duration in seconds
       });
       // this fixes a bug in leaflet where it looses track of the zoom level after a flyto
-      setTimeout(function(){ map.setZoom(zoom);}, 1000*flyDuration + 50);
+      fixZoomAfterFlyToTimeOut = setTimeout(function(){ map.setZoom(zoom);}, 1000*flyDuration + 50);
 
       // Set isFlying back to false after animation completes
-      setTimeout(() => {
+      handleBoundChangesAfterFlyToTimeOut = setTimeout(() => {
         isFlying = false;
         // Dispatch a single boundschange event after flying completes
         handleBoundsChange();
@@ -184,80 +187,7 @@
   }
 
   // ===== MARKER MANAGEMENT =====
-  function computeMarkerHtml(marker) {
-    const iconByType = {
-      adm1st: "map",
-      adm2nd: "map",
-      adm3rd: "map",
-      airport: "plane-takeoff",
-      building: "building",
-      church: "church",
-      city: "city",
-      country: "flag",
-      county: "map",
-      edu: "school",
-      event: "newspaper",
-      forest: "trees",
-      glacier: "mountain-snow",
-      island: "tree-palm",
-      isle: "tree-palm",
-      landmark: "landmark",
-      locality: "locality",
-      mountain: "mountain-snow",
-      other: "pin",
-      railwaystation: "train-front",
-      river: "waves",
-      school: "school",
-      settlement: "city",
-      town: "city",
-      village: "city",
-      waterbody: "waves",
-    };
-
-    const icon = iconByType[marker.category] || iconByType.other;
-    const unsanitized_page_title = marker.page_title.replaceAll("_", " ");
-
-    let label = marker.name;
-    if (!marker.name) {
-      label = unsanitized_page_title;
-    } else if (unsanitized_page_title.includes(marker.name)) {
-      label = unsanitized_page_title;
-    } else {
-      const fullLabel = marker.name + " - " + unsanitized_page_title;
-      if (fullLabel.length <= 30) {
-        label = fullLabel;
-      }
-    }
-
-    return `
-    <div class="map-marker marker-display-${marker.displayClass}" >
-        <div class="marker-icon-circle">
-          <img src="${basePath}icons/${icon}.svg">
-        </div>
-        <div class="marker-text-container">
-          <div class="marker-text marker-text-outline">${label}</div>
-          <div class="marker-text">${label}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  function makeIcon(marker, displayClass) {
-    const markerHtml = computeMarkerHtml(marker);
-
-    const iconSizesByDisplayClass = {
-      dot: [18, 18],
-      reduced: [28, 28],
-      full: [128, 32],
-      selected: [128, 32],
-    };
-
-    return L.divIcon({
-      className: "custom-div-icon",
-      html: markerHtml,
-      iconSize: iconSizesByDisplayClass[displayClass],
-    });
-  }
+  
 
   function updateMarkers() {
     if (!map || !markerLayer) return;
@@ -266,7 +196,7 @@
     const processedIds = new Set();
 
     // Update or add markers
-    markers.forEach((marker) => {
+    for (const marker of markers) {
       processedIds.add(marker.geokey);
 
       let displayClass = marker.displayClass;
@@ -283,7 +213,7 @@
       } else {
         createNewMarker(marker, displayClass, pane);
       }
-    });
+    }
 
     // Remove markers that are no longer in the data
     removeStaleMarkers(processedIds);
@@ -312,7 +242,7 @@
 
     // Update icon if display class changed
     if (existingClass !== displayClass) {
-      const icon = makeIcon(marker, displayClass);
+      const icon = createGeoDivIcon(marker, displayClass, map.getZoom());
       existingMarker.setIcon(icon);
 
       // Update the stored display class
@@ -323,43 +253,31 @@
     }
   }
 
-  function createNewMarker(marker, displayClass, pane) {
-    const icon = makeIcon(marker, displayClass);
-    const mapMarker = L.marker([marker.lat, marker.lon], {
-      icon: icon,
-      pane: pane,
-    });
 
-    // const popupContent = '<img class="geo-popup-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Albert_Einstein_1947.jpg/250px-Albert_Einstein_1947.jpg" class="popup-img">';
 
-    // mapMarker.on('mouseover', function (e) {
-    //   mapMarker.bindPopup(popupContent).openPopup();
-    // });
-    
-    // mapMarker.on('mouseout', function (e) {
-    //   mapMarker.closePopup();
-    // });
+  function createNewMarker(entry, displayClass, pane) {
+    const marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
 
     // Add event handlers
-    mapMarker.on("click", () => {
-      dispatch("markerclick", marker);
+    marker.on("click", () => {
+      dispatch("markerclick", entry);
     });
 
-    mapMarker.on("mouseover", () => {
-      if (hoveredMarkerId !== marker.geokey) {
-        hoveredMarkerId = marker.geokey;
+    marker.on("mouseover", () => {
+      if (hoveredMarkerId !== entry.geokey) {
+        hoveredMarkerId = entry.geokey;
         updateMarkers();
       }
     });
 
     // Store reference to the new marker
-    existingMapMarkers.set(marker.geokey, {
-      existingMarker: mapMarker,
+    existingMapMarkers.set(entry.geokey, {
+      existingMarker: marker,
       displayClass: displayClass,
     });
 
     // Add marker to the map
-    mapMarker.addTo(markerLayer);
+    marker.addTo(markerLayer);
   }
 
   function removeStaleMarkers(processedIds) {
@@ -427,6 +345,8 @@
 ></div>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+
   .map-container {
     width: 100%;
     height: 100%;
@@ -449,11 +369,18 @@
       filter: brightness(1.2);
       z-index: 1000 !important; /* Ensure hovered markers appear above others */
     }
+    &:hover > .undermarker {
+      display: none;
+    }
     &:hover > .marker-icon-circle,
     &.marker-display-selected > .marker-icon-circle {
       --circle-size: 32px !important;
       box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
       z-index: 1000 !important;
+    }
+
+    &.marker-display-selected > .undermarker {
+      display: none;
     }
 
     &.marker-display-selected {
@@ -562,7 +489,72 @@
     text-stroke-linejoin: round;
     z-index: 1;
   }
-  :global(.geo-popup-img) {
-    width: 80px;
+
+  :global(.marker-count) {
+    font-size: 8px;
+    color: #111;
+    position: absolute;
+    top: 20%;
+    left: 55%;
+    transform: translateY(-50%);
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 1px;
+    border: 0.5px solid #111;
+    font-family: 'Roboto Mono', monospace;
+  }
+
+  :global(.undermarker) {
+    position: absolute;
+    display: flex;
+    background-color: white !important;
+    border: 0.5px solid #111 !important;
+    left: 50%;
+    z-index: -50 !important;
+  }
+  :global(.undermarker-large) {
+    top: -6px;
+    transform: translateX(-41%);
+  }
+  :global(.undermarker-medium) {
+    top: -4px;
+    transform: translateX(-44%);
+  }
+  :global(.undermarker-small) {
+    top: -2px;
+    transform: translateX(-47%);
+  }
+  :global(.geo-marker-popup) {
+    border-radius: 0px;
+    border: none;
+    padding: 0;
+    margin: 0;
+    
+  }
+  
+  :global(.geo-marker-popup .leaflet-popup-content-wrapper) {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 1px;
+    /* box-shadow: 0 3px 14px rgba(0,0,0,0.4); */
+  }
+  
+  :global(.geo-marker-popup .leaflet-popup-content) {
+    margin: 0;
+    padding: 0;
+  }
+  
+  :global(.geo-marker-popup .leaflet-popup-tip) {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+
+  :global(.leaflet-popup-pane) {
+    z-index: 497 !important;
+  }
+  
+  :global(.geo-marker-popup img) {
+    max-width: 150px;
+    max-height: 150px;
+    display: block;
+    margin: 0 auto;
   }
 </style>

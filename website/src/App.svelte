@@ -63,7 +63,7 @@
     if (urlState.selectedMarkerId) {
       selectedMarkerId = urlState.selectedMarkerId;
     }
-    hotSpotsTree = await loadHotSpotsData();
+    // hotSpotsTree = await loadHotSpotsData();
     if (urlState.location) {
       mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0})
     } else {
@@ -181,19 +181,19 @@
     }
 
     // Fetch hot spot areas in bounds
-    const rawHotSpotAreasInBounds = findNodesInBounds(
-      hotSpotsTree,
-      bounds,
-      Math.max(zoom + 3, 6),
-      "",
-      []
-    );
-    // const polylines = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
+    // const rawHotSpotAreasInBounds = findNodesInBounds(
+    //   hotSpotsTree,
+    //   bounds,
+    //   Math.max(zoom + 3, 6),
+    //   "",
+    //   []
+    // );
+    // // const polylines = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
 
-    const { polylines, dots } = latlonSquaresToPolylines(
-      rawHotSpotAreasInBounds
-    );
-    hotSpotAreasInBounds = [...polylines, ...dots].slice(0, 200);
+    // const { polylines, dots } = latlonSquaresToPolylines(
+    //   rawHotSpotAreasInBounds
+    // );
+    // hotSpotAreasInBounds = [...polylines, ...dots].slice(0, 200);
   }
 
   /**
