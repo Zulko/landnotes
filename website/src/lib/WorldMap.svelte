@@ -65,7 +65,7 @@
     map = L.map(mapElement, {
       zoomControl: false,
       worldCopyJump: true,
-    }).setView([0, 0], 8);
+    }).setView([0, 0], 2);
 
     // Add tile layer (OpenStreetMap)
     // L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -142,14 +142,14 @@
         duration: flyDuration, // Duration in seconds
       });
       // this fixes a bug in leaflet where it looses track of the zoom level after a flyto
-      setTimeout(function(){ map.setZoom(zoom);}, 1000*flyDuration + 100);
+      setTimeout(function(){ map.setZoom(zoom);}, 1000*flyDuration + 50);
 
       // Set isFlying back to false after animation completes
       setTimeout(() => {
         isFlying = false;
         // Dispatch a single boundschange event after flying completes
         handleBoundsChange();
-      }, 1000*flyDuration + 100); // Slightly longer than animation duration
+      }, 1000*flyDuration + 50); // Slightly longer than animation duration
     }
 
     
@@ -329,6 +329,16 @@
       icon: icon,
       pane: pane,
     });
+
+    // const popupContent = '<img class="geo-popup-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Albert_Einstein_1947.jpg/250px-Albert_Einstein_1947.jpg" class="popup-img">';
+
+    // mapMarker.on('mouseover', function (e) {
+    //   mapMarker.bindPopup(popupContent).openPopup();
+    // });
+    
+    // mapMarker.on('mouseout', function (e) {
+    //   mapMarker.closePopup();
+    // });
 
     // Add event handlers
     mapMarker.on("click", () => {
@@ -551,5 +561,8 @@
     -webkit-text-stroke-linejoin: round;
     text-stroke-linejoin: round;
     z-index: 1;
+  }
+  :global(.geo-popup-img) {
+    width: 80px;
   }
 </style>

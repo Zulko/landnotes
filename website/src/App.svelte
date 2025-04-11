@@ -3,7 +3,7 @@
   // IMPORTS
   // -------------------------
   // Svelte lifecycle
-  import { onMount, afterUpdate } from "svelte";
+  import { onMount } from "svelte";
 
   // Components
   import WorldMap from "./lib/WorldMap.svelte";
@@ -13,7 +13,6 @@
   // Utilities
   import { updateURLParams, readURLParams } from "./lib/urlState";
   import {
-    enrichPrefixTreeWithBounds,
     findNodesInBounds,
     getGeodataFromBounds,
     getGeodataFromGeokeys,
@@ -99,11 +98,13 @@
 
   async function handleNewSelectedMarker(selectedMarkerId) {
     let newMarkers;
+    console.log("handleNewSelectedMarker", selectedMarkerId)
     if (selectedMarkerId) {
-      const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
-      openWikiPane(selectedMarker[0].page_title);
+      const query = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
+      const selectedMarker = query[0];
+      openWikiPane(selectedMarker.page_title);
       if (!markers.some(marker => marker.geokey === selectedMarkerId)) {
-        newMarkers = [...markers, selectedMarker[0]];
+        newMarkers = [...markers, selectedMarker];
       } else {
         newMarkers = [...markers];
       }
@@ -125,18 +126,10 @@
   function handlePopState(ev: PopStateEvent) {
     const state = ev.state || {};
 
-    if (state.targetLocation) {
-      targetMapLocation = state.targetLocation;
+    if (state.location) {
+      mapComponent.goTo({location: state.location, zoom: state.zoom, flyDuration: 0})
     }
-
-    if (state.selectedMarker) {
-      selectedMarkerId = state.selectedMarker;
-      openWikiPane(selectedMarkerId.page_title);
-    } else {
-      // Close the pane if no marker is selected
-      isPaneOpen = false;
-      wikiPage = "";
-    }
+    selectedMarkerId = state.selectedMarkerId;
   }
 
   /**
@@ -150,7 +143,6 @@
    * Process map bounds changes and fetch new markers
    */
   async function handleBoundsChange(event) {
-    console.log("handleBoundsChange", event)
     const center = event.detail.center;
 
     // Update URL with new location
