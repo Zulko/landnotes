@@ -1,7 +1,10 @@
 <script>
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   import { getEntriesfromText } from "./geodata";
+  import MenuDropdown from "./MenuDropdown.svelte";
+  
   export let searchQuery = "";
+  export let searchMode = "places";
 
   const dispatch = createEventDispatcher();
 
@@ -44,6 +47,11 @@
       // Clear any pending search
       if (debounceTimer) clearTimeout(debounceTimer);
     }
+  }
+
+  function handleModeChange(event) {
+    searchMode = event.detail.mode;
+    dispatch("modeChange", { mode: searchMode });
   }
 
   onDestroy(() => {
@@ -121,6 +129,9 @@
     <div class="search-icon">
       <img src={`${import.meta.env.BASE_URL}icons/search.svg`} alt="Search" />
     </div>
+    
+    <!-- Menu component -->
+    <MenuDropdown {searchMode} on:modeChange={handleModeChange} />
   </div>
 
   {#if isActive && searchResults.length > 0}
@@ -199,7 +210,7 @@
 
   .clear-button {
     position: absolute;
-    right: 10px;
+    right: 40px; /* Adjusted to make room for menu button */
     background: none;
     border: none;
     font-size: 20px;
