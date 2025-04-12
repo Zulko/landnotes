@@ -4,16 +4,11 @@
   export let searchMode = "places";
   
   const dispatch = createEventDispatcher();
-  let isMenuOpen = false;
-
-  function toggleMenu() {
-    isMenuOpen = !isMenuOpen;
-  }
 
   function handleMenuBlur() {
     // Small delay to allow click events on menu items to fire
     setTimeout(() => {
-      isMenuOpen = false;
+      dispatch("closeMenu");
     }, 200);
   }
 
@@ -24,8 +19,9 @@
 
   function handleClickOutside(event) {
     // Close menu when clicking outside
-    if (isMenuOpen && !event.target.closest('.menu-container')) {
-      isMenuOpen = false;
+    if (isMenuOpen && !event.target.closest('.menu-container') && 
+        !event.target.closest('.menu-button')) {
+      dispatch("closeMenu");
     }
   }
 
@@ -39,12 +35,7 @@
 </script>
 
 <div class="menu-container">
-  <button class="menu-button" on:click={toggleMenu} aria-label="Menu">
-    ☰
-  </button>
-  
   <!-- Menu dropdown -->
-  {#if isMenuOpen}
     <div class="menu-dropdown" on:blur={handleMenuBlur} tabindex="-1">
       <div class="menu-group">
         <span class="menu-label">Mode:</span>
@@ -68,31 +59,11 @@
         Go to the project source on GitHub
       </a>
     </div>
-  {/if}
 </div>
 
 <style>
   .menu-container {
     position: relative;
-    margin-left: 5px;
-    margin-right: 5px;
-  }
-
-  .menu-button {
-    background: none;
-    border: none;
-    font-size: 18px;
-    color: #666;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .menu-button:hover {
-    background-color: #f0f0f0;
   }
 
   .menu-dropdown {

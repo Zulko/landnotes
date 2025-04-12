@@ -13,6 +13,7 @@
   let isLoading = false;
   let debounceTimer = null;
   let selectedIndex = -1; // Track the currently selected suggestion
+  let isMenuOpen = false; // State for menu dropdown visibility
 
   // Debounced search function
   function debouncedSearch() {
@@ -52,6 +53,16 @@
   function handleModeChange(event) {
     searchMode = event.detail.mode;
     dispatch("modeChange", { mode: searchMode });
+  }
+
+  // Toggle menu open/closed
+  function toggleMenu() {
+    isMenuOpen = !isMenuOpen;
+  }
+
+  // Handle menu close request from MenuDropdown
+  function handleCloseMenu() {
+    isMenuOpen = false;
   }
 
   onDestroy(() => {
@@ -130,10 +141,12 @@
       <img src={`${import.meta.env.BASE_URL}icons/search.svg`} alt="Search" />
     </div>
     
-    <!-- Menu component with added class -->
+    <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
       <div class="tooltip">Menu</div>
-      <MenuDropdown {searchMode} on:modeChange={handleModeChange} />
+      <button class="menu-button" on:click={toggleMenu} aria-label="Menu">
+        ☰
+      </button>
     </div>
   </div>
 
@@ -166,6 +179,15 @@
         {/if}
       </div>
     </div>
+  {/if}
+
+  <!-- Menu component -->
+  {#if isMenuOpen}
+  <MenuDropdown 
+    {searchMode} 
+    on:modeChange={handleModeChange}
+    on:closeMenu={handleCloseMenu}
+  />
   {/if}
 </div>
 
@@ -224,6 +246,24 @@
     margin-right: 5px;
   }
 
+  .menu-button {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+
+  .menu-button-wrapper:hover {
+    background-color: #e0e0e0;
+  }
+
   .menu-button-wrapper .tooltip {
     visibility: hidden;
     position: absolute;
@@ -254,23 +294,6 @@
     border-width: 5px;
     border-style: solid;
     border-color: transparent transparent rgba(0, 0, 0, 0.7) transparent;
-  }
-  
-  .menu-button-wrapper :global(button) {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    color: #555;
-  }
-  
-  .menu-button-wrapper:hover {
-    background-color: #e0e0e0;
   }
 
   .clear-button {
