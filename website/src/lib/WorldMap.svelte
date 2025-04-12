@@ -102,9 +102,11 @@
     // Create layer groups for different marker types
     const markerLayers = [
       { name: "dot", zIndex: 200 },
-      { name: "reduced", zIndex: 498 },
-      { name: "full", zIndex: 499 },
-      { name: "selected", zIndex: 500 },
+      { name: "reduced", zIndex: 300 },
+      { name: "full", zIndex: 400 },
+      { name: "hovered", zIndex: 500 },
+      { name: "selected", zIndex: 600 },
+
       { name: "hotspot", zIndex: 100 },
     ];
 
@@ -204,7 +206,7 @@
 
       if (hoveredMarkerId === marker.geokey && displayClass !== "selected") {
         displayClass = "full";
-        pane = "selected";
+        pane = "hovered";
       }
 
       // Check if marker already exists
@@ -490,25 +492,11 @@
     z-index: 1;
   }
 
-  :global(.marker-count) {
-    font-size: 8px;
-    color: #111;
-    position: absolute;
-    top: 20%;
-    left: 55%;
-    transform: translateY(-50%);
-    background-color: #fff;
-    border-radius: 4px;
-    padding: 1px;
-    border: 0.5px solid #111;
-    font-family: 'Roboto Mono', monospace;
-  }
-
   :global(.undermarker) {
     position: absolute;
     display: flex;
     background-color: white !important;
-    border: 0.5px solid #111 !important;
+    border: 0.5px solid #444 !important;
     left: 50%;
     z-index: -50 !important;
   }
@@ -526,18 +514,11 @@
   }
   :global(.geo-marker-popup) {
     border-radius: 0px;
-    border: none;
     padding: 0;
     margin: 0;
     
   }
-  
-  :global(.geo-marker-popup .leaflet-popup-content-wrapper) {
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 1px;
-    /* box-shadow: 0 3px 14px rgba(0,0,0,0.4); */
-  }
-  
+
   :global(.geo-marker-popup .leaflet-popup-content) {
     margin: 0;
     padding: 0;
@@ -545,12 +526,16 @@
   
   :global(.geo-marker-popup .leaflet-popup-tip) {
     background-color: rgba(255, 255, 255, 0.9);
+
   }
 
   :global(.leaflet-popup-pane) {
-    z-index: 497 !important;
+    z-index: 499 !important;
   }
   
+  :global(.geo-marker-popup .leaflet-popup-content-wrapper) {
+    background-color: transparent !important;
+  }
   :global(.geo-marker-popup img) {
     max-width: 150px;
     max-height: 150px;
