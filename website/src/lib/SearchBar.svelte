@@ -108,7 +108,7 @@
   <div class="search-input-wrapper">
     <input
       type="text"
-      placeholder="Search locations (regions already visited only)"
+      placeholder="Enter a place name"
       bind:value={searchQuery}
       on:focus={handleFocus}
       on:blur={handleBlur}
@@ -130,8 +130,11 @@
       <img src={`${import.meta.env.BASE_URL}icons/search.svg`} alt="Search" />
     </div>
     
-    <!-- Menu component -->
-    <MenuDropdown {searchMode} on:modeChange={handleModeChange} />
+    <!-- Menu component with added class -->
+    <div class="menu-button-wrapper">
+      <div class="tooltip">Menu</div>
+      <MenuDropdown {searchMode} on:modeChange={handleModeChange} />
+    </div>
   </div>
 
   {#if isActive && searchResults.length > 0}
@@ -208,9 +211,71 @@
     opacity: 0.5;
   }
 
+  .menu-button-wrapper {
+    position: absolute;
+    right: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    height: 28px;
+    width: 28px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+
+  .menu-button-wrapper .tooltip {
+    visibility: hidden;
+    position: absolute;
+    bottom: -35px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    text-align: center;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .menu-button-wrapper:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .menu-button-wrapper .tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent rgba(0, 0, 0, 0.7) transparent;
+  }
+  
+  .menu-button-wrapper :global(button) {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    color: #555;
+  }
+  
+  .menu-button-wrapper:hover {
+    background-color: #e0e0e0;
+  }
+
   .clear-button {
     position: absolute;
-    right: 40px; /* Adjusted to make room for menu button */
+    right: 40px; /* Keeps space for menu button */
     background: none;
     border: none;
     font-size: 20px;

@@ -17,10 +17,9 @@
     }, 200);
   }
 
-  function setSearchMode(mode) {
+  function setMode(mode) {
     searchMode = mode;
     dispatch("modeChange", { mode });
-    isMenuOpen = false;
   }
 
   function handleClickOutside(event) {
@@ -52,13 +51,13 @@
         <div class="menu-options">
           <button 
             class="mode-option {searchMode === 'places' ? 'active' : ''}" 
-            on:click={() => setSearchMode('places')}
+            on:click={() => setMode('places')}
           >
             Places
           </button>
           <button 
             class="mode-option {searchMode === 'events' ? 'active' : ''}" 
-            on:click={() => setSearchMode('events')}
+            on:click={() => setMode('events')}
           >
             Events
           </button>
