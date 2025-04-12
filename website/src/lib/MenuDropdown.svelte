@@ -2,6 +2,7 @@
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   
   export let searchMode = "places";
+  export let isMenuOpen = false;
   
   const dispatch = createEventDispatcher();
 
@@ -64,18 +65,21 @@
 <style>
   .menu-container {
     position: relative;
+    width: 100%;
   }
 
   .menu-dropdown {
     position: absolute;
     top: 100%;
+    left: 0;
     right: 0;
     background: white;
     border: 1px solid #ccc;
     border-radius: 4px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    z-index: 1001;
-    min-width: 200px;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
     margin-top: 5px;
   }
 
@@ -113,10 +117,11 @@
 
   .menu-item {
     display: block;
-    padding: 10px;
+    padding: 10px 15px;
     text-decoration: none;
     color: #333;
     border-bottom: 1px solid #eee;
+    cursor: pointer;
   }
 
   .menu-item:last-child {
