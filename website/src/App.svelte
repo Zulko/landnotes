@@ -13,12 +13,9 @@
   // Utilities
   import { updateURLParams, readURLParams } from "./lib/urlState";
   import {
-    findNodesInBounds,
     getGeodataFromBounds,
     getGeodataFromGeokeys,
-    loadHotSpotsData
   } from "./lib/geodata";
-  import { latlonSquaresToPolylines } from "./lib/polylines";
 
   // -------------------------
   // STATE MANAGEMENT
@@ -33,8 +30,6 @@
   let targetMapLocation = null;
   let markers = [];
   let cachedEntries = new Map();
-  let hotSpotsTree = null;
-  let hotSpotAreasInBounds = [];
 
   /**
    * UI state
@@ -63,19 +58,13 @@
     if (urlState.selectedMarkerId) {
       selectedMarkerId = urlState.selectedMarkerId;
     }
-    // hotSpotsTree = await loadHotSpotsData();
     if (urlState.location) {
       mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0})
     } else {
       mapComponent.goTo({location: {lat: 0, lon: 0}, zoom: 3, flyDuration: 0})
     }
-    
-    
-
     // Add history navigation handler
     window.addEventListener("popstate", handlePopState);
-
-    // Load and process hot spots data
     
   });
 
@@ -179,21 +168,6 @@
     } catch (error) {
       console.error("Error fetching geodata:", error);
     }
-
-    // Fetch hot spot areas in bounds
-    // const rawHotSpotAreasInBounds = findNodesInBounds(
-    //   hotSpotsTree,
-    //   bounds,
-    //   Math.max(zoom + 3, 6),
-    //   "",
-    //   []
-    // );
-    // // const polylines = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
-
-    // const { polylines, dots } = latlonSquaresToPolylines(
-    //   rawHotSpotAreasInBounds
-    // );
-    // hotSpotAreasInBounds = [...polylines, ...dots].slice(0, 200);
   }
 
   /**
@@ -274,7 +248,6 @@
       <WorldMap
         bind:this={mapComponent}
         {markers}
-        hotSpots={hotSpotAreasInBounds}
         on:boundschange={handleBoundsChange}
         on:markerclick={handleMarkerClick}
       />

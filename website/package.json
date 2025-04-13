@@ -16,6 +16,7 @@
   "dependencies": {
     "blueimp-md5": "^2.19.0",
     "jszip": "^3.10.1",
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.9.4",
+    "pako": "^2.1.0"
   }
 }

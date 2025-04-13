@@ -76,19 +76,19 @@ function computeMarkerHtml(entry, zoom) {
       }
     }
     let markerCountDiv = "";
-    if (entry.entries_under_geokey) {
-      const counts = entry.entries_under_geokey.split(",");
-      const countAtZoom = parseInt(counts[zoom - entry.geokey.length]);
-      if (countAtZoom > 1) {
-        if (countAtZoom > 100) {
-          markerCountDiv += `<div class="marker-icon-circle undermarker undermarker-large"></div>`;
-        }
-        if (countAtZoom > 10) {
-          markerCountDiv += `<div class="marker-icon-circle undermarker undermarker-medium"></div>`;
-        }
-        markerCountDiv += `<div class="marker-icon-circle undermarker undermarker-small"></div>`;
-      }
-    }
+    // if (entry.entries_under_geokey) {
+    //   const counts = entry.entries_under_geokey.split(",");
+    //   const countAtZoom = parseInt(counts[zoom - entry.geokey.length]);
+    //   if (countAtZoom > 1) {
+    //     if (countAtZoom > 100) {
+    //       markerCountDiv += `<div class="marker-icon-circle undermarker undermarker-large"></div>`;
+    //     }
+    //     if (countAtZoom > 10) {
+    //       markerCountDiv += `<div class="marker-icon-circle undermarker undermarker-medium"></div>`;
+    //     }
+    //     markerCountDiv += `<div class="marker-icon-circle undermarker undermarker-small"></div>`;
+    //   }
+    // }
 
     return `
     

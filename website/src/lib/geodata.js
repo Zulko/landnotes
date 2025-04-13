@@ -1,4 +1,4 @@
-import JSZip from "jszip";
+import {inflate} from "pako";
 
 /**
  * Decodes a hybrid geohash to its center latitude and longitude coordinates
@@ -79,7 +79,15 @@ export function decodeHybridGeohash(geohash) {
     };
 }
 
-
+const decodeHybridGeohashCache = new Map();
+function cachedDecodeHybridGeohash(geohash) {
+  if (decodeHybridGeohashCache.has(geohash)) {
+    return decodeHybridGeohashCache.get(geohash);
+  }
+  const result = decodeHybridGeohash(geohash);
+  decodeHybridGeohashCache.set(geohash, result);
+  return result;
+}
 
 export function enrichPrefixTreeWithBounds(
     tree, 
@@ -363,7 +371,7 @@ export function getOverlappingGeoEncodings({minLat, minLon, maxLat, maxLon}, zoo
 
 function addLatLonToEntry(entry) {
     const full_geokey = `${entry.geokey}${entry.geokey_complement}`;
-    const coords = decodeHybridGeohash(full_geokey);
+    const coords = cachedDecodeHybridGeohash(full_geokey);
     entry.lat = coords.lat;
     entry.lon = coords.lon;
 }
@@ -494,6 +502,26 @@ export function geohashToLatLon(geohash) {
   return { lat, lon };
 }
 
+function processEntriesUnderGeokey(entry) {
+  if (entry.entries_under_geokey) {
+    // Decompress entries_under_geokey if it's compressed with zlib
+    const compressedData = new Uint8Array(entry.entries_under_geokey);
+    const decompressed = inflate(compressedData, { to: 'string' });
+    const entriesUnderGeokey = JSON.parse(decompressed);
+    entry.entries_under_geokey = entriesUnderGeokey;
+    
+    // Convert geohashes to lat/lon coordinates for each key in entries_under_geokey
+    for (const key in entry.entries_under_geokey) {
+      if (entry.entries_under_geokey.hasOwnProperty(key)) {
+        const geohashes = entry.entries_under_geokey[key];
+        entry.entries_under_geokey[key] = geohashes.map(geohash => {
+          const coords = decodeHybridGeohash(geohash);
+          return {geokey: `dot-${geohash}`, ...coords};
+        });
+      }
+    }
+  }
+}
 /**
  * Fetches geodata for a list of geokeys, using cached entries when available
  * 
@@ -533,8 +561,10 @@ export async function getGeodataFromGeokeys(geoKeys, cachedEntries) {
 
   const queryJSON = await query.json();
   const entries = queryJSON.results;
+  console.time("addLatLonToEntry");
   entries.forEach(addLatLonToEntry);
-
+  entries.forEach(processEntriesUnderGeokey);
+  console.timeEnd("addLatLonToEntry");
   // Update the cache
   geoKeysNotInCachedEntries.forEach((geokey) => {
     cachedEntries.set(geokey, null);
@@ -557,73 +587,35 @@ export async function getGeodataFromBounds(bounds, maxZoomLevel, cachedEntries) 
     (_, i) => i + 1
   ).flatMap((zoomLevel) => getOverlappingGeoEncodings(bounds, zoomLevel));
 
-  // Use the new function to fetch entries
-  return await getGeodataFromGeokeys(geoKeys, cachedEntries);
+  const geokeyResults = await getGeodataFromGeokeys(geoKeys, cachedEntries);
+  
+  const filteredResults = geokeyResults.filter((entry) => {
+    return entry.lat >= bounds.minLat && entry.lat <= bounds.maxLat &&
+      entry.lon >= bounds.minLon && entry.lon <= bounds.maxLon;
+  });
+  return geokeyResults;
 }
 
 export async function getEntriesfromText(searchText) {
-    try {
-      const response = await fetch("/query/geo-text-search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ searchText }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Search request failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      const entries = data["results"];
-      entries.forEach(addLatLonToEntry);
-      return entries;
-    } catch (error) {
-      console.error("Error searching for locations:", error);
-      return [];
-    }
-  }
-
-/**
- * Loads and processes hot spots data from a zipped JSON file
- * @param {string} url - URL of the zipped JSON file
- * @returns {Promise<object>} - The processed hot spots tree
- */
-export async function loadHotSpotsData(url = "/geodata/hot_spots_tree.zip") {
   try {
-    // Fetch the zip file
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to load hot spots data: ${response.status}`);
-    }
-
-    // Get the zip file as array buffer
-    const zipData = await response.arrayBuffer();
-
-    // Use JSZip to extract the contents
-    const zip = await JSZip.loadAsync(zipData);
-
-    // Find the JSON file in the zip (assuming there's only one JSON file)
-    let jsonFile;
-    zip.forEach((relativePath, zipEntry) => {
-      if (relativePath.endsWith(".json")) {
-        jsonFile = zipEntry;
-      }
+    const response = await fetch("/query/geo-text-search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ searchText }),
     });
 
-    if (!jsonFile) {
-      throw new Error("No JSON file found in the zip archive");
+    if (!response.ok) {
+      throw new Error(`Search request failed with status ${response.status}`);
     }
 
-    // Extract and parse the JSON file
-    const jsonContent = await jsonFile.async("string");
-    const prefixTree = JSON.parse(jsonContent);
-
-    // Enrich the prefix tree with bounds
-    return enrichPrefixTreeWithBounds(prefixTree);
+    const data = await response.json();
+    const entries = data["results"];
+    entries.forEach(addLatLonToEntry);
+    return entries;
   } catch (error) {
-    console.error("Error loading hot spots data:", error);
-    throw error;
+    console.error("Error searching for locations:", error);
+    return [];
   }
 }

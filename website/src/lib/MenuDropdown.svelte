@@ -39,7 +39,7 @@
   <!-- Menu dropdown -->
     <div class="menu-dropdown" on:blur={handleMenuBlur} tabindex="-1">
       <div class="menu-group">
-        <span class="menu-label">Mode:</span>
+        <span class="menu-label">What to show?</span>
         <div class="menu-options">
           <button 
             class="mode-option {searchMode === 'places' ? 'active' : ''}" 
@@ -86,17 +86,20 @@
   .menu-group {
     padding: 10px;
     border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .menu-label {
-    display: block;
     font-weight: 500;
-    margin-bottom: 5px;
     color: #666;
   }
 
   .menu-options {
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     gap: 5px;
   }
 
@@ -107,6 +110,7 @@
     background: white;
     cursor: pointer;
     font-size: 14px;
+    white-space: nowrap;
   }
 
   .mode-option.active {

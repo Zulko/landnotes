@@ -143,7 +143,6 @@
     
     <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
-      <div class="tooltip">Menu</div>
       <button class="menu-button" on:click={toggleMenu} aria-label="Menu">
         ☰
       </button>
@@ -239,11 +238,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #f5f5f5;
     height: 28px;
     width: 28px;
     border-radius: 50%;
-    margin-right: 5px;
+    margin-right: 2px;
   }
 
   .menu-button {
@@ -262,38 +260,6 @@
 
   .menu-button-wrapper:hover {
     background-color: #e0e0e0;
-  }
-
-  .menu-button-wrapper .tooltip {
-    visibility: hidden;
-    position: absolute;
-    bottom: -35px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    text-align: center;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-  }
-
-  .menu-button-wrapper:hover .tooltip {
-    visibility: visible;
-    opacity: 1;
-  }
-
-  .menu-button-wrapper .tooltip::after {
-    content: "";
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: transparent transparent rgba(0, 0, 0, 0.7) transparent;
   }
 
   .clear-button {

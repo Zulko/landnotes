@@ -50,7 +50,6 @@ export default {
 			            allResults.results = allResults.results.concat(batchResult.results);
 			        }
 			    }
-     			
 				return new Response(JSON.stringify(allResults), { headers: { "Content-Type": "application/json" } });
 			case '/query/geo-text-search':
 				// Text-based search using the fts5 table - optimized version

@@ -8,16 +8,14 @@
 
   // ===== PROPS =====
   export let markers = [];
-  export let hotSpots = [];
 
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
   let markerLayer = null;
-  let hotSpotLayer = null;
   let isFlying = false;
   let hoveredMarkerId = null;
-  let existingMapMarkers = new Map(); // key: marker.geokey, value: L.marker object
+  let currentMarkers = new Map(); // key: marker.geokey, value: L.marker object
   let resizeObserver;
   let boundsChangeTimeout = null;
   let handleBoundChangesAfterFlyToTimeOut = null;
@@ -27,7 +25,6 @@
   onMount(() => {
     initializeMap();
     updateMarkers();
-    updateHotSpots();
 
     // Initialize ResizeObserver
     resizeObserver = new ResizeObserver(() => {
@@ -55,11 +52,6 @@
   $: if (markers && map) {
     updateMarkers();
   }
-
-  $: if (hotSpots && map) {
-    updateHotSpots();
-  }
-
   // ===== MAP INITIALIZATION =====
   function initializeMap() {
     // Initialize the map
@@ -85,7 +77,7 @@
       {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 18,
+        maxZoom: 19,
         minZoom: 2,
       }
     ).addTo(map);
@@ -96,9 +88,6 @@
         position: "bottomright",
       })
       .addTo(map);
-
-    // Create a custom pane for hotspots with z-index lower than markers but higher than tiles
-
     // Create layer groups for different marker types
     const markerLayers = [
       { name: "dot", zIndex: 200 },
@@ -106,8 +95,6 @@
       { name: "full", zIndex: 400 },
       { name: "hovered", zIndex: 500 },
       { name: "selected", zIndex: 600 },
-
-      { name: "hotspot", zIndex: 100 },
     ];
 
     markerLayers.forEach((layer) => {
@@ -115,7 +102,6 @@
       map.getPane(layer.name).style.zIndex = layer.zIndex;
     });
 
-    hotSpotLayer = L.layerGroup().addTo(map);
     markerLayer = L.layerGroup().addTo(map);
 
     // Add event listeners
@@ -210,19 +196,29 @@
       }
 
       // Check if marker already exists
-      if (existingMapMarkers.has(marker.geokey)) {
+      if (currentMarkers.has(marker.geokey)) {
         updateExistingMarker(marker, displayClass, pane);
       } else {
         createNewMarker(marker, displayClass, pane);
+      }
+      const underMarkers = marker.entries_under_geokey[map.getZoom() - 1];
+      if (underMarkers) {
+        for (const underMarker of underMarkers) {
+          if (!currentMarkers.has(underMarker.geokey)) {
+            createNewMarker(underMarker, "dot", "dot");
+          }
+          processedIds.add(underMarker.geokey);
+        }
       }
     }
 
     // Remove markers that are no longer in the data
     removeStaleMarkers(processedIds);
+
   }
 
   function updateExistingMarker(marker, displayClass, pane) {
-    const { existingMarker, existingClass } = existingMapMarkers.get(
+    const { existingMarker, existingClass } = currentMarkers.get(
       marker.geokey
     );
 
@@ -248,7 +244,7 @@
       existingMarker.setIcon(icon);
 
       // Update the stored display class
-      existingMapMarkers.set(marker.geokey, {
+      currentMarkers.set(marker.geokey, {
         existingMarker,
         displayClass,
       });
@@ -258,80 +254,47 @@
 
 
   function createNewMarker(entry, displayClass, pane) {
-    const marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
+    let marker;
+    if (displayClass === "dot") {
+      marker = L.circleMarker([entry.lat, entry.lon], {
+        radius: 4,
+        weight: 1,
+        color: "#777",
+        fillColor: "white",
+        fillOpacity: 1,
+        pane: pane,
+      });
+    } else {
+      marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
+      // Add event handlers
+      marker.on("click", () => {
+        dispatch("markerclick", entry);
+      });
 
-    // Add event handlers
-    marker.on("click", () => {
-      dispatch("markerclick", entry);
-    });
-
-    marker.on("mouseover", () => {
-      if (hoveredMarkerId !== entry.geokey) {
-        hoveredMarkerId = entry.geokey;
-        updateMarkers();
-      }
-    });
-
-    // Store reference to the new marker
-    existingMapMarkers.set(entry.geokey, {
+      marker.on("mouseover", () => {
+        if (hoveredMarkerId !== entry.geokey) {
+          hoveredMarkerId = entry.geokey;
+          updateMarkers();
+        }
+      });
+    }
+    marker.addTo(markerLayer);
+    currentMarkers.set(entry.geokey, {
       existingMarker: marker,
       displayClass: displayClass,
     });
+    
 
-    // Add marker to the map
-    marker.addTo(markerLayer);
+
   }
 
   function removeStaleMarkers(processedIds) {
-    for (const [markerId, entry] of existingMapMarkers.entries()) {
+    for (const [markerId, entry] of currentMarkers.entries()) {
       if (!processedIds.has(markerId)) {
         markerLayer.removeLayer(entry.existingMarker);
-        existingMapMarkers.delete(markerId);
+        currentMarkers.delete(markerId);
       }
     }
-  }
-
-  // Add this new function for handling hotspots
-  function updateHotSpots() {
-    if (!map || !hotSpotLayer) return;
-    // Clear existing hotspots
-    hotSpotLayer.clearLayers();
-
-    // Create all rectangles first, then add them as a group
-    const vectors = hotSpots.map((hotSpot) => {
-      // Calculate center point of the hotspot
-      if (hotSpot.minLat !== undefined) {
-        const centerLat = (hotSpot.minLat + hotSpot.maxLat) / 2;
-        const centerLon = (hotSpot.minLon + hotSpot.maxLon) / 2;
-
-        return L.circleMarker([centerLat, centerLon], {
-          radius: map ? Math.max(2, Math.min(5, 0.5 * map.getZoom())) : 3,
-          color: "black",
-          opacity: map ? Math.max(0.3, Math.min(8, 0.08 * map.getZoom())) : 0.1,
-          weight: 1,
-          fillColor: "white",
-          fillOpacity: map
-            ? Math.max(0.3, Math.min(0.8, 0.08 * map.getZoom()))
-            : 0.1,
-          pane: "overlayPane",
-        });
-      } else {
-        const points = hotSpot.map((point) => [point.lat, point.lon]);
-        return L.polygon(points, {
-          color: "black",
-          fillColor: "orange",
-          fillOpacity: map
-            ? Math.max(0.3, Math.min(0.5, 0.05 * map.getZoom()))
-            : 0.1,
-          weight: map ? Math.max(0, Math.min(2, 0.3 * map.getZoom() - 2)) : 1,
-          opacity: 0.5,
-          noClip: false,
-        });
-      }
-    });
-
-    // Add all rectangles to the layer at once
-    L.featureGroup(vectors).addTo(hotSpotLayer);
   }
 
   // ===== EXPORTED FUNCTIONS =====
@@ -347,7 +310,6 @@
 ></div>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
   .map-container {
     width: 100%;
@@ -492,26 +454,6 @@
     z-index: 1;
   }
 
-  :global(.undermarker) {
-    position: absolute;
-    display: flex;
-    background-color: white !important;
-    border: 0.5px solid #444 !important;
-    left: 50%;
-    z-index: -50 !important;
-  }
-  :global(.undermarker-large) {
-    top: -6px;
-    transform: translateX(-41%);
-  }
-  :global(.undermarker-medium) {
-    top: -4px;
-    transform: translateX(-44%);
-  }
-  :global(.undermarker-small) {
-    top: -2px;
-    transform: translateX(-47%);
-  }
   :global(.geo-marker-popup) {
     border-radius: 0px;
     padding: 0;
