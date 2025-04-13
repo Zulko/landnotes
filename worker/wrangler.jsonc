@@ -27,7 +27,13 @@
 			"database_name": "landnotes-geo-db",
 			"database_id": "77e642fc-e1d6-4996-bc1d-11bcb077a838",
 			"preview_database_id": "local-landnotes-geo-db"
-		}
+		},
+		{
+			"binding": "eventsDB",
+			"database_name": "landnotes-events-db",
+			"database_id": "2a596312-20f2-4c93-8ffd-8fa6ef9c5c12"
+		},
+		
 	],
 	/**
 	 * Smart Placement
