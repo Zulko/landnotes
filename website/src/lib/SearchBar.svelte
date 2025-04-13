@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
-  import { getEntriesfromText } from "./geodata";
+  import { getEntriesfromText } from "./geo/geodata";
   import MenuDropdown from "./MenuDropdown.svelte";
   
   export let searchQuery = "";

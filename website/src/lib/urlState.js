@@ -1,4 +1,4 @@
-import { geohashToLatLon, latLonToGeohash } from './geodata';
+import { geohashToLatLon, latLonToGeohash } from './geo/geohash';
 
 /**
  * Updates the URL with current application state without reloading the page

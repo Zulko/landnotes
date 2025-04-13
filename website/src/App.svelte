@@ -15,7 +15,7 @@
   import {
     getGeodataFromBounds,
     getGeodataFromGeokeys,
-  } from "./lib/geodata";
+  } from "./lib/geo/geodata";
 
   // -------------------------
   // STATE MANAGEMENT
@@ -27,7 +27,6 @@
   let mapComponent;
   let zoom = 1;
   let location = null;
-  let targetMapLocation = null;
   let markers = [];
   let cachedEntries = new Map();
 
