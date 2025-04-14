@@ -83,6 +83,10 @@
   $: if (previousSelectedMarkerId !== selectedMarkerId) {
     handleNewSelectedMarker(selectedMarkerId)
   }
+
+  $: if (date) {
+    console.log("date", date)
+  }
   // -------------------------
   // EVENT HANDLERS
   // -------------------------

@@ -37,11 +37,15 @@
   }
   
   function updateDate(field, value) {
-    const newValue = parseInt(value, 10);
-    if (!isNaN(newValue)) {
-      date[field] = newValue;
-      dispatch('change', { date, isValid: isDateValid });
-    }
+    const newDate = { ...date };
+    newDate[field] = value;
+    const daysInMonth = new Date(
+      newDate.year < 0 ? newDate.year + 1 : newDate.year, 
+      newDate.month, 
+      0
+    ).getDate();
+    newDate.day = Math.min(Math.max(newDate.day, 1), daysInMonth);
+    date = newDate;
   }
 </script>
 
@@ -49,15 +53,15 @@
   <input
       type="number"
       min="1"
-      max="31"
-      bind:value={date.day}
-      on:change={() => date = { ...date }}
+      max={new Date(date.year < 0 ? date.year + 1 : date.year, date.month, 0).getDate()}
+      value={date.day}
+      on:change={(e) => updateDate('day', parseInt(e.target.value))}
       placeholder="Day"
       aria-label="Day"
   />
   <select 
-    bind:value={date.month}
-    on:change={() => date = { ...date }}
+    value={date.month}
+    on:change={(e) => updateDate('month', parseInt(e.target.value))}
   >
     {#each Array.from({length: 12}, (_, i) => 1 + i) as month}
       <option value={month}>{monthAbbreviations[month-1]}</option>
@@ -65,11 +69,10 @@
   </select>
     <input
       type="number"
-      bind:value={date.year}
-      on:change={() => date = { ...date }}
+      value={date.year}
+      on:change={(e) => updateDate('year', parseInt(e.target.value))}
       min="-10000"
       max="2000"
-      class:invalid={!isDateValid}
       placeholder="Year"
       aria-label="Year"
     />
@@ -128,27 +131,7 @@
     background-color: #fff;
     box-shadow: 0 0 0 1px rgba(229, 57, 53, 0.3);
   }
-  
-  span:not(.separator) {
-    color: #718096;
-    font-weight: 400;
-  }
-  
-  .error-message {
-    color: #e53935;
-    font-size: 0.75rem;
-    margin-left: 8px;
-    position: absolute;
-    bottom: -20px;
-    left: 0;
-    white-space: nowrap;
-    padding: 2px 8px;
-    background-color: rgba(253, 240, 239, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 4px;
-    font-weight: 500;
-  }
+
 
   /* Style the spinner buttons to be always visible */
   input[type="number"]::-webkit-inner-spin-button,
