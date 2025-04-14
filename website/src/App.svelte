@@ -24,11 +24,11 @@
   /**
    * Map configuration and state
    */
-  let mapComponent;
+  let mode = "places";
   let zoom = 1;
   let location = null;
   let markers = [];
-  let cachedEntries = new Map();
+  
 
   /**
    * UI state
@@ -40,8 +40,10 @@
   /**
    * Content state
    */
+  let mapComponent;
   let wikiPage = "";
   let selectedMarkerId = null;
+  let cachedEntries = new Map();
 
   // -------------------------
   // LIFECYCLE HOOKS
@@ -187,11 +189,6 @@
    */
   function handleSearchSelect(event) {
     selectedMarkerId = event.detail.geokey;
-    targetMapLocation = {
-      lat: event.detail.lat,
-      lon: event.detail.lon,
-      zoom: Math.max(12, zoom), // Ensure zoom is at least 12
-    };
     mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: Math.max(12, zoom), flyDuration: 1})
   }
 
@@ -251,7 +248,7 @@
         on:markerclick={handleMarkerClick}
       />
       <div class="search-wrapper">
-        <SearchBar on:select={handleSearchSelect} />
+        <SearchBar on:select={handleSearchSelect} bind:mode />
       </div>
     </div>
   </div>

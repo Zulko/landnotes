@@ -2,9 +2,9 @@
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   import { getEntriesfromText } from "./geo/geodata";
   import MenuDropdown from "./MenuDropdown.svelte";
-  
+  import DateRangePicker from "./DateRangePicker.svelte";
   export let searchQuery = "";
-  export let searchMode = "places";
+  export let mode = "places";
 
   const dispatch = createEventDispatcher();
 
@@ -14,6 +14,8 @@
   let debounceTimer = null;
   let selectedIndex = -1; // Track the currently selected suggestion
   let isMenuOpen = false; // State for menu dropdown visibility
+
+  const basePath = import.meta.env.BASE_URL;
 
   // Debounced search function
   function debouncedSearch() {
@@ -48,11 +50,6 @@
       // Clear any pending search
       if (debounceTimer) clearTimeout(debounceTimer);
     }
-  }
-
-  function handleModeChange(event) {
-    searchMode = event.detail.mode;
-    dispatch("modeChange", { mode: searchMode });
   }
 
   // Toggle menu open/closed
@@ -119,7 +116,7 @@
   <div class="search-input-wrapper">
     <input
       type="text"
-      placeholder="Enter a place name"
+      placeholder="Search a place"
       bind:value={searchQuery}
       on:focus={handleFocus}
       on:blur={handleBlur}
@@ -143,8 +140,12 @@
     
     <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
-      <button class="menu-button" on:click={toggleMenu} aria-label="Menu">
-        ☰
+      <button class="menu-button" on:click={toggleMenu} title="Menu">
+        <img
+          src={`${basePath}icons/menu.svg`}
+          alt="Menu"
+          class="icon"
+        />
       </button>
     </div>
   </div>
@@ -181,10 +182,13 @@
   {/if}
 
   <!-- Menu component -->
+  {#if mode === "events"}
+    <DateRangePicker />
+  {/if}
   {#if isMenuOpen}
   <MenuDropdown 
-    {searchMode} 
-    on:modeChange={handleModeChange}
+    bind:mode
+    isMenuOpen={isMenuOpen}
     on:closeMenu={handleCloseMenu}
   />
   {/if}
@@ -234,14 +238,14 @@
 
   .menu-button-wrapper {
     position: absolute;
-    right: 5px;
+    right: 1px;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 28px;
     width: 28px;
     border-radius: 50%;
-    margin-right: 2px;
+    padding: 5px
   }
 
   .menu-button {
@@ -259,7 +263,7 @@
   }
 
   .menu-button-wrapper:hover {
-    background-color: #e0e0e0;
+    background-color: #eee;
   }
 
   .clear-button {

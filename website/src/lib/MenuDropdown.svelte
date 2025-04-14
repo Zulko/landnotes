@@ -1,7 +1,7 @@
 <script>
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   
-  export let searchMode = "places";
+  export let mode = "places";
   export let isMenuOpen = false;
   
   const dispatch = createEventDispatcher();
@@ -11,11 +11,6 @@
     setTimeout(() => {
       dispatch("closeMenu");
     }, 200);
-  }
-
-  function setMode(mode) {
-    searchMode = mode;
-    dispatch("modeChange", { mode });
   }
 
   function handleClickOutside(event) {
@@ -42,19 +37,28 @@
         <span class="menu-label">What to show?</span>
         <div class="menu-options">
           <button 
-            class="mode-option {searchMode === 'places' ? 'active' : ''}" 
-            on:click={() => setMode('places')}
+            class="mode-option {mode === 'places' ? 'active' : ''}" 
+            on:click={() => mode = 'places'}
           >
             Places
           </button>
           <button 
-            class="mode-option {searchMode === 'events' ? 'active' : ''}" 
-            on:click={() => setMode('events')}
+            class="mode-option {mode === 'events' ? 'active' : ''}" 
+            on:click={() => mode = 'events'}
           >
             Events
           </button>
         </div>
       </div>
+      {#if mode === 'events'}
+        <div class="menu-group">
+          <span class="menu-label">Show</span>
+          <select class="mode-option">
+            <option value="overlapping">events overlapping with the date range</option>
+            <option value="inside">events strictly within the date range</option>
+          </select>
+        </div>
+      {/if}
       <a href="/blog-post" class="menu-item">Read the blog post</a>
       <a href="https://github.com/yourusername/yourrepo" target="_blank" rel="noopener noreferrer" class="menu-item">
         Go to the project source on GitHub

@@ -31,9 +31,21 @@
 		{
 			"binding": "eventsDB",
 			"database_name": "landnotes-events-db",
-			"database_id": "2a596312-20f2-4c93-8ffd-8fa6ef9c5c12"
+			"database_id": "2a596312-20f2-4c93-8ffd-8fa6ef9c5c12",
+			"preview_database_id": "local-landnotes-events-db"
 		},
-		
+		{
+			"binding": "eventsByPageDB",
+			"database_name": "landnotes-events-by-page-db",
+			"database_id": "000860d8-e326-4784-96c0-452f0753c261",
+			"preview_database_id": "local-landnotes-events-by-page-db"
+		},
+		{
+			"binding": "eventsByMonthDB",
+			"database_name": "landnotes-events-by-month-db",
+			"database_id": "b6775587-6490-46fe-949b-0bc1d0a128e5",
+			"preview_database_id": "local-landnotes-events-by-month-db"
+		}
 	],
 	/**
 	 * Smart Placement
