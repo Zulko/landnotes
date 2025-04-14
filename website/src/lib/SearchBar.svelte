@@ -189,7 +189,6 @@
   {#if isMenuOpen}
   <MenuDropdown 
     bind:mode
-    isMenuOpen={isMenuOpen}
     on:closeMenu={handleCloseMenu}
   />
   {/if}

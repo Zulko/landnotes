@@ -2,7 +2,7 @@
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   
   export let mode = "places";
-  export let isMenuOpen = false;
+  export let overlapMode = "overlapping";
   
   const dispatch = createEventDispatcher();
 
@@ -15,7 +15,7 @@
 
   function handleClickOutside(event) {
     // Close menu when clicking outside
-    if (isMenuOpen && !event.target.closest('.menu-container') && 
+    if (!event.target.closest('.menu-container') && 
         !event.target.closest('.menu-button')) {
       dispatch("closeMenu");
     }
@@ -50,9 +50,9 @@
           </button>
         </div>
         {#if mode === 'events'}
-              <select class="mode-option">
-                <option value="overlapping">overlapping with the date range</option>
-                <option value="inside">strictly within the date range</option>
+              <select class="mode-option" bind:value={overlapMode}>
+                <option value="overlapping">overlapping with the date</option>
+                <option value="inside">strictly at the date</option>
               </select>
           {/if}
       </div>
