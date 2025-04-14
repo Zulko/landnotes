@@ -2,12 +2,13 @@
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   import { getEntriesfromText } from "./geo/geodata";
   import MenuDropdown from "./MenuDropdown.svelte";
-  import DateRangePicker from "./DateRangePicker.svelte";
-  export let searchQuery = "";
+  import DatePicker from "./DatePicker.svelte";
+  
   export let mode = "places";
-
+  export let date;
   const dispatch = createEventDispatcher();
 
+  export let searchQuery = "";
   let searchResults = [];
   let isActive = false;
   let isLoading = false;
@@ -182,8 +183,8 @@
   {/if}
 
   <!-- Menu component -->
-  {#if mode === "events"}
-    <DateRangePicker />
+  {#if mode === "events" && searchResults.length == 0}
+    <DatePicker bind:date/>
   {/if}
   {#if isMenuOpen}
   <MenuDropdown 

@@ -25,6 +25,7 @@
    * Map configuration and state
    */
   let mode = "places";
+  let date = { year: 1810, month: 3, day: null };
   let zoom = 1;
   let location = null;
   let markers = [];
@@ -248,7 +249,7 @@
         on:markerclick={handleMarkerClick}
       />
       <div class="search-wrapper">
-        <SearchBar on:select={handleSearchSelect} bind:mode />
+        <SearchBar on:select={handleSearchSelect} bind:mode bind:date />
       </div>
     </div>
   </div>

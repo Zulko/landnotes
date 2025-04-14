@@ -34,31 +34,28 @@
   <!-- Menu dropdown -->
     <div class="menu-dropdown" on:blur={handleMenuBlur} tabindex="-1">
       <div class="menu-group">
-        <span class="menu-label">What to show?</span>
+        <!-- <span class="menu-label">What to show?</span> -->
         <div class="menu-options">
           <button 
             class="mode-option {mode === 'places' ? 'active' : ''}" 
             on:click={() => mode = 'places'}
           >
-            Places
+            Show places
           </button>
           <button 
             class="mode-option {mode === 'events' ? 'active' : ''}" 
             on:click={() => mode = 'events'}
           >
-            Events
+            Show events
           </button>
         </div>
+        {#if mode === 'events'}
+              <select class="mode-option">
+                <option value="overlapping">overlapping with the date range</option>
+                <option value="inside">strictly within the date range</option>
+              </select>
+          {/if}
       </div>
-      {#if mode === 'events'}
-        <div class="menu-group">
-          <span class="menu-label">Show</span>
-          <select class="mode-option">
-            <option value="overlapping">events overlapping with the date range</option>
-            <option value="inside">events strictly within the date range</option>
-          </select>
-        </div>
-      {/if}
       <a href="/blog-post" class="menu-item">Read the blog post</a>
       <a href="https://github.com/yourusername/yourrepo" target="_blank" rel="noopener noreferrer" class="menu-item">
         Go to the project source on GitHub
@@ -93,18 +90,14 @@
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-
-  .menu-label {
-    font-weight: 500;
-    color: #666;
+    flex-wrap: wrap;
   }
 
   .menu-options {
     display: flex;
     flex-direction: row;
-    flex-wrap: nowrap;
     gap: 5px;
+    flex-wrap: wrap;
   }
 
   .mode-option {
@@ -138,5 +131,15 @@
 
   .menu-item:hover {
     background-color: #f5f5f5;
+  }
+
+  select.mode-option {
+    padding: 5px 8px 5px 10px;
+    max-width: 100%;
+    width: auto;
+    font-size: 13px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 1px;
   }
 </style> 
