@@ -142,9 +142,16 @@
   .date-range-picker {
     display: flex;
     align-items: center;
-    gap: 5px;
-    font-family: sans-serif;
+    justify-content: center;
+    gap: 8px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     flex-wrap: nowrap;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin: 0 auto;
+    width: fit-content;
   }
   
   .date-picker {
@@ -163,6 +170,11 @@
     padding: 3px 6px;
     border: 1px solid #ccc;
     border-radius: 3px;
+  }
+  
+  /* Make month and day inputs smaller */
+  input[min="1"] {
+    width: 35px;
   }
   
   input.invalid {
