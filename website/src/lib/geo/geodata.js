@@ -136,7 +136,6 @@ export async function getGeodataFromBounds(bounds, maxZoomLevel, cachedEntries) 
     return entry.lat >= bounds.minLat && entry.lat <= bounds.maxLat &&
       entry.lon >= bounds.minLon && entry.lon <= bounds.maxLon;
   });
-  console.log("dotMarkers", dotMarkers.length);
   return {dotMarkers, entriesInBounds};
 }
 

@@ -7,8 +7,7 @@
   const dispatch = createEventDispatcher();
 
   // ===== PROPS =====
-  export let mapEntries = [];
-  export let mapDots = [];
+  let {mapEntries, mapDots} = $props();
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
@@ -51,12 +50,18 @@
 
   // ===== REACTIVE DECLARATIONS =====
 
-  $: if (mapEntries && map) {
-    updateMarkers();
-  }
-  $: if (mapDots && map) {
-    updateDotMarkers();
-  }
+  $effect(() => {
+    if (mapEntries && map) {
+      updateMarkers();
+    }
+  });
+
+  $effect(() => {
+    if (mapDots && map) {
+      updateDotMarkers();
+    }
+  });
+
   // ===== MAP INITIALIZATION =====
   function initializeMap() {
     // Initialize the map
@@ -295,7 +300,7 @@
 <div
   class="map-container"
   bind:this={mapElement}
-  on:resize={handleResize}
+  onresize={handleResize}
 ></div>
 
 <style>

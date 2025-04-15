@@ -41,7 +41,6 @@ export function updateURLParams(state, addToHistory = true) {
     console.log("adding to history", newUrl);
     window.history.pushState(state, '', newUrl);
   } else {
-    console.log("heeeeeeeeeeeeeeeere")
     console.log("replacing current history entry", newUrl);
     window.history.replaceState(state, '', newUrl);
   }
@@ -59,7 +58,6 @@ export function readURLParams() {
   // Get map position parameters
   const result = {}
   const location = params.get('location')
-  console.log("location", location)
   if (location) {
     const [geohash, zoom] = location.split('-');
     result.location = geohashToLatLon(geohash);
@@ -75,8 +73,6 @@ export function readURLParams() {
     result.mode = 'places';
     result
   }
-  console.log("result", result)
-
   return result;
 }
 

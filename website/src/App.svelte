@@ -120,12 +120,12 @@
   // -------------------------
 
   async function handleNewSelectedMarker(newSelectedMarkerId) {
+    console.log("handleNewSelectedMarker");
     previousSelectedMarkerId = state.selectedMarkerId
     let newMarkers;
     if (newSelectedMarkerId) {
       const query = await getGeodataFromGeokeys([newSelectedMarkerId], cachedEntries);
       const selectedMarker = query[0];
-      console.log("boooooom");
       openWikiPane(selectedMarker.page_title);
       if (!mapEntries.some(marker => marker.geokey === newSelectedMarkerId)) {
         newMarkers = [...mapEntries, selectedMarker];
@@ -181,6 +181,7 @@
    * Process map bounds changes and fetch new markers
    */
   async function handleBoundsChange(event) {
+    console.log("handleBoundsChange");
     const center = event.detail.center;
 
     // Update URL with new location
@@ -318,16 +319,19 @@
           on:select={handleSearchSelect}
           on:modeChange={(event) => {
             if (state) {
+              console.log("modeChange");
               state = { ...state, mode: event.detail }
             }
           }}
           on:dateChange={(event) => {
             if (state) {
+              console.log("dateChange", event.detail, state.date);
               state = { ...state, date: event.detail }
             }
           }}
           on:strictDateChange={(event) => {
             if (state) {
+              console.log("strictDateChange");
               state = { ...state, strictDate: event.detail }
             }
           }}
