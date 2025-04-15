@@ -66,7 +66,11 @@
     
     // Read URL parameters when the app loads
     const urlState = readURLParams();
+    if (urlState.selectedMarkerId) {
+      handleNewSelectedMarker(urlState.selectedMarkerId);
+    }
     appState = {...stateDefaults, ...urlState};
+    
     if (urlState.location) {
       mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0})
     } else {
@@ -92,8 +96,11 @@
     debounce((s) => updateURLParamsOnStateChange(s), 500)($state.snapshot(appState));
   });
 
-    function onPaneClose() {
-    appState = {...appState, selectedMarkerId: null};
+  function onPaneClose() {
+    isPaneOpen = false;
+    wikiPage = "";
+    appState.selectedMarkerId = null;
+    handleNewSelectedMarker(null);
     setTimeout(() => mapComponent.invalidateMapSize(), 50);
   };
 
@@ -118,13 +125,14 @@
 
     console.log("handleNewSelectedMarker");
     if (selectedMarkerId === appState.selectedMarkerId) return;
-    appState = {...appState, selectedMarkerId}
     
     let newMarkers;
     if (selectedMarkerId) {
       const query = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
       const selectedMarker = query[0];
-      openWikiPane(selectedMarker.page_title);
+      wikiPage = selectedMarker.page_title;
+      console.log("wikiPaaaaaaaaaaaaaaaaaaaaaage", wikiPage);
+      isPaneOpen = true;
       if (!mapEntries.some(marker => marker.geokey === selectedMarkerId)) {
         newMarkers = [...mapEntries, selectedMarker];
       } else {
@@ -132,7 +140,8 @@
       }
     }
     else {
-      closeWikiPane();
+      wikiPage = "";
+      isPaneOpen = false;
       newMarkers = [...mapEntries];
       
     }
@@ -216,6 +225,7 @@
     if (appState.selectedMarkerId !== selectedMarkerId) {
       setTimeout(() => {
         handleNewSelectedMarker(selectedMarkerId)
+        appState.selectedMarkerId = selectedMarkerId;
       }, 100)
       mapComponent.goTo({location, zoom: appState.zoom, flyDuration: 0.4})
     } else {
@@ -228,26 +238,17 @@
    * Handle search selection
    */
   function onSearchSelect({geokey, lat, lon}) {
-    handleNewSelectedMarker(geokey)
+    const selectedMarkerId = geokey;
+    if (appState.selectedMarkerId !== selectedMarkerId) {
+      handleNewSelectedMarker(selectedMarkerId)
+      appState.selectedMarkerId = selectedMarkerId;
+    }
     mapComponent.goTo({location: {lat, lon}, zoom: Math.max(12, appState.zoom), flyDuration: 1})
   }
 
   // -------------------------
   // HELPER FUNCTIONS
   // -------------------------
-
-  /**
-   * Opens the wiki pane with the specified page
-   */
-  function openWikiPane(pageTitle) {
-    wikiPage = pageTitle;
-    isPaneOpen = true;
-  }
-
-  function closeWikiPane() {
-    wikiPage = "";
-    isPaneOpen = false;
-  }
 
   /**
    * Debounce function to limit how often a function is called
@@ -292,7 +293,7 @@
 <main class:has-open-pane={isPaneOpen} class:is-mobile={isMobile}>
   <div class="content-container">
     <div class="wiki-pane-container">
-      <SlidingPane {onPaneClose} page_title={wikiPage} />
+      <SlidingPane {onPaneClose} {wikiPage} />
     </div>
     
     <div class="map-container">

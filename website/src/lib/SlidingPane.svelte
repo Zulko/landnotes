@@ -2,7 +2,8 @@
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
 
   // ===== PROPS =====
-  let {page_title, onPaneClose} = $props();
+  let {wikiPage, onPaneClose} = $props();
+  
   let expanded = $state(false);
   let isMobile = $state(typeof window !== "undefined" && window.innerWidth <= 768);
   const normalWidth = "400px"; // Default width for desktop
@@ -29,12 +30,21 @@
   );
 
   // Generate Wikipedia URL based on device and width
-  let wikiUrl = $derived(page_title
+  let wikiUrl = $derived(wikiPage
     ? isMobile || parseInt(actualWidth) < 768
-      ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(page_title)}`
-      : `https://en.wikipedia.org/wiki/${encodeURIComponent(page_title)}`
+      ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(wikiPage)}`
+      : `https://en.wikipedia.org/wiki/${encodeURIComponent(wikiPage)}`
     : "about:blank"
   );
+
+  $inspect(wikiPage).with((type, value) => {
+    const style = 'background: #222; color: #bada55; font-size: 14px; padding: 4px;';
+    console.log(`%c[${type.toUpperCase()}] wikiPage: ${value}`, style);
+  });
+  $inspect(wikiUrl).with((type, value) => {
+    const style = 'background: #222; color: #bada55; font-size: 14px; padding: 4px;';
+    console.log(`%c[${type.toUpperCase()}] wikiUrl: ${value}`, style);
+  });
 
   // ===== EVENT HANDLERS =====
 
@@ -45,7 +55,7 @@
 
   // Open in new tab
   function onOpenExternal() {
-    if (page_title) {
+    if (wikiPage) {
       window.open(wikiUrl, "_blank");
     }
   }
@@ -95,7 +105,8 @@
     />
 
     <div class="pane-content">
-      {#if page_title}
+      {#if wikiPage}
+        <h1>{wikiPage}</h1>
         <iframe
           title="Wikipedia Content"
           src={wikiUrl}
