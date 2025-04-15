@@ -113,26 +113,21 @@ export async function getGeodataFromBounds(bounds, maxZoomLevel, cachedEntries) 
   let totalEntries = 0;
   for (const result of geokeyResults) {
     if (!result.entries_under_geokey) continue;
-    
-    // Process each zoom level in entries_under_geokey
-    for (const zoomLevel in result.entries_under_geokey) {
-      if (!result.entries_under_geokey.hasOwnProperty(zoomLevel)) continue;
-      
+    if (!result.entries_under_geokey[maxZoomLevel]) continue;
       // Process each entry at this zoom level
-      for (const entry of result.entries_under_geokey[zoomLevel]) {
-        totalEntries++;
-        if (seenCoordinates.has(entry.geokey)) continue;
-        seenCoordinates.add(entry.geokey);
-        
-        // Check if the coordinates are within bounds
-        if (
-          entry.lat >= bounds.minLat && 
-          entry.lat <= bounds.maxLat &&
-          entry.lon >= bounds.minLon && 
-          entry.lon <= bounds.maxLon
-        ) {
-          dotMarkers.push(entry);
-        }
+    for (const entry of result.entries_under_geokey[maxZoomLevel]) {
+      totalEntries++;
+      if (seenCoordinates.has(entry.geokey)) continue;
+      seenCoordinates.add(entry.geokey);
+      
+      // Check if the coordinates are within bounds
+      if (
+        entry.lat >= bounds.minLat && 
+        entry.lat <= bounds.maxLat &&
+        entry.lon >= bounds.minLon && 
+        entry.lon <= bounds.maxLon
+      ) {
+        dotMarkers.push(entry);
       }
     }
   }
@@ -141,7 +136,7 @@ export async function getGeodataFromBounds(bounds, maxZoomLevel, cachedEntries) 
     return entry.lat >= bounds.minLat && entry.lat <= bounds.maxLat &&
       entry.lon >= bounds.minLon && entry.lon <= bounds.maxLon;
   });
-
+  console.log("dotMarkers", dotMarkers.length);
   return {dotMarkers, entriesInBounds};
 }
 
