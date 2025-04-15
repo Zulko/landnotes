@@ -1,10 +1,7 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
-  
-  const dispatch = createEventDispatcher();
   
   // Define a date object to hold the values
-  export let date;
+  let {date = $bindable({year: 1810, month: 3, day: "all"})} = $props();
   
   // Add an array of month abbreviations
   const monthAbbreviations = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -41,7 +38,7 @@
   <select
     value={date.day}
     
-    on:change={(e) => updateDate('day', e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+    onchange={(e) => updateDate('day', e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
     aria-label="Day"
     style="width: 60px;"
   >
@@ -55,7 +52,7 @@
   {/if}
   <select 
     value={date.month}
-    on:change={(e) => updateDate('month', e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+    onchange={(e) => updateDate('month', e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
   >
     {#if date.year < firstYearRequiringMonth}
      <option value="all">All year</option>
@@ -67,7 +64,7 @@
     <input
       type="number"
       value={date.year}
-      on:change={(e) => updateDate('year', parseInt(e.target.value))}
+      onchange={(e) => updateDate('year', parseInt(e.target.value))}
       min="-10000"
       max="2000"
       placeholder="Year"

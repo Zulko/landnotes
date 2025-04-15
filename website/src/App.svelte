@@ -33,7 +33,7 @@
     selectedMarkerId: null
   }
 
-  let appState = $state(null);
+  let appState = $state(stateDefaults);
   
 
 
@@ -42,8 +42,6 @@
    */
   let isMobile = $state(false);
   let isPaneOpen = $state(false);
-  let previousPaneState = $state(false);
-  let previousSelectedMarkerId = $state(null);
   /**
    * Content state
    */
@@ -296,7 +294,7 @@
     <div class="wiki-pane-container">
       <SlidingPane {onPaneClose} page_title={wikiPage} />
     </div>
-
+    
     <div class="map-container">
       <WorldMap
         bind:this={mapComponent}
@@ -308,9 +306,9 @@
       <div class="search-wrapper">
         <SearchBar 
           {onSearchSelect}
-          mode={appState?.mode}
-          date={appState?.date}
-          strictDate={appState?.strictDate}
+          bind:mode={appState.mode}
+          bind:date={appState.date}
+          bind:strictDate={appState.strictDate}
         />
       </div>
     </div>

@@ -1,10 +1,8 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  import { createEventDispatcher } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { createGeoMarker, createGeoDivIcon } from "./markers";
-  const dispatch = createEventDispatcher();
 
   // ===== PROPS =====
   let {mapEntries, mapDots, onMapBoundsChange, onMarkerClick} = $props();
@@ -149,7 +147,7 @@
       // Set isFlying back to false after animation completes
       handleBoundChangesAfterFlyToTimeOut = setTimeout(() => {
         isFlying = false;
-        // Dispatch a single boundschange event after flying completes
+        // Activate single boundschange event after flying completes
         handleBoundsChange();
       }, 1000*flyDuration + 50); // Slightly longer than animation duration
     }
@@ -169,7 +167,7 @@
       maxLon: bounds._northEast.lng,
     };
 
-    // Debounce the dispatch to avoid too frequent updates
+    // Debounce the effect to avoid too frequent updates
     clearTimeout(boundsChangeTimeout);
     boundsChangeTimeout = setTimeout(() => {
       onMapBoundsChange({

@@ -1,22 +1,18 @@
 <script>
-  import { createEventDispatcher, onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   
-  let {mode = "places", strictDate = false} = $props();
-
-  const dispatch = createEventDispatcher();
+  let {mode = $bindable("places"), strictDate = $bindable(false), onCloseMenu} = $props();
 
   function handleMenuBlur() {
     // Small delay to allow click events on menu items to fire
-    setTimeout(() => {
-      dispatch("closeMenu");
-    }, 200);
+    setTimeout(onCloseMenu, 200);
   }
 
   function handleClickOutside(event) {
     // Close menu when clicking outside
     if (!event.target.closest('.menu-container') && 
         !event.target.closest('.menu-button')) {
-      dispatch("closeMenu");
+      onCloseMenu();
     }
   }
 

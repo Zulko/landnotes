@@ -1,12 +1,10 @@
 <script>
-  import { createEventDispatcher, onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { getEntriesfromText } from "./geo/geodata";
   import MenuDropdown from "./MenuDropdown.svelte";
   import DatePicker from "./DatePicker.svelte";
   
   let {mode = $bindable("places"), date = $bindable(null), strictDate = $bindable(false), onSearchSelect} = $props();
-  const dispatch = createEventDispatcher();
-
   let searchQuery = $state("");
   let searchResults = $state([]);
   let isActive = $state(false);
@@ -50,18 +48,6 @@
       // Clear any pending search
       if (debounceTimer) clearTimeout(debounceTimer);
     }
-  });
-
-  $effect(() => {
-    dispatch("modeChange", mode);
-  });
-
-  $effect(() => {
-    dispatch("strictDateChange", strictDate);
-  });
-
-  $effect(() => {
-    dispatch("dateChange", date);
   });
 
     // Reset selected index when search results change
