@@ -299,6 +299,7 @@
 
   function removeStaleMarkers(processedIds, existingMarkersMap) {
     for (const [markerId, entry] of existingMarkersMap.entries()) {
+      console.log("removing")
       if (!processedIds.has(markerId)) {
         markerLayer.removeLayer(entry.existingMarker);
         existingMarkersMap.delete(markerId);

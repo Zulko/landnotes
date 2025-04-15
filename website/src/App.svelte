@@ -110,6 +110,7 @@
       updateURLParams(state, false);
     }
   }
+
   $: if (state && state.selectedMarkerId !== previousSelectedMarkerId) {
     handleNewSelectedMarker(state.selectedMarkerId)
   }
@@ -119,10 +120,12 @@
   // -------------------------
 
   async function handleNewSelectedMarker(newSelectedMarkerId) {
+    previousSelectedMarkerId = state.selectedMarkerId
     let newMarkers;
     if (newSelectedMarkerId) {
       const query = await getGeodataFromGeokeys([newSelectedMarkerId], cachedEntries);
       const selectedMarker = query[0];
+      console.log("boooooom");
       openWikiPane(selectedMarker.page_title);
       if (!mapEntries.some(marker => marker.geokey === newSelectedMarkerId)) {
         newMarkers = [...mapEntries, selectedMarker];
@@ -135,7 +138,7 @@
       newMarkers = [...mapEntries];
       
     }
-    previousSelectedMarkerId = state.selectedMarkerId
+    
     addMarkerClasses(newMarkers, state.zoom)
     mapEntries = newMarkers
     
