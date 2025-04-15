@@ -24,12 +24,16 @@
   /**
    * Map configuration and state
    */
-  let mode = "places";
-  let date = { year: 1810, month: 3, day: null };
-  let zoom = 1;
-  let location = null;
-  let markers = [];
+  let state
   
+  const stateDefaults = {
+    mode: "places",
+    strictDate: true,
+    date: { year: 1810, month: 3, day: "all"},
+    zoom: 1,
+    location: null,
+    selectedMarkerId: null
+  }
 
   /**
    * UI state
@@ -41,9 +45,9 @@
   /**
    * Content state
    */
+  let markers = [];
   let mapComponent;
   let wikiPage = "";
-  let selectedMarkerId = null;
   let cachedEntries = new Map();
 
   // -------------------------
@@ -57,9 +61,7 @@
 
     // Read URL parameters when the app loads
     const urlState = readURLParams();
-    if (urlState.selectedMarkerId) {
-      selectedMarkerId = urlState.selectedMarkerId;
-    }
+    state = {...stateDefaults, ...urlState};
     if (urlState.location) {
       mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0})
     } else {
@@ -74,31 +76,31 @@
   $: if (previousPaneState !== isPaneOpen && mapComponent) {
     setTimeout(() => mapComponent.invalidateMapSize(), 50);
     if (!isPaneOpen) {
-      selectedMarkerId = null;
+      state = {...state, selectedMarkerId: null};
     }
     previousPaneState = isPaneOpen;
 
   }
 
-  $: if (previousSelectedMarkerId !== selectedMarkerId) {
-    handleNewSelectedMarker(selectedMarkerId)
+  $: if (state) {
+    console.log("state changed", state)
+    updateURLParams(state)
+  }
+  $: if (state && state.selectedMarkerId !== previousSelectedMarkerId) {
+    handleNewSelectedMarker(state.selectedMarkerId)
   }
 
-  $: if (date) {
-    console.log("date", date)
-  }
   // -------------------------
   // EVENT HANDLERS
   // -------------------------
 
-  async function handleNewSelectedMarker(selectedMarkerId) {
+  async function handleNewSelectedMarker(newSelectedMarkerId) {
     let newMarkers;
-    console.log("handleNewSelectedMarker", selectedMarkerId)
-    if (selectedMarkerId) {
-      const query = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
+    if (newSelectedMarkerId) {
+      const query = await getGeodataFromGeokeys([newSelectedMarkerId], cachedEntries);
       const selectedMarker = query[0];
       openWikiPane(selectedMarker.page_title);
-      if (!markers.some(marker => marker.geokey === selectedMarkerId)) {
+      if (!markers.some(marker => marker.geokey === newSelectedMarkerId)) {
         newMarkers = [...markers, selectedMarker];
       } else {
         newMarkers = [...markers];
@@ -109,22 +111,21 @@
       newMarkers = [...markers];
       
     }
-    addMarkerClasses(newMarkers, zoom)
+    previousSelectedMarkerId = state.selectedMarkerId
+    addMarkerClasses(newMarkers, state.zoom)
     markers = newMarkers
-    updateURLParams({location, zoom, selectedMarkerId})
-    previousSelectedMarkerId = selectedMarkerId
+    
   }
 
   /**
    * Handle browser history navigation
    */
   function handlePopState(ev: PopStateEvent) {
-    const state = ev.state || {};
-
+    console.log("handlePopState", ev.state)
+    state = ev.state
     if (state.location) {
       mapComponent.goTo({location: state.location, zoom: state.zoom, flyDuration: 0})
     }
-    selectedMarkerId = state.selectedMarkerId;
   }
 
   /**
@@ -141,10 +142,9 @@
     const center = event.detail.center;
 
     // Update URL with new location
-    zoom = event.detail.zoom;
-    location = {lat: center.lat, lon: center.lng}
-    updateURLParams({location, zoom, selectedMarkerId});
-
+    const zoom = event.detail.zoom;
+    const location = {lat: center.lat, lon: center.lng}
+    state = {...state, zoom, location}
     // Get entries for the visible map area
     const bounds = {
       minLat: event.detail.bounds._southWest.lat,
@@ -161,10 +161,10 @@
         cachedEntries
       );
       if (
-        selectedMarkerId &&
-        !entries.some((entry) => entry.geokey === selectedMarkerId)
+        state.selectedMarkerId &&
+        !entries.some((entry) => entry.geokey === state.selectedMarkerId)
       ) {
-        const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
+        const selectedMarker = await getGeodataFromGeokeys([state.selectedMarkerId], cachedEntries);
         entries.push(selectedMarker[0]);
       }
 
@@ -180,11 +180,11 @@
    * Handle marker click events
    */
   function handleMarkerClick(event) {
-    if (selectedMarkerId !== event.detail.geokey) {
-      selectedMarkerId = event.detail.geokey
-      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom, flyDuration: 1})
+    if (state.selectedMarkerId !== event.detail.geokey) {
+      state = {...state, selectedMarkerId: event.detail.geokey}
+      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: state.zoom, flyDuration: 1})
     } else {
-      const newZoom = Math.min(17, Math.max(12, zoom + 2))
+      const newZoom = Math.min(17, Math.max(12, state.zoom + 2))
       mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: newZoom, flyDuration: 1})
     }
   }
@@ -193,8 +193,8 @@
    * Handle search selection
    */
   function handleSearchSelect(event) {
-    selectedMarkerId = event.detail.geokey;
-    mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: Math.max(12, zoom), flyDuration: 1})
+    state = {...state, selectedMarkerId: event.detail.geokey}
+    mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: Math.max(12, state.zoom), flyDuration: 1})
   }
 
   // -------------------------
@@ -222,7 +222,7 @@
     // Assign default display classes based on the sorted order
     // Handle selected and high-zoom markers
     for (const entry of entries) {
-      if (selectedMarkerId && entry.geokey == selectedMarkerId) {
+      if (state.selectedMarkerId && entry.geokey == state.selectedMarkerId) {
         entry.displayClass = "selected";
       } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
         entry.displayClass = "full";
@@ -253,7 +253,27 @@
         on:markerclick={handleMarkerClick}
       />
       <div class="search-wrapper">
-        <SearchBar on:select={handleSearchSelect} bind:mode bind:date />
+        <SearchBar 
+          on:select={handleSearchSelect}
+          on:modeChange={(event) => {
+            if (state) {
+              state = { ...state, mode: event.detail }
+            }
+          }}
+          on:dateChange={(event) => {
+            if (state) {
+              state = { ...state, date: event.detail }
+            }
+          }}
+          on:strictDateChange={(event) => {
+            if (state) {
+              state = { ...state, strictDate: event.detail }
+            }
+          }}
+          mode={state?.mode}
+          date={state?.date}
+          strictDate={state?.strictDate}
+        />
       </div>
     </div>
   </div>

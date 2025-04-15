@@ -6,6 +6,7 @@
   
   export let mode = "places";
   export let date;
+  export let strictDate = false;
   const dispatch = createEventDispatcher();
 
   export let searchQuery = "";
@@ -52,6 +53,10 @@
       if (debounceTimer) clearTimeout(debounceTimer);
     }
   }
+
+  $: dispatch("modeChange", mode);
+  $: dispatch("strictDateChange", strictDate);
+  $: dispatch("dateChange", date);
 
   // Toggle menu open/closed
   function toggleMenu() {
@@ -189,6 +194,7 @@
   {#if isMenuOpen}
   <MenuDropdown 
     bind:mode
+    bind:strictDate
     on:closeMenu={handleCloseMenu}
   />
   {/if}
@@ -252,7 +258,7 @@
     background: transparent;
     border: none;
     font-size: 18px;
-    color: #666;
+    color: #999;
     cursor: pointer;
     display: flex;
     align-items: center;

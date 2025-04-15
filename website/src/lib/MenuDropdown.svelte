@@ -2,8 +2,8 @@
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   
   export let mode = "places";
-  export let overlapMode = "overlapping";
-  
+  export let strictDate = false;
+
   const dispatch = createEventDispatcher();
 
   function handleMenuBlur() {
@@ -31,36 +31,46 @@
 </script>
 
 <div class="menu-container">
-  <!-- Menu dropdown -->
-    <div class="menu-dropdown" on:blur={handleMenuBlur} tabindex="-1">
-      <div class="menu-group">
-        <!-- <span class="menu-label">What to show?</span> -->
-        <div class="menu-options">
-          <button 
-            class="mode-option {mode === 'places' ? 'active' : ''}" 
-            on:click={() => mode = 'places'}
-          >
-            Show places
-          </button>
-          <button 
-            class="mode-option {mode === 'events' ? 'active' : ''}" 
-            on:click={() => mode = 'events'}
-          >
-            Show events
-          </button>
-        </div>
-        {#if mode === 'events'}
-              <select class="mode-option" bind:value={overlapMode}>
-                <option value="overlapping">overlapping with the date</option>
-                <option value="inside">strictly at the date</option>
-              </select>
-          {/if}
+  <div class="menu-dropdown" on:blur={handleMenuBlur} tabindex="-1">
+    <!-- View mode selection -->
+    <div class="menu-group">
+      <span class="menu-label">Show</span>
+      <div class="menu-options">
+        <button 
+          class="mode-option {mode === 'places' ? 'active' : ''}" 
+          on:click={() => mode = 'places'}
+        >
+          places
+        </button>
+        <button 
+          class="mode-option {mode === 'events' ? 'active' : ''}" 
+          on:click={() => mode = 'events'}
+        >
+          events
+        </button>
       </div>
-      <a href="/blog-post" class="menu-item">Read the blog post</a>
+    </div>
+    
+    <!-- Date filter options - only shown for events mode -->
+    {#if mode === 'events'}
+    <div class="menu-group">
+      <span class="menu-label">Date filter</span>
+      <select class="mode-option" value={strictDate ? "strict" : "overlapping"} 
+              on:change={(e) => strictDate = e.target.value === "strict"}>
+        <option value="strict">Only events strictly within the date</option>
+        <option value="overlapping">All events overlapping with the date</option>
+      </select>
+    </div>
+    {/if}
+    
+    <!-- Links section -->
+    <div class="menu-links">
+      <a href="/blog-post" class="menu-item">About Landnotes</a>
       <a href="https://github.com/yourusername/yourrepo" target="_blank" rel="noopener noreferrer" class="menu-item">
         Go to the project source on GitHub
       </a>
     </div>
+  </div>
 </div>
 
 <style>
@@ -103,7 +113,6 @@
   .mode-option {
     padding: 5px 10px;
     border: 1px solid #ccc;
-    border-radius: 15px;
     background: white;
     cursor: pointer;
     font-size: 14px;
@@ -141,5 +150,9 @@
     background-color: white;
     border: 1px solid #ccc;
     border-radius: 1px;
+  }
+
+  .menu-links {
+    border-top: 1px solid #eee;
   }
 </style> 

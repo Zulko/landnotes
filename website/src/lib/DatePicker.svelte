@@ -7,62 +7,59 @@
   export let date;
   
   // Add an array of month abbreviations
-  const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthAbbreviations = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   
   // Optional: you can also export individual props if needed
   // but they should be bound to date properties
-  
-  $: isDateValid = isValidDate(date);
-  
-  function isValidDate(date) {
-    const { year, month, day } = date;
-    
-    // Basic validation
-    if (!year || !month || !day) return false;
-    
-    // Check month range
-    if (month < 1 || month > 12) return false;
-    
-    // Get days in the specified month
-    const daysInMonth = new Date(
-      year < 0 ? year + 1 : year, 
-      month, 
-      0
-    ).getDate();
-    
-    // Check day range
-    if (day < 1 || day > daysInMonth) return false;
-    
-    return true;
+
+  const firstYearRequiringMonth = 1500;
+  const firstYearRequiringDay = 1920;
+
+  function getDaysInMonth(year, month) {
+    return new Date(year < 0 ? year + 1 : year, month, 0).getDate();
   }
   
   function updateDate(field, value) {
     const newDate = { ...date };
     newDate[field] = value;
-    const daysInMonth = new Date(
-      newDate.year < 0 ? newDate.year + 1 : newDate.year, 
-      newDate.month, 
-      0
-    ).getDate();
-    newDate.day = Math.min(Math.max(newDate.day, 1), daysInMonth);
+    if (newDate.month === "all" && newDate.year >= firstYearRequiringMonth) {
+      newDate.month = 1;
+    }
+    if (newDate.day === "all" && newDate.year >= firstYearRequiringDay) {
+      newDate.day = 1;
+    }
+    if (newDate.day !== "all") {
+      const daysInMonth = getDaysInMonth(newDate.year, newDate.month);
+      newDate.day = Math.min(Math.max(newDate.day, 1), daysInMonth);
+    }
     date = newDate;
   }
 </script>
 
 <div class="date-picker">
-  <input
-      type="number"
-      min="1"
-      max={new Date(date.year < 0 ? date.year + 1 : date.year, date.month, 0).getDate()}
-      value={date.day}
-      on:change={(e) => updateDate('day', parseInt(e.target.value))}
-      placeholder="Day"
-      aria-label="Day"
-  />
+  {#if date.month !== "all"}
+  <select
+    value={date.day}
+    
+    on:change={(e) => updateDate('day', e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+    aria-label="Day"
+    style="width: 60px;"
+  >
+    {#if date.year < firstYearRequiringDay}
+     <option value="all">All</option>
+    {/if}
+    {#each Array.from({length: getDaysInMonth(date.year, date.month)}, (_, i) => 1 + i) as day}
+      <option value={day}>{day}</option>
+    {/each}
+  </select>
+  {/if}
   <select 
     value={date.month}
-    on:change={(e) => updateDate('month', parseInt(e.target.value))}
+    on:change={(e) => updateDate('month', e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
   >
+    {#if date.year < firstYearRequiringMonth}
+     <option value="all">All year</option>
+    {/if}
     {#each Array.from({length: 12}, (_, i) => 1 + i) as month}
       <option value={month}>{monthAbbreviations[month-1]}</option>
     {/each}
@@ -75,6 +72,7 @@
       max="2000"
       placeholder="Year"
       aria-label="Year"
+      style="width: 60px;"
     />
 
 </div>
@@ -88,20 +86,12 @@
     flex-wrap: nowrap;
     padding: 8px;
     width: fit-content;
-    /* -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px); */
-    
-    margin: 0 auto -5px;
-  }
-  
-  .date-picker {
-    display: flex;
-    align-items: center;
+    margin: 0 auto;
   }
   
   input, select {
     margin-left: 4px;
-    padding: 6px 4px;
+    padding: 6px 4px 6px 4px;
     border: 1px solid #e0e4e8;
     border-radius: 6px;
     background-color: #fff;
@@ -110,26 +100,12 @@
     transition: all 0.2s ease;
     outline: none;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
   }
   
   input:focus {
     border-color: #4f86ed;
     box-shadow: 0 0 0 2px rgba(79, 134, 237, 0.2);
-  }
-  
-  input:hover:not(:focus) {
-    border-color: #cbd2d9;
-  }
-  
-  /* Make month and day inputs smaller */
-  input[min="1"] {
-    width: 35px;
-  }
-  
-  input.invalid {
-    border-color: #e53935;
-    background-color: #fff;
-    box-shadow: 0 0 0 1px rgba(229, 57, 53, 0.3);
   }
 
 
