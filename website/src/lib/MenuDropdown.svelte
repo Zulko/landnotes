@@ -1,8 +1,7 @@
 <script>
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   
-  export let mode = "places";
-  export let strictDate = false;
+  let {mode = "places", strictDate = false} = $props();
 
   const dispatch = createEventDispatcher();
 
@@ -31,20 +30,20 @@
 </script>
 
 <div class="menu-container">
-  <div class="menu-dropdown" on:blur={handleMenuBlur} tabindex="-1">
+  <div class="menu-dropdown" onblur={handleMenuBlur} tabindex="-1">
     <!-- View mode selection -->
     <div class="menu-group">
       <span class="menu-label">Show</span>
       <div class="menu-options">
         <button 
           class="mode-option {mode === 'places' ? 'active' : ''}" 
-          on:click={() => mode = 'places'}
+          onclick={() => mode = 'places'}
         >
           places
         </button>
         <button 
           class="mode-option {mode === 'events' ? 'active' : ''}" 
-          on:click={() => mode = 'events'}
+          onclick={() => mode = 'events'}
         >
           events
         </button>
@@ -56,7 +55,7 @@
     <div class="menu-group">
       <span class="menu-label">Date filter</span>
       <select class="mode-option" value={strictDate ? "strict" : "overlapping"} 
-              on:change={(e) => strictDate = e.target.value === "strict"}>
+              onchange={(e) => strictDate = e.target.value === "strict"}>
         <option value="strict">Only events strictly within the date</option>
         <option value="overlapping">All events overlapping with the date</option>
       </select>

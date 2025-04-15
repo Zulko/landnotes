@@ -4,19 +4,17 @@
   import MenuDropdown from "./MenuDropdown.svelte";
   import DatePicker from "./DatePicker.svelte";
   
-  export let mode = "places";
-  export let date;
-  export let strictDate = false;
+  let {mode = $bindable("places"), date = $bindable(null), strictDate = $bindable(false), onSearchSelect} = $props();
   const dispatch = createEventDispatcher();
 
-  export let searchQuery = "";
-  let searchResults = [];
-  let isActive = false;
-  let isLoading = false;
-  let debounceTimer = null;
-  let selectedIndex = -1; // Track the currently selected suggestion
-  let isMenuOpen = false; // State for menu dropdown visibility
+  let searchQuery = $state("");
+  let searchResults = $state([]);
+  let isActive = $state(false);
+  let isLoading = $state(false);
+  let selectedIndex = $state(-1); // Track the currently selected suggestion
+  let isMenuOpen = $state(false); // State for menu dropdown visibility
 
+  let debounceTimer = null;
   const basePath = import.meta.env.BASE_URL;
 
   // Debounced search function
@@ -40,7 +38,7 @@
   }
 
   // Search text reactive statement
-  $: {
+  $effect(() => {
     if (searchQuery && searchQuery.length > 1) {
       isLoading = true;
       searchResults = [];
@@ -52,11 +50,26 @@
       // Clear any pending search
       if (debounceTimer) clearTimeout(debounceTimer);
     }
-  }
+  });
 
-  $: dispatch("modeChange", mode);
-  $: dispatch("strictDateChange", strictDate);
-  $: dispatch("dateChange", date);
+  $effect(() => {
+    dispatch("modeChange", mode);
+  });
+
+  $effect(() => {
+    dispatch("strictDateChange", strictDate);
+  });
+
+  $effect(() => {
+    dispatch("dateChange", date);
+  });
+
+    // Reset selected index when search results change
+  $effect(() => {
+    if (searchResults) {
+      selectedIndex = -1;
+    }
+  });
 
   // Toggle menu open/closed
   function toggleMenu() {
@@ -91,7 +104,7 @@
   }
 
   function handleSelect(entry) {
-    dispatch("select", entry);
+    onSearchSelect(entry);
     searchQuery = "";
     isActive = false;
     selectedIndex = -1;
@@ -112,10 +125,6 @@
     }
   }
 
-  // Reset selected index when search results change
-  $: if (searchResults) {
-    selectedIndex = -1;
-  }
 </script>
 
 <div class="search-container">
@@ -124,15 +133,15 @@
       type="text"
       placeholder="Search a place"
       bind:value={searchQuery}
-      on:focus={handleFocus}
-      on:blur={handleBlur}
-      on:keydown={handleKeydown}
+      onfocus={handleFocus}
+      onblur={handleBlur}
+      onkeydown={handleKeydown}
       class="search-input"
     />
     {#if searchQuery}
       <button
         class="clear-button"
-        on:click={() => {
+        onclick={() => {
           searchQuery = "";
           isActive = false;
         }}
@@ -146,7 +155,7 @@
     
     <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
-      <button class="menu-button" on:click={toggleMenu} title="Menu">
+      <button class="menu-button" onclick={toggleMenu} title="Menu">
         <img
           src={`${basePath}icons/menu.svg`}
           alt="Menu"
@@ -161,7 +170,7 @@
       {#each searchResults as entry, i}
         <div
           class="suggestion-item {i === selectedIndex ? 'selected' : ''}"
-          on:mousedown={() => handleSelect(entry)}
+          onmousedown={() => handleSelect(entry)}
           role="option"
           aria-selected={i === selectedIndex}
           tabindex="0"

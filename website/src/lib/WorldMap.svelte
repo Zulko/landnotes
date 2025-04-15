@@ -7,7 +7,7 @@
   const dispatch = createEventDispatcher();
 
   // ===== PROPS =====
-  let {mapEntries, mapDots} = $props();
+  let {mapEntries, mapDots, onMapBoundsChange, onMarkerClick} = $props();
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
@@ -162,12 +162,18 @@
     if (!map || isFlying) return;
 
     const bounds = map.getBounds();
+    const formattedBounds = {
+      minLat: bounds._southWest.lat,
+      maxLat: bounds._northEast.lat,
+      minLon: bounds._southWest.lng,
+      maxLon: bounds._northEast.lng,
+    };
 
     // Debounce the dispatch to avoid too frequent updates
     clearTimeout(boundsChangeTimeout);
     boundsChangeTimeout = setTimeout(() => {
-      dispatch("boundschange", {
-        bounds: bounds,
+      onMapBoundsChange({
+        bounds: formattedBounds,
         center: bounds.getCenter(),
         zoom: map.getZoom(),
       });
@@ -222,7 +228,7 @@
       // Add event handlers
       if (!isExistingMarker) {
         marker.on("click", () => {
-          dispatch("markerclick", entry);
+          onMarkerClick(entry);
         });
 
         marker.on("mouseover", () => {

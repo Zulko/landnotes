@@ -2,53 +2,49 @@
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
 
   // ===== PROPS =====
-  export let isOpen = false;
-  export let page_title = ""; // Wikipedia page name
-  export let width = "400px"; // Default width for desktop
-  export let height = "35vh"; // Default height for mobile
+  let {page_title, onPaneClose} = $props();
+  let expanded = $state(false);
+  let isMobile = $state(typeof window !== "undefined" && window.innerWidth <= 768);
+  const normalWidth = "400px"; // Default width for desktop
+  const normalHeight = "35vh"; // Default height for mobile
 
   // ===== STATE VARIABLES =====
-  let expanded = false;
-  let normalWidth = width;
-  let normalHeight = height;
+  
 
   // ===== COMPUTED VALUES =====
   // Detect mobile view
-  $: isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+  
 
   // Compute actual dimensions based on expanded state
-  $: actualWidth = isMobile
+  let actualWidth = $derived(isMobile
     ? "100%"
     : expanded
       ? `${parseInt(normalWidth) * 2}px`
-      : normalWidth;
+      : normalWidth
+    );
 
-  $: actualHeight = isMobile ? (expanded ? "100vh" : normalHeight) : "100vh";
+  let actualHeight = $derived(isMobile
+    ? (expanded ? "100vh" : normalHeight)
+    : "100vh"
+  );
 
   // Generate Wikipedia URL based on device and width
-  $: wikiUrl = page_title
+  let wikiUrl = $derived(page_title
     ? isMobile || parseInt(actualWidth) < 768
       ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(page_title)}`
       : `https://en.wikipedia.org/wiki/${encodeURIComponent(page_title)}`
-    : "about:blank";
+    : "about:blank"
+  );
 
   // ===== EVENT HANDLERS =====
-  // Handle close events
-  function close() {
-    isOpen = false;
-    expanded = false;
-    // Emit a close event so parent components can deselect the marker
-    const closeEvent = new CustomEvent('close');
-    dispatchEvent(closeEvent);
-  }
 
   // Toggle expanded mode (works for both desktop and mobile)
-  function toggleExpand() {
+  function onToggleExpand() {
     expanded = !expanded;
   }
 
   // Open in new tab
-  function openInNewTab() {
+  function onOpenExternal() {
     if (page_title) {
       window.open(wikiUrl, "_blank");
     }
@@ -85,17 +81,17 @@
 </script>
 
 <svelte:window
-  on:keydown={(e) => e.key === "Escape" && close()}
-  on:resize={handleResize}
+  onkeydown={(e) => e.key === "Escape" && onPaneClose()}
+  onresize={handleResize}
 />
 
-<div class="pane-container" class:is-open={isOpen}>
+<div class="pane-container">
   <div class="pane" style="width: {actualWidth}; height: {actualHeight};">
     <SlidingPaneHeader
       {expanded}
-      onClose={close}
-      onToggleExpand={toggleExpand}
-      onOpenExternal={openInNewTab}
+      {onPaneClose}
+      {onToggleExpand}
+      {onOpenExternal}
     />
 
     <div class="pane-content">

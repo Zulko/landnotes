@@ -1,19 +1,14 @@
 <script>
   const basePath = import.meta.env.BASE_URL;
   // Props
-  export let expanded = false;
-
-  // Events
-  export let onClose = () => {};
-  export let onToggleExpand = () => {};
-  export let onOpenExternal = () => {};
+  let {expanded, onPaneClose, onToggleExpand, onOpenExternal} = $props();
 </script>
 
 <div class="pane-header">
   <div class="header-buttons">
     <button
       class="icon-button external-link-button"
-      on:click={onOpenExternal}
+      onclick={onOpenExternal}
       title="Open in new tab"
       aria-label="Open in new tab"
     >
@@ -27,7 +22,7 @@
     <button
       class="icon-button expand-button desktop-only"
       class:active={expanded}
-      on:click={onToggleExpand}
+      onclick={onToggleExpand}
       title={expanded ? "Shrink pane" : "Expand pane"}
       aria-label={expanded ? "Shrink pane" : "Expand pane"}
     >
@@ -43,7 +38,7 @@
     <button
       class="icon-button expand-button mobile-only"
       class:active={expanded}
-      on:click={onToggleExpand}
+      onclick={onToggleExpand}
       title={expanded ? "Shrink pane" : "Expand pane"}
       aria-label={expanded ? "Shrink pane" : "Expand pane"}
     >
@@ -55,7 +50,7 @@
         class="icon"
       />
     </button>
-    <button class="close-button" on:click={onClose} aria-label="Close panel">
+    <button class="close-button" onclick={onPaneClose} aria-label="Close panel">
       &times;
     </button>
   </div>

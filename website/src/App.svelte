@@ -24,8 +24,6 @@
   /**
    * Map configuration and state
    */
-  let state
-  
   const stateDefaults = {
     mode: "places",
     strictDate: true,
@@ -35,21 +33,25 @@
     selectedMarkerId: null
   }
 
+  let appState = $state(null);
+  
+
+
   /**
    * UI state
    */
-  let isMobile = false;
-  let isPaneOpen = false;
-  let previousPaneState = false;
-  let previousSelectedMarkerId = null;
+  let isMobile = $state(false);
+  let isPaneOpen = $state(false);
+  let previousPaneState = $state(false);
+  let previousSelectedMarkerId = $state(null);
   /**
    * Content state
    */
-  let mapEntries = [];
-  let mapDots = [];
+  let mapEntries = $state([]);
+  let mapDots = $state([]);
   let mapComponent;
-  let wikiPage = "";
-  let cachedEntries = new Map();
+  let wikiPage = $state("");
+  let cachedEntries = $state(new Map());
 
   // Add a flag to track when we're handling a popstate event
   let isHandlingPopstate = false;
@@ -66,7 +68,7 @@
     
     // Read URL parameters when the app loads
     const urlState = readURLParams();
-    state = {...stateDefaults, ...urlState};
+    appState = {...stateDefaults, ...urlState};
     if (urlState.location) {
       mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0})
     } else {
@@ -80,54 +82,52 @@
     setTimeout(() => {
       isInitialLoad = false;
       // Replace the initial history entry instead of adding a new one
-      updateURLParams(state, false);
+      updateURLParams($state.snapshot(appState), false);
     }, 100);
   });
 
   // When pane state changes, update map size after a slight delay to allow transitions
-  $: if (previousPaneState !== isPaneOpen && mapComponent) {
+
+
+
+  $effect(() => {
+    debounce((s) => updateURLParamsOnStateChange(s), 500)($state.snapshot(appState));
+  });
+
+    function onPaneClose() {
+    appState = {...appState, selectedMarkerId: null};
     setTimeout(() => mapComponent.invalidateMapSize(), 50);
-    if (!isPaneOpen) {
-      state = {...state, selectedMarkerId: null};
-    }
-    previousPaneState = isPaneOpen;
+  };
 
-  }
-
-  $: if (state) {
-    debounce((s) => handleStateChange(s), 500)(state);
-  }
-
-  function handleStateChange(state) {
-    console.log("state changed", state);
+  function updateURLParamsOnStateChange(appState) {
+    console.log("state changed", appState);
     // Only update URL if not handling popstate and not in initial load
     if (!isHandlingPopstate && !isInitialLoad) {
-      console.log("Updating URL params with history", state);
-      updateURLParams(state, true);
+      console.log("Updating URL params with history", appState);
+      updateURLParams(appState, true);
     } else {
-      console.log("Updating URL params without history", state);
+      console.log("Updating URL params without history", appState);
       // Still update the URL, but don't add to history
-      updateURLParams(state, false);
+      updateURLParams(appState, false);
     }
-  }
-
-  $: if (state && state.selectedMarkerId !== previousSelectedMarkerId) {
-    handleNewSelectedMarker(state.selectedMarkerId)
   }
 
   // -------------------------
   // EVENT HANDLERS
   // -------------------------
 
-  async function handleNewSelectedMarker(newSelectedMarkerId) {
+  async function handleNewSelectedMarker(selectedMarkerId) {
+
     console.log("handleNewSelectedMarker");
-    previousSelectedMarkerId = state.selectedMarkerId
+    if (selectedMarkerId === appState.selectedMarkerId) return;
+    appState = {...appState, selectedMarkerId}
+    
     let newMarkers;
-    if (newSelectedMarkerId) {
-      const query = await getGeodataFromGeokeys([newSelectedMarkerId], cachedEntries);
+    if (selectedMarkerId) {
+      const query = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
       const selectedMarker = query[0];
       openWikiPane(selectedMarker.page_title);
-      if (!mapEntries.some(marker => marker.geokey === newSelectedMarkerId)) {
+      if (!mapEntries.some(marker => marker.geokey === selectedMarkerId)) {
         newMarkers = [...mapEntries, selectedMarker];
       } else {
         newMarkers = [...mapEntries];
@@ -139,7 +139,7 @@
       
     }
     
-    addMarkerClasses(newMarkers, state.zoom)
+    addMarkerClasses(newMarkers, appState.zoom)
     mapEntries = newMarkers
     
   }
@@ -154,13 +154,13 @@
     // If state is null, use defaults
     if (!ev.state) {
       console.warn("No state in popstate event, using defaults");
-      state = {...stateDefaults};
+      appState = {...stateDefaults};
     } else {
-      state = ev.state;
+      appState = ev.state;
     }
     
-    if (state.location) {
-      mapComponent.goTo({location: state.location, zoom: state.zoom, flyDuration: 0})
+    if (appState.location) {
+      mapComponent.goTo({location: appState.location, zoom: appState.zoom, flyDuration: 0})
     }
     
     // Reset the flag after a brief timeout to allow the state update to complete
@@ -180,21 +180,10 @@
   /**
    * Process map bounds changes and fetch new markers
    */
-  async function handleBoundsChange(event) {
-    console.log("handleBoundsChange");
-    const center = event.detail.center;
-
-    // Update URL with new location
-    const zoom = event.detail.zoom;
+  async function onMapBoundsChange({bounds, center, zoom}) {
+    console.log("onMapBoundsChange");
     const location = {lat: center.lat, lon: center.lng}
-    state = {...state, zoom, location}
-    // Get entries for the visible map area
-    const bounds = {
-      minLat: event.detail.bounds._southWest.lat,
-      maxLat: event.detail.bounds._northEast.lat,
-      minLon: event.detail.bounds._southWest.lng,
-      maxLon: event.detail.bounds._northEast.lng,
-    };
+    appState = {...appState, zoom, location}
 
     // Fetch geodata for the current bounds
     try {
@@ -204,10 +193,10 @@
         cachedEntries
       );
       if (
-        state.selectedMarkerId &&
-        !entriesInBounds.some((entry) => entry.geokey === state.selectedMarkerId)
+        appState.selectedMarkerId &&
+        !entriesInBounds.some((entry) => entry.geokey === appState.selectedMarkerId)
       ) {
-        const selectedMarker = await getGeodataFromGeokeys([state.selectedMarkerId], cachedEntries);
+        const selectedMarker = await getGeodataFromGeokeys([appState.selectedMarkerId], cachedEntries);
         entriesInBounds.push(selectedMarker[0]);
       }
 
@@ -223,24 +212,26 @@
   /**
    * Handle marker click events
    */
-  function handleMarkerClick(event) {
-    if (state.selectedMarkerId !== event.detail.geokey) {
+  function onMarkerClick({geokey, lat, lon}) {
+    const selectedMarkerId = geokey;
+    const location = {lat, lon}
+    if (appState.selectedMarkerId !== selectedMarkerId) {
       setTimeout(() => {
-        state = {...state, selectedMarkerId: event.detail.geokey}
+        handleNewSelectedMarker(selectedMarkerId)
       }, 100)
-      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: state.zoom, flyDuration: 0.4})
+      mapComponent.goTo({location, zoom: appState.zoom, flyDuration: 0.4})
     } else {
-      const newZoom = Math.min(17, Math.max(12, state.zoom + 2))
-      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: newZoom, flyDuration: 0.4})
+      const newZoom = Math.min(17, Math.max(12, appState.zoom + 2))
+      mapComponent.goTo({location, zoom: newZoom, flyDuration: 0.4})
     }
   }
 
   /**
    * Handle search selection
    */
-  function handleSearchSelect(event) {
-    state = {...state, selectedMarkerId: event.detail.geokey}
-    mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: Math.max(12, state.zoom), flyDuration: 1})
+  function onSearchSelect({geokey, lat, lon}) {
+    handleNewSelectedMarker(geokey)
+    mapComponent.goTo({location: {lat, lon}, zoom: Math.max(12, appState.zoom), flyDuration: 1})
   }
 
   // -------------------------
@@ -250,8 +241,8 @@
   /**
    * Opens the wiki pane with the specified page
    */
-  function openWikiPane(page) {
-    wikiPage = page;
+  function openWikiPane(pageTitle) {
+    wikiPage = pageTitle;
     isPaneOpen = true;
   }
 
@@ -283,7 +274,7 @@
     // Assign default display classes based on the sorted order
     // Handle selected and high-zoom markers
     for (const entry of entries) {
-      if (state.selectedMarkerId && entry.geokey == state.selectedMarkerId) {
+      if (appState.selectedMarkerId && entry.geokey == appState.selectedMarkerId) {
         entry.displayClass = "selected";
       } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
         entry.displayClass = "full";
@@ -303,7 +294,7 @@
 <main class:has-open-pane={isPaneOpen} class:is-mobile={isMobile}>
   <div class="content-container">
     <div class="wiki-pane-container">
-      <SlidingPane bind:isOpen={isPaneOpen} page_title={wikiPage} />
+      <SlidingPane {onPaneClose} page_title={wikiPage} />
     </div>
 
     <div class="map-container">
@@ -311,33 +302,15 @@
         bind:this={mapComponent}
         {mapEntries}
         {mapDots}
-        on:boundschange={handleBoundsChange}
-        on:markerclick={handleMarkerClick}
+        {onMapBoundsChange}
+        {onMarkerClick}
       />
       <div class="search-wrapper">
         <SearchBar 
-          on:select={handleSearchSelect}
-          on:modeChange={(event) => {
-            if (state) {
-              console.log("modeChange");
-              state = { ...state, mode: event.detail }
-            }
-          }}
-          on:dateChange={(event) => {
-            if (state) {
-              console.log("dateChange", event.detail, state.date);
-              state = { ...state, date: event.detail }
-            }
-          }}
-          on:strictDateChange={(event) => {
-            if (state) {
-              console.log("strictDateChange");
-              state = { ...state, strictDate: event.detail }
-            }
-          }}
-          mode={state?.mode}
-          date={state?.date}
-          strictDate={state?.strictDate}
+          {onSearchSelect}
+          mode={appState?.mode}
+          date={appState?.date}
+          strictDate={appState?.strictDate}
         />
       </div>
     </div>
