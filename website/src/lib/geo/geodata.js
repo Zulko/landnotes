@@ -106,12 +106,43 @@ export async function getGeodataFromBounds(bounds, maxZoomLevel, cachedEntries) 
   ).flatMap((zoomLevel) => getOverlappingGeoEncodings(bounds, zoomLevel));
 
   const geokeyResults = await getGeodataFromGeokeys(geoKeys, cachedEntries);
+
+  // Create a list of dot markers from entries_under_geokey
+  const dotMarkers = [];
+  const seenCoordinates = new Set(); // Track coordinates we've already processed
+  let totalEntries = 0;
+  for (const result of geokeyResults) {
+    if (!result.entries_under_geokey) continue;
+    
+    // Process each zoom level in entries_under_geokey
+    for (const zoomLevel in result.entries_under_geokey) {
+      if (!result.entries_under_geokey.hasOwnProperty(zoomLevel)) continue;
+      
+      // Process each entry at this zoom level
+      for (const entry of result.entries_under_geokey[zoomLevel]) {
+        totalEntries++;
+        if (seenCoordinates.has(entry.geokey)) continue;
+        seenCoordinates.add(entry.geokey);
+        
+        // Check if the coordinates are within bounds
+        if (
+          entry.lat >= bounds.minLat && 
+          entry.lat <= bounds.maxLat &&
+          entry.lon >= bounds.minLon && 
+          entry.lon <= bounds.maxLon
+        ) {
+          dotMarkers.push(entry);
+        }
+      }
+    }
+  }
   
-  const filteredResults = geokeyResults.filter((entry) => {
+  const entriesInBounds = geokeyResults.filter((entry) => {
     return entry.lat >= bounds.minLat && entry.lat <= bounds.maxLat &&
       entry.lon >= bounds.minLon && entry.lon <= bounds.maxLon;
   });
-  return geokeyResults;
+
+  return {dotMarkers, entriesInBounds};
 }
 
 export async function getEntriesfromText(searchText) {

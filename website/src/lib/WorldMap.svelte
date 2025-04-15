@@ -7,8 +7,8 @@
   const dispatch = createEventDispatcher();
 
   // ===== PROPS =====
-  export let markers = [];
-
+  export let mapEntries = [];
+  export let mapDots = [];
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
@@ -16,6 +16,7 @@
   let isFlying = false;
   let hoveredMarkerId = null;
   let currentMarkers = new Map(); // key: marker.geokey, value: L.marker object
+  let currentDotMarkers = new Map(); // key: marker.geokey, value: L.marker object
   let resizeObserver;
   let boundsChangeTimeout = null;
   let handleBoundChangesAfterFlyToTimeOut = null;
@@ -49,8 +50,11 @@
 
   // ===== REACTIVE DECLARATIONS =====
 
-  $: if (markers && map) {
+  $: if (mapEntries && map) {
     updateMarkers();
+  }
+  $: if (mapDots && map) {
+    updateDotMarkers();
   }
   // ===== MAP INITIALIZATION =====
   function initializeMap() {
@@ -184,40 +188,45 @@
     const processedIds = new Set();
 
     // Update or add markers
-    for (const marker of markers) {
-      processedIds.add(marker.geokey);
+    for (const entry of mapEntries) {
+      processedIds.add(entry.geokey);
 
-      let displayClass = marker.displayClass;
-      let pane = marker.displayClass;
+      let displayClass = entry.displayClass;
+      let pane = entry.displayClass;
 
-      if (hoveredMarkerId === marker.geokey && displayClass !== "selected") {
+      if (hoveredMarkerId === entry.geokey && displayClass !== "selected") {
         displayClass = "full";
         pane = "hovered";
       }
 
       // Check if marker already exists
-      if (currentMarkers.has(marker.geokey)) {
-        updateExistingMarker(marker, displayClass, pane);
+      if (currentMarkers.has(entry.geokey)) {
+        updateExistingMarker(entry, displayClass, pane, currentMarkers);
       } else {
-        createNewMarker(marker, displayClass, pane);
-      }
-      const underMarkers = marker.entries_under_geokey[map.getZoom() - 1];
-      if (underMarkers) {
-        for (const underMarker of underMarkers) {
-          if (!currentMarkers.has(underMarker.geokey)) {
-            createNewMarker(underMarker, "dot", "dot");
-          }
-          processedIds.add(underMarker.geokey);
-        }
+        createNewMarker(entry, displayClass, pane, currentMarkers);
       }
     }
 
     // Remove markers that are no longer in the data
-    removeStaleMarkers(processedIds);
-
+    removeStaleMarkers(processedIds, currentMarkers);
   }
 
-  function updateExistingMarker(marker, displayClass, pane) {
+  function updateDotMarkers() {
+    if (!map || !markerLayer) return;
+
+    // Track which markers we've processed to identify removals
+    const processedIds = new Set();
+
+    for (const dotEntry of mapDots) {
+      if (!currentDotMarkers.has(dotEntry.geokey)) {
+        createNewMarker(dotEntry, "dot", "dot", currentDotMarkers);
+      }
+      processedIds.add(dotEntry.geokey);
+    }
+    removeStaleMarkers(processedIds, currentDotMarkers);
+  }
+
+  function updateExistingMarker(marker, displayClass, pane, existingMarkersMap) {
     const { existingMarker, existingClass } = currentMarkers.get(
       marker.geokey
     );
@@ -244,7 +253,7 @@
       existingMarker.setIcon(icon);
 
       // Update the stored display class
-      currentMarkers.set(marker.geokey, {
+      existingMarkersMap.set(marker.geokey, {
         existingMarker,
         displayClass,
       });
@@ -253,7 +262,7 @@
 
 
 
-  function createNewMarker(entry, displayClass, pane) {
+  function createNewMarker(entry, displayClass, pane, existingMarkersMap) {
     let marker;
     if (displayClass === "dot") {
       marker = L.circleMarker([entry.lat, entry.lon], {
@@ -279,7 +288,7 @@
       });
     }
     marker.addTo(markerLayer);
-    currentMarkers.set(entry.geokey, {
+    existingMarkersMap.set(entry.geokey, {
       existingMarker: marker,
       displayClass: displayClass,
     });
@@ -288,11 +297,11 @@
 
   }
 
-  function removeStaleMarkers(processedIds) {
-    for (const [markerId, entry] of currentMarkers.entries()) {
+  function removeStaleMarkers(processedIds, existingMarkersMap) {
+    for (const [markerId, entry] of existingMarkersMap.entries()) {
       if (!processedIds.has(markerId)) {
         markerLayer.removeLayer(entry.existingMarker);
-        currentMarkers.delete(markerId);
+        existingMarkersMap.delete(markerId);
       }
     }
   }

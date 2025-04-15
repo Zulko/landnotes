@@ -13,8 +13,8 @@ import { geohashToLatLon, latLonToGeohash } from './geo/geohash';
  * @param {boolean} [addToHistory=false] - Whether to add this state to browser history
  */
 export function updateURLParams(state, addToHistory = true) {
-  const {location, zoom, selectedMarkerId, mode, date, strictDate} = state
-  console.log("updateURLParams")
+  const {location, zoom, selectedMarkerId, mode, date, strictDate} = state;
+  console.log("updateURLParams, addToHistory:", addToHistory);
   const params = new URLSearchParams();
   
   // Add map position parameters if they exist
@@ -38,9 +38,11 @@ export function updateURLParams(state, addToHistory = true) {
   const newUrl = `${window.location.pathname}?${params.toString()}`;
   
   if (addToHistory) {
-    console.log("adding to history", newUrl)
+    console.log("adding to history", newUrl);
     window.history.pushState(state, '', newUrl);
   } else {
+    console.log("heeeeeeeeeeeeeeeere")
+    console.log("replacing current history entry", newUrl);
     window.history.replaceState(state, '', newUrl);
   }
 }

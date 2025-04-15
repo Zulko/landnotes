@@ -45,10 +45,16 @@
   /**
    * Content state
    */
-  let markers = [];
+  let mapEntries = [];
+  let mapDots = [];
   let mapComponent;
   let wikiPage = "";
   let cachedEntries = new Map();
+
+  // Add a flag to track when we're handling a popstate event
+  let isHandlingPopstate = false;
+  // Track initial page load
+  let isInitialLoad = true;
 
   // -------------------------
   // LIFECYCLE HOOKS
@@ -58,7 +64,6 @@
     console.log("App starting!");
     handleResize(); // Initialize mobile detection
     
-
     // Read URL parameters when the app loads
     const urlState = readURLParams();
     state = {...stateDefaults, ...urlState};
@@ -67,9 +72,16 @@
     } else {
       mapComponent.goTo({location: {lat: 0, lon: 0}, zoom: 3, flyDuration: 0})
     }
+    
     // Add history navigation handler
     window.addEventListener("popstate", handlePopState);
     
+    // Wait a bit and then mark initialization as complete
+    setTimeout(() => {
+      isInitialLoad = false;
+      // Replace the initial history entry instead of adding a new one
+      updateURLParams(state, false);
+    }, 100);
   });
 
   // When pane state changes, update map size after a slight delay to allow transitions
@@ -83,8 +95,20 @@
   }
 
   $: if (state) {
-    console.log("state changed", state)
-    updateURLParams(state)
+    debounce((s) => handleStateChange(s), 500)(state);
+  }
+
+  function handleStateChange(state) {
+    console.log("state changed", state);
+    // Only update URL if not handling popstate and not in initial load
+    if (!isHandlingPopstate && !isInitialLoad) {
+      console.log("Updating URL params with history", state);
+      updateURLParams(state, true);
+    } else {
+      console.log("Updating URL params without history", state);
+      // Still update the URL, but don't add to history
+      updateURLParams(state, false);
+    }
   }
   $: if (state && state.selectedMarkerId !== previousSelectedMarkerId) {
     handleNewSelectedMarker(state.selectedMarkerId)
@@ -100,20 +124,20 @@
       const query = await getGeodataFromGeokeys([newSelectedMarkerId], cachedEntries);
       const selectedMarker = query[0];
       openWikiPane(selectedMarker.page_title);
-      if (!markers.some(marker => marker.geokey === newSelectedMarkerId)) {
-        newMarkers = [...markers, selectedMarker];
+      if (!mapEntries.some(marker => marker.geokey === newSelectedMarkerId)) {
+        newMarkers = [...mapEntries, selectedMarker];
       } else {
-        newMarkers = [...markers];
+        newMarkers = [...mapEntries];
       }
     }
     else {
       closeWikiPane();
-      newMarkers = [...markers];
+      newMarkers = [...mapEntries];
       
     }
     previousSelectedMarkerId = state.selectedMarkerId
     addMarkerClasses(newMarkers, state.zoom)
-    markers = newMarkers
+    mapEntries = newMarkers
     
   }
 
@@ -121,11 +145,26 @@
    * Handle browser history navigation
    */
   function handlePopState(ev: PopStateEvent) {
-    console.log("handlePopState", ev.state)
-    state = ev.state
+    console.log("handlePopState", ev.state);
+    isHandlingPopstate = true;
+    
+    // If state is null, use defaults
+    if (!ev.state) {
+      console.warn("No state in popstate event, using defaults");
+      state = {...stateDefaults};
+    } else {
+      state = ev.state;
+    }
+    
     if (state.location) {
       mapComponent.goTo({location: state.location, zoom: state.zoom, flyDuration: 0})
     }
+    
+    // Reset the flag after a brief timeout to allow the state update to complete
+    setTimeout(() => { 
+      isHandlingPopstate = false;
+      console.log("Popstate handling complete");
+    }, 100);
   }
 
   /**
@@ -155,22 +194,23 @@
 
     // Fetch geodata for the current bounds
     try {
-      const entries = await getGeodataFromBounds(
+      const {entriesInBounds, dotMarkers} = await getGeodataFromBounds(
         bounds,
         zoom - 1,
         cachedEntries
       );
       if (
         state.selectedMarkerId &&
-        !entries.some((entry) => entry.geokey === state.selectedMarkerId)
+        !entriesInBounds.some((entry) => entry.geokey === state.selectedMarkerId)
       ) {
         const selectedMarker = await getGeodataFromGeokeys([state.selectedMarkerId], cachedEntries);
-        entries.push(selectedMarker[0]);
+        entriesInBounds.push(selectedMarker[0]);
       }
 
       // Update markers with display classes
-      addMarkerClasses(entries, zoom);
-      markers = entries;
+      addMarkerClasses(entriesInBounds, zoom);
+      mapEntries = entriesInBounds;
+      mapDots = dotMarkers;
     } catch (error) {
       console.error("Error fetching geodata:", error);
     }
@@ -181,11 +221,13 @@
    */
   function handleMarkerClick(event) {
     if (state.selectedMarkerId !== event.detail.geokey) {
-      state = {...state, selectedMarkerId: event.detail.geokey}
-      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: state.zoom, flyDuration: 1})
+      setTimeout(() => {
+        state = {...state, selectedMarkerId: event.detail.geokey}
+      }, 100)
+      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: state.zoom, flyDuration: 0.4})
     } else {
       const newZoom = Math.min(17, Math.max(12, state.zoom + 2))
-      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: newZoom, flyDuration: 1})
+      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: newZoom, flyDuration: 0.4})
     }
   }
 
@@ -213,6 +255,21 @@
     wikiPage = "";
     isPaneOpen = false;
   }
+
+  /**
+   * Debounce function to limit how often a function is called
+   * @param func The function to debounce
+   * @param wait Wait time in milliseconds
+   * @returns Debounced function
+   */
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+  
   /**
    * Classify markers for display based on importance and zoom level
    */
@@ -248,7 +305,8 @@
     <div class="map-container">
       <WorldMap
         bind:this={mapComponent}
-        {markers}
+        {mapEntries}
+        {mapDots}
         on:boundschange={handleBoundsChange}
         on:markerclick={handleMarkerClick}
       />
