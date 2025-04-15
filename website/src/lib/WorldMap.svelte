@@ -250,14 +250,24 @@
     const newDotMarkers = new Map();
 
     for (const dotEntry of mapDots) {
-      const marker = L.circleMarker([dotEntry.lat, dotEntry.lon], {
-        radius: 4,
-        weight: 1,
-        color: "#777",
-        fillColor: "white",
-        fillOpacity: 1,
-        pane: "dot",
-      });
+      let marker;
+      
+      // Simply reuse the existing marker if it exists
+      if (currentDotMarkers.has(dotEntry.geokey)) {
+        marker = currentDotMarkers.get(dotEntry.geokey).existingMarker;
+        // Update position in case it changed
+        marker.setLatLng([dotEntry.lat, dotEntry.lon]);
+      } else {
+        // Create new marker only for new entries
+        marker = L.circleMarker([dotEntry.lat, dotEntry.lon], {
+          radius: 4,
+          weight: 1,
+          color: "#777",
+          fillColor: "white",
+          fillOpacity: 1,
+          pane: "dot",
+        });
+      }
       
       marker.addTo(newDotMarkerLayer);
       newDotMarkers.set(dotEntry.geokey, {
