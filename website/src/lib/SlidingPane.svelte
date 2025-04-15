@@ -13,9 +13,7 @@
   
 
   // ===== COMPUTED VALUES =====
-  // Detect mobile view
   
-
   // Compute actual dimensions based on expanded state
   let actualWidth = $derived(isMobile
     ? "100%"
@@ -106,7 +104,6 @@
 
     <div class="pane-content">
       {#if wikiPage}
-        <h1>{wikiPage}</h1>
         <iframe
           title="Wikipedia Content"
           src={wikiUrl}
@@ -123,10 +120,6 @@
 
 <style>
   .pane-container {
-    display: none;
-  }
-
-  .pane-container.is-open {
     display: flex;
   }
 

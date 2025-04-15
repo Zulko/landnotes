@@ -4,6 +4,7 @@
   // -------------------------
   // Svelte lifecycle
   import { onMount } from "svelte";
+  import { fly, fade } from 'svelte/transition';
 
   // Components
   import WorldMap from "./lib/WorldMap.svelte";
@@ -41,7 +42,6 @@
    * UI state
    */
   let isMobile = $state(false);
-  let isPaneOpen = $state(false);
   /**
    * Content state
    */
@@ -97,8 +97,6 @@
   });
 
   function onPaneClose() {
-    isPaneOpen = false;
-    wikiPage = "";
     appState.selectedMarkerId = null;
     handleNewSelectedMarker(null);
     setTimeout(() => mapComponent.invalidateMapSize(), 50);
@@ -131,8 +129,6 @@
       const query = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
       const selectedMarker = query[0];
       wikiPage = selectedMarker.page_title;
-      console.log("wikiPaaaaaaaaaaaaaaaaaaaaaage", wikiPage);
-      isPaneOpen = true;
       if (!mapEntries.some(marker => marker.geokey === selectedMarkerId)) {
         newMarkers = [...mapEntries, selectedMarker];
       } else {
@@ -140,8 +136,6 @@
       }
     }
     else {
-      wikiPage = "";
-      isPaneOpen = false;
       newMarkers = [...mapEntries];
       
     }
@@ -290,11 +284,13 @@
 
 <svelte:window on:resize={handleResize} />
 
-<main class:has-open-pane={isPaneOpen} class:is-mobile={isMobile}>
+<main class:is-mobile={isMobile}>
   <div class="content-container">
-    <div class="wiki-pane-container">
-      <SlidingPane {onPaneClose} {wikiPage} />
-    </div>
+    {#if appState.selectedMarkerId}
+      <div class="wiki-pane-container">
+        <SlidingPane {onPaneClose} {wikiPage} />
+      </div>
+    {/if}
     
     <div class="map-container">
       <WorldMap
@@ -337,7 +333,7 @@
 
   .wiki-pane-container {
     flex: 0 0 0;
-    transition: flex 0.3s ease;
+    transition: flex 1s ease;
     height: 100%;
     z-index: 100;
   }
@@ -349,10 +345,6 @@
     position: relative;
   }
 
-  /* When pane is open on desktop */
-  main.has-open-pane:not(.is-mobile) .wiki-pane-container {
-    flex: 0 0 400px; /* Default width, will be adjusted by SlidingPane component */
-  }
 
   /* Mobile layout */
   main.is-mobile .content-container {
