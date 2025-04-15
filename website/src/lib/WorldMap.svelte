@@ -198,40 +198,40 @@
       }
 
       let marker;
+      let isExistingMarker = false;
       if (currentMarkers.has(entry.geokey)) {
         // Reuse existing marker configuration with updated properties
         const { existingMarker, existingClass } = currentMarkers.get(entry.geokey);
         
         // Only update icon if display class changed
-        if (existingClass !== displayClass || 
-            existingMarker._latlng.lat !== entry.lat || 
-            existingMarker._latlng.lng !== entry.lon) {
-          
+        if (existingClass !== displayClass) {
           marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
         } else {
           marker = existingMarker;
+          isExistingMarker = true;
         }
       } else {
         marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
       }
       
       // Add event handlers
-      marker.on("click", () => {
-        dispatch("markerclick", entry);
-      });
+      if (!isExistingMarker) {
+        marker.on("click", () => {
+          dispatch("markerclick", entry);
+        });
 
-      marker.on("mouseover", () => {
-        if (hoveredMarkerId !== entry.geokey) {
-          hoveredMarkerId = entry.geokey;
-          updateMarkers();
-        }
-      });
-      
+        marker.on("mouseover", () => {
+          if (hoveredMarkerId !== entry.geokey) {
+            hoveredMarkerId = entry.geokey;
+            updateMarkers();
+          }
+        });
+      }
       marker.addTo(newMarkerLayer);
       newMarkers.set(entry.geokey, {
-        existingMarker: marker,
-        displayClass: displayClass,
-      });
+          existingMarker: marker,
+          displayClass: displayClass,
+        });
     }
 
     // Swap the layer groups
@@ -268,13 +268,14 @@
           pane: "dot",
         });
       }
-      
       marker.addTo(newDotMarkerLayer);
       newDotMarkers.set(dotEntry.geokey, {
         existingMarker: marker,
         displayClass: "dot",
       });
     }
+
+    
 
     // Swap the layer groups
     if (dotMarkerLayer) {
