@@ -13,6 +13,7 @@
   let mapElement;
   let map;
   let markerLayer = null;
+  let dotMarkerLayer = null;
   let isFlying = false;
   let hoveredMarkerId = null;
   let currentMarkers = new Map(); // key: marker.geokey, value: L.marker object
@@ -107,6 +108,7 @@
     });
 
     markerLayer = L.layerGroup().addTo(map);
+    dotMarkerLayer = L.layerGroup().addTo(map);
 
     // Add event listeners
     map.on("moveend", handleBoundsChange);
@@ -179,18 +181,14 @@
   }
 
   // ===== MARKER MANAGEMENT =====
-  
-
   function updateMarkers() {
-    if (!map || !markerLayer) return;
+    if (!map) return;
 
-    // Track which markers we've processed to identify removals
-    const processedIds = new Set();
+    const newMarkerLayer = L.layerGroup();
+    const newMarkers = new Map();
 
-    // Update or add markers
+    // Create or update markers
     for (const entry of mapEntries) {
-      processedIds.add(entry.geokey);
-
       let displayClass = entry.displayClass;
       let pane = entry.displayClass;
 
@@ -199,82 +197,24 @@
         pane = "hovered";
       }
 
-      // Check if marker already exists
+      let marker;
       if (currentMarkers.has(entry.geokey)) {
-        updateExistingMarker(entry, displayClass, pane, currentMarkers);
+        // Reuse existing marker configuration with updated properties
+        const { existingMarker, existingClass } = currentMarkers.get(entry.geokey);
+        
+        // Only update icon if display class changed
+        if (existingClass !== displayClass || 
+            existingMarker._latlng.lat !== entry.lat || 
+            existingMarker._latlng.lng !== entry.lon) {
+          
+          marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
+        } else {
+          marker = existingMarker;
+        }
       } else {
-        createNewMarker(entry, displayClass, pane, currentMarkers);
+        marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
       }
-    }
-
-    // Remove markers that are no longer in the data
-    removeStaleMarkers(processedIds, currentMarkers);
-  }
-
-  function updateDotMarkers() {
-    if (!map || !markerLayer) return;
-
-    // Track which markers we've processed to identify removals
-    const processedIds = new Set();
-
-    for (const dotEntry of mapDots) {
-      if (!currentDotMarkers.has(dotEntry.geokey)) {
-        createNewMarker(dotEntry, "dot", "dot", currentDotMarkers);
-      }
-      processedIds.add(dotEntry.geokey);
-    }
-    removeStaleMarkers(processedIds, currentDotMarkers);
-  }
-
-  function updateExistingMarker(marker, displayClass, pane, existingMarkersMap) {
-    const { existingMarker, existingClass } = currentMarkers.get(
-      marker.geokey
-    );
-
-    // Update position if needed
-    if (
-      existingMarker._latlng.lat !== marker.lat ||
-      existingMarker._latlng.lng !== marker.lon
-    ) {
-      existingMarker.setLatLng([marker.lat, marker.long]);
-    }
-
-    // Update pane if needed
-    if (existingMarker.options.pane !== pane) {
-      existingMarker.options.pane = pane;
-      // Force marker to use the new pane
-      existingMarker.removeFrom(map);
-      existingMarker.addTo(map);
-    }
-
-    // Update icon if display class changed
-    if (existingClass !== displayClass) {
-      const icon = createGeoDivIcon(marker, displayClass, map.getZoom());
-      existingMarker.setIcon(icon);
-
-      // Update the stored display class
-      existingMarkersMap.set(marker.geokey, {
-        existingMarker,
-        displayClass,
-      });
-    }
-  }
-
-
-
-  function createNewMarker(entry, displayClass, pane, existingMarkersMap) {
-    let marker;
-    if (displayClass === "dot") {
-      marker = L.circleMarker([entry.lat, entry.lon], {
-        radius: 4,
-        weight: 1,
-        color: "#777",
-        fillColor: "white",
-        fillOpacity: 1,
-        pane: pane,
-      });
-    } else {
-      marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
+      
       // Add event handlers
       marker.on("click", () => {
         dispatch("markerclick", entry);
@@ -286,25 +226,53 @@
           updateMarkers();
         }
       });
+      
+      marker.addTo(newMarkerLayer);
+      newMarkers.set(entry.geokey, {
+        existingMarker: marker,
+        displayClass: displayClass,
+      });
     }
-    marker.addTo(markerLayer);
-    existingMarkersMap.set(entry.geokey, {
-      existingMarker: marker,
-      displayClass: displayClass,
-    });
-    
 
-
+    // Swap the layer groups
+    if (markerLayer) {
+      map.removeLayer(markerLayer);
+    }
+    newMarkerLayer.addTo(map);
+    markerLayer = newMarkerLayer;
+    currentMarkers = newMarkers;
   }
 
-  function removeStaleMarkers(processedIds, existingMarkersMap) {
-    for (const [markerId, entry] of existingMarkersMap.entries()) {
-      console.log("removing")
-      if (!processedIds.has(markerId)) {
-        markerLayer.removeLayer(entry.existingMarker);
-        existingMarkersMap.delete(markerId);
-      }
+  function updateDotMarkers() {
+    if (!map) return;
+
+    const newDotMarkerLayer = L.layerGroup();
+    const newDotMarkers = new Map();
+
+    for (const dotEntry of mapDots) {
+      const marker = L.circleMarker([dotEntry.lat, dotEntry.lon], {
+        radius: 4,
+        weight: 1,
+        color: "#777",
+        fillColor: "white",
+        fillOpacity: 1,
+        pane: "dot",
+      });
+      
+      marker.addTo(newDotMarkerLayer);
+      newDotMarkers.set(dotEntry.geokey, {
+        existingMarker: marker,
+        displayClass: "dot",
+      });
     }
+
+    // Swap the layer groups
+    if (dotMarkerLayer) {
+      map.removeLayer(dotMarkerLayer);
+    }
+    newDotMarkerLayer.addTo(map);
+    dotMarkerLayer = newDotMarkerLayer;
+    currentDotMarkers = newDotMarkers;
   }
 
   // ===== EXPORTED FUNCTIONS =====
