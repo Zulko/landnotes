@@ -35,13 +35,6 @@
   }
 
   let appState = $state(stateDefaults);
-  
-
-
-  /**
-   * UI state
-   */
-  let isMobile = $state(false);
   /**
    * Content state
    */
@@ -52,49 +45,64 @@
   let cachedEntries = $state(new Map());
 
   // Add a flag to track when we're handling a popstate event
-  let isHandlingPopstate = false;
-  // Track initial page load
-  let isInitialLoad = true;
+  let dontPushToHistory = $state(false);
+  let isMobile = $state(false);
 
   // -------------------------
   // LIFECYCLE HOOKS
   // -------------------------
 
+
+    // -------------------------
+  // HELPER FUNCTIONS
+  // -------------------------
+
+  /**
+   * Debounce function to limit how often a function is called
+   * @param func The function to debounce
+   * @param wait Wait time in milliseconds
+   * @returns Debounced function
+   */
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+
   onMount(async () => {
     console.log("App starting!");
     handleResize(); // Initialize mobile detection
+    setStateFromURLParams()
+    window.addEventListener("popstate", handlePopState);
+  });
+
+  // When pane state changes, update map size after a slight delay to allow transitions
+
+  $effect(() => {
+    debouncedUpdateURLParams($state.snapshot(appState));
     
-    // Read URL parameters when the app loads
+  });
+
+  function setStateFromURLParams() {
+    dontPushToHistory = true;
     const urlState = readURLParams();
     if (urlState.selectedMarkerId) {
       handleNewSelectedMarker(urlState.selectedMarkerId);
     }
     appState = {...stateDefaults, ...urlState};
-    
     if (urlState.location) {
-      mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0})
+      mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0.3})
     } else {
-      mapComponent.goTo({location: {lat: 0, lon: 0}, zoom: 3, flyDuration: 0})
+      mapComponent.goTo({location: {lat: 0, lon: 0}, zoom: 3, flyDuration: 0.3})
     }
-    
-    // Add history navigation handler
-    window.addEventListener("popstate", handlePopState);
-    
-    // Wait a bit and then mark initialization as complete
     setTimeout(() => {
-      isInitialLoad = false;
-      // Replace the initial history entry instead of adding a new one
-      updateURLParams($state.snapshot(appState), false);
-    }, 100);
-  });
-
-  // When pane state changes, update map size after a slight delay to allow transitions
-
-
-
-  $effect(() => {
-    debounce((s) => updateURLParamsOnStateChange(s), 500)($state.snapshot(appState));
-  });
+      console.log("releasing the lock")
+      dontPushToHistory = false;
+    }, 3000)
+  }
+    
 
   function onPaneClose() {
     appState.selectedMarkerId = null;
@@ -103,17 +111,14 @@
   };
 
   function updateURLParamsOnStateChange(appState) {
+    if (dontPushToHistory) return;
     console.log("state changed", appState);
     // Only update URL if not handling popstate and not in initial load
-    if (!isHandlingPopstate && !isInitialLoad) {
-      console.log("Updating URL params with history", appState);
-      updateURLParams(appState, true);
-    } else {
-      console.log("Updating URL params without history", appState);
-      // Still update the URL, but don't add to history
-      updateURLParams(appState, false);
-    }
+    console.log("Updating URL params with history", appState);
+    updateURLParams(appState, true);
   }
+
+  const debouncedUpdateURLParams = debounce(updateURLParamsOnStateChange, 500);
 
   // -------------------------
   // EVENT HANDLERS
@@ -149,26 +154,12 @@
    * Handle browser history navigation
    */
   function handlePopState(ev: PopStateEvent) {
-    console.log("handlePopState", ev.state);
-    isHandlingPopstate = true;
-    
-    // If state is null, use defaults
-    if (!ev.state) {
-      console.warn("No state in popstate event, using defaults");
-      appState = {...stateDefaults};
-    } else {
-      appState = ev.state;
-    }
-    
-    if (appState.location) {
-      mapComponent.goTo({location: appState.location, zoom: appState.zoom, flyDuration: 0})
-    }
-    
-    // Reset the flag after a brief timeout to allow the state update to complete
-    setTimeout(() => { 
-      isHandlingPopstate = false;
-      console.log("Popstate handling complete");
-    }, 100);
+    console.log("POPPPPP")
+    setStateFromURLParams()
+    setTimeout(() => {
+      console.log("focusing on main")
+      document.getElementById("main").focus();
+    }, 3000)
   }
 
   /**
@@ -220,7 +211,7 @@
       setTimeout(() => {
         handleNewSelectedMarker(selectedMarkerId)
         appState.selectedMarkerId = selectedMarkerId;
-      }, 100)
+      }, 400)
       mapComponent.goTo({location, zoom: appState.zoom, flyDuration: 0.4})
     } else {
       const newZoom = Math.min(17, Math.max(12, appState.zoom + 2))
@@ -240,23 +231,7 @@
     mapComponent.goTo({location: {lat, lon}, zoom: Math.max(12, appState.zoom), flyDuration: 1})
   }
 
-  // -------------------------
-  // HELPER FUNCTIONS
-  // -------------------------
 
-  /**
-   * Debounce function to limit how often a function is called
-   * @param func The function to debounce
-   * @param wait Wait time in milliseconds
-   * @returns Debounced function
-   */
-  function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-  }
   
   /**
    * Classify markers for display based on importance and zoom level
@@ -284,7 +259,7 @@
 
 <svelte:window on:resize={handleResize} />
 
-<main class:is-mobile={isMobile}>
+<main class:is-mobile={isMobile} tabindex="-1" data-focus-target id="main">
   <div class="content-container">
     {#if appState.selectedMarkerId}
       <div class="wiki-pane-container">

@@ -63,7 +63,7 @@
   }
 
   // Handle menu close request from MenuDropdown
-  function handleCloseMenu() {
+  function onCloseMenu() {
     isMenuOpen = false;
   }
 
@@ -190,7 +190,7 @@
   <MenuDropdown 
     bind:mode
     bind:strictDate
-    on:closeMenu={handleCloseMenu}
+    {onCloseMenu}
   />
   {/if}
 </div>

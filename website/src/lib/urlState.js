@@ -36,6 +36,11 @@ export function updateURLParams(state, addToHistory = true) {
   
   // Update URL without reloading the page
   const newUrl = `${window.location.pathname}?${params.toString()}`;
+
+  if ( params.toString() === window.location.search.slice(1)) {
+    console.log("Skipping pushstate because the url is the same");
+    return;
+  }
   
   if (addToHistory) {
     console.log("adding to history", newUrl);
@@ -53,7 +58,6 @@ export function updateURLParams(state, addToHistory = true) {
  */
 export function readURLParams() {
   const params = new URLSearchParams(window.location.search);
-  console.log("window.location.search", window.location.search);
   
   // Get map position parameters
   const result = {}

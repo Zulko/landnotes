@@ -1,5 +1,6 @@
 <script>
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
+  import { onMount } from 'svelte';
 
   // ===== PROPS =====
   let {wikiPage, onPaneClose} = $props();
@@ -10,21 +11,26 @@
   const normalHeight = "35vh"; // Default height for mobile
 
   // ===== STATE VARIABLES =====
+  let isInitialRender = $state(true);
   
 
   // ===== COMPUTED VALUES =====
   
-  // Compute actual dimensions based on expanded state
-  let actualWidth = $derived(isMobile
-    ? "100%"
-    : expanded
-      ? `${parseInt(normalWidth) * 2}px`
-      : normalWidth
-    );
+  // Compute actual dimensions based on expanded state and initial render
+  let actualWidth = $derived(isInitialRender 
+    ? "0px"
+    : isMobile
+      ? "100%"
+      : expanded
+        ? `${parseInt(normalWidth) * 2}px`
+        : normalWidth
+  );
 
-  let actualHeight = $derived(isMobile
-    ? (expanded ? "100vh" : normalHeight)
-    : "100vh"
+  let actualHeight = $derived(isInitialRender
+    ? "0px" 
+    : isMobile
+      ? (expanded ? "100vh" : normalHeight)
+      : "100vh"
   );
 
   // Generate Wikipedia URL based on device and width
@@ -66,26 +72,13 @@
     }
   }
 
-  // ===== TRANSITIONS =====
-  // Custom transition for desktop and mobile
-  function slideTransition(node, { duration }) {
-    const isMobile = window.innerWidth <= 768;
-
-    return {
-      duration,
-      css: (t) => {
-        // For desktop: slide from left (-100% to 0%)
-        // For mobile: slide from bottom (100% to 0%)
-        const value = isMobile ? (1 - t) * 100 : (t - 1) * 100;
-        const prop = isMobile ? "translateY" : "translateX";
-
-        return `
-          transform: ${prop}(${value}%);
-          opacity: ${t};
-        `;
-      },
-    };
-  }
+  // ===== LIFECYCLE =====
+  onMount(() => {
+    // Trigger the initial animation after a small delay
+    setTimeout(() => {
+      isInitialRender = false;
+    }, 10);
+  });
 </script>
 
 <svelte:window
@@ -104,12 +97,13 @@
 
     <div class="pane-content">
       {#if wikiPage}
-        <iframe
+        <iframe id="wiki-iframe"
+          tabindex="-2"
+          aria-hidden="true"
           title="Wikipedia Content"
           src={wikiUrl}
           frameborder="0"
           class="wiki-iframe"
-          sandbox="allow-same-origin allow-scripts"
         ></iframe>
       {:else}
         <p>No page specified</p>
