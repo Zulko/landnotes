@@ -19,12 +19,8 @@
   } from "./lib/geo/geodata";
 
   // -------------------------
-  // STATE MANAGEMENT
+  // STATE VARIABLES & DEFAULTS
   // -------------------------
-
-  /**
-   * Map configuration and state
-   */
   const stateDefaults = {
     mode: "places",
     strictDate: true,
@@ -35,33 +31,33 @@
   }
 
   let appState = $state(stateDefaults);
-  /**
-   * Content state
-   */
   let mapEntries = $state([]);
   let mapDots = $state([]);
   let mapComponent;
   let wikiPage = $state("");
   let cachedEntries = $state(new Map());
-
-  // Add a flag to track when we're handling a popstate event
   let dontPushToHistory = $state(false);
   let isMobile = $state(false);
 
   // -------------------------
   // LIFECYCLE HOOKS
   // -------------------------
+  onMount(async () => {
+    console.log("App starting!");
+    handleResize(); // Initialize mobile detection
+    setStateFromURLParams();
+    window.addEventListener("popstate", handlePopState);
+  });
 
+  $effect(() => {
+    debouncedUpdateURLParams($state.snapshot(appState));
+  });
 
-    // -------------------------
+  // -------------------------
   // HELPER FUNCTIONS
   // -------------------------
-
   /**
    * Debounce function to limit how often a function is called
-   * @param func The function to debounce
-   * @param wait Wait time in milliseconds
-   * @returns Debounced function
    */
   function debounce(func, wait) {
     let timeout;
@@ -71,20 +67,12 @@
     };
   }
 
-  onMount(async () => {
-    console.log("App starting!");
-    handleResize(); // Initialize mobile detection
-    setStateFromURLParams()
-    window.addEventListener("popstate", handlePopState);
-  });
-
-  // When pane state changes, update map size after a slight delay to allow transitions
-
-  $effect(() => {
-    debouncedUpdateURLParams($state.snapshot(appState));
-    
-  });
-
+  // -------------------------
+  // STATE MANAGEMENT FUNCTIONS
+  // -------------------------
+  /**
+   * Initialize app state from URL parameters
+   */
   function setStateFromURLParams() {
     dontPushToHistory = true;
     const urlState = readURLParams();
@@ -92,29 +80,24 @@
       handleNewSelectedMarker(urlState.selectedMarkerId);
     }
     appState = {...stateDefaults, ...urlState};
-    if (urlState.location) {
-      mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0.3})
-    } else {
-      mapComponent.goTo({location: {lat: 0, lon: 0}, zoom: 3, flyDuration: 0.3})
-    }
-    setTimeout(() => {
-      console.log("releasing the lock")
-      dontPushToHistory = false;
-    }, 3000)
-  }
     
+    if (urlState.location) {
+      mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0.3});
+    } else {
+      mapComponent.goTo({location: {lat: 0, lon: 0}, zoom: 3, flyDuration: 0.3});
+    }
+    
+    setTimeout(() => {
+      console.log("releasing the lock");
+      dontPushToHistory = false;
+    }, 3000);
+  }
 
-  function onPaneClose() {
-    appState.selectedMarkerId = null;
-    handleNewSelectedMarker(null);
-    setTimeout(() => mapComponent.invalidateMapSize(), 50);
-  };
-
+  /**
+   * Update URL parameters when state changes
+   */
   function updateURLParamsOnStateChange(appState) {
     if (dontPushToHistory) return;
-    console.log("state changed", appState);
-    // Only update URL if not handling popstate and not in initial load
-    console.log("Updating URL params with history", appState);
     updateURLParams(appState, true);
   }
 
@@ -123,43 +106,20 @@
   // -------------------------
   // EVENT HANDLERS
   // -------------------------
-
-  async function handleNewSelectedMarker(selectedMarkerId) {
-
-    console.log("handleNewSelectedMarker");
-    if (selectedMarkerId === appState.selectedMarkerId) return;
-    
-    let newMarkers;
-    if (selectedMarkerId) {
-      const query = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
-      const selectedMarker = query[0];
-      wikiPage = selectedMarker.page_title;
-      if (!mapEntries.some(marker => marker.geokey === selectedMarkerId)) {
-        newMarkers = [...mapEntries, selectedMarker];
-      } else {
-        newMarkers = [...mapEntries];
-      }
-    }
-    else {
-      newMarkers = [...mapEntries];
-      
-    }
-    
-    addMarkerClasses(newMarkers, appState.zoom)
-    mapEntries = newMarkers
-    
-  }
-
   /**
    * Handle browser history navigation
    */
-  function handlePopState(ev: PopStateEvent) {
-    console.log("POPPPPP")
-    setStateFromURLParams()
-    setTimeout(() => {
-      console.log("focusing on main")
-      document.getElementById("main").focus();
-    }, 3000)
+  function handlePopState(ev) {
+    setStateFromURLParams();
+  }
+
+  /**
+   * Handle closing of the sliding pane
+   */
+  function onPaneClose() {
+    appState.selectedMarkerId = null;
+    handleNewSelectedMarker(null);
+    setTimeout(() => mapComponent.invalidateMapSize(), 50);
   }
 
   /**
@@ -173,9 +133,8 @@
    * Process map bounds changes and fetch new markers
    */
   async function onMapBoundsChange({bounds, center, zoom}) {
-    console.log("onMapBoundsChange");
-    const location = {lat: center.lat, lon: center.lng}
-    appState = {...appState, zoom, location}
+    const location = {lat: center.lat, lon: center.lng};
+    appState = {...appState, zoom, location};
 
     // Fetch geodata for the current bounds
     try {
@@ -184,6 +143,8 @@
         zoom - 1,
         cachedEntries
       );
+      
+      // Make sure the selected marker is included
       if (
         appState.selectedMarkerId &&
         !entriesInBounds.some((entry) => entry.geokey === appState.selectedMarkerId)
@@ -206,16 +167,15 @@
    */
   function onMarkerClick({geokey, lat, lon}) {
     const selectedMarkerId = geokey;
-    const location = {lat, lon}
+    const location = {lat, lon};
+    
     if (appState.selectedMarkerId !== selectedMarkerId) {
-      setTimeout(() => {
-        handleNewSelectedMarker(selectedMarkerId)
-        appState.selectedMarkerId = selectedMarkerId;
-      }, 400)
-      mapComponent.goTo({location, zoom: appState.zoom, flyDuration: 0.4})
+      handleNewSelectedMarker(selectedMarkerId);
+      appState.selectedMarkerId = selectedMarkerId;     
+      mapComponent.goTo({location, zoom: appState.zoom, flyDuration: 0.3});
     } else {
-      const newZoom = Math.min(17, Math.max(12, appState.zoom + 2))
-      mapComponent.goTo({location, zoom: newZoom, flyDuration: 0.4})
+      const newZoom = Math.min(17, Math.max(12, appState.zoom + 2));
+      mapComponent.goTo({location, zoom: newZoom, flyDuration: 0.4});
     }
   }
 
@@ -225,22 +185,44 @@
   function onSearchSelect({geokey, lat, lon}) {
     const selectedMarkerId = geokey;
     if (appState.selectedMarkerId !== selectedMarkerId) {
-      handleNewSelectedMarker(selectedMarkerId)
+      handleNewSelectedMarker(selectedMarkerId);
       appState.selectedMarkerId = selectedMarkerId;
     }
-    mapComponent.goTo({location: {lat, lon}, zoom: Math.max(12, appState.zoom), flyDuration: 1})
+    mapComponent.goTo({location: {lat, lon}, zoom: Math.max(12, appState.zoom), flyDuration: 1});
   }
 
+  // -------------------------
+  // MARKER MANAGEMENT FUNCTIONS
+  // -------------------------
+  /**
+   * Update the selected marker and associated data
+   */
+  async function handleNewSelectedMarker(selectedMarkerId) {
+    if (selectedMarkerId === appState.selectedMarkerId) return;
+    
+    let newMarkers;
+    if (selectedMarkerId) {
+      const query = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
+      const selectedMarker = query[0];
+      wikiPage = selectedMarker.page_title;
+      
+      if (!mapEntries.some(marker => marker.geokey === selectedMarkerId)) {
+        newMarkers = [...mapEntries, selectedMarker];
+      } else {
+        newMarkers = [...mapEntries];
+      }
+    } else {
+      newMarkers = [...mapEntries];
+    }
+    
+    addMarkerClasses(newMarkers, appState.zoom);
+    mapEntries = newMarkers;
+  }
 
-  
   /**
    * Classify markers for display based on importance and zoom level
    */
   function addMarkerClasses(entries, zoomLevel) {
-    // Sort entries by page length in descending order
-
-    // Assign default display classes based on the sorted order
-    // Handle selected and high-zoom markers
     for (const entry of entries) {
       if (appState.selectedMarkerId && entry.geokey == appState.selectedMarkerId) {
         entry.displayClass = "selected";
@@ -252,7 +234,6 @@
         entry.displayClass = "dot";
       }
     }
-
     return entries;
   }
 </script>
@@ -320,7 +301,6 @@
     position: relative;
   }
 
-
   /* Mobile layout */
   main.is-mobile .content-container {
     flex-direction: column;
@@ -330,8 +310,6 @@
     flex: 0 0 0;
     order: 2; /* Put wiki pane at the bottom */
   }
-
-
 
   main.is-mobile .map-container {
     order: 1; /* Put map at the top */
