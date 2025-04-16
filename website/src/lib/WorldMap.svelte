@@ -5,7 +5,7 @@
   import { createGeoMarker, createGeoDivIcon } from "./markers";
 
   // ===== PROPS =====
-  let {mapEntries, mapDots, onMapBoundsChange, onMarkerClick} = $props();
+  let { mapEntries, mapDots, onMapBoundsChange, onMarkerClick } = $props();
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
@@ -120,7 +120,7 @@
   }
 
   // ===== MAP CONTROL FUNCTIONS =====
-  export function goTo({location, zoom, flyDuration}) {
+  export function goTo({ location, zoom, flyDuration }) {
     const { lat, lon } = location;
     clearTimeout(handleBoundChangesAfterFlyToTimeOut);
     clearTimeout(fixZoomAfterFlyToTimeOut);
@@ -133,7 +133,7 @@
     if (flyDuration == 0) {
       map.setView([lat, lon], zoom, {
         animate: false,
-        duration: 0
+        duration: 0,
       });
     } else {
       isFlying = true;
@@ -142,17 +142,23 @@
         duration: flyDuration, // Duration in seconds
       });
       // this fixes a bug in leaflet where it looses track of the zoom level after a flyto
-      fixZoomAfterFlyToTimeOut = setTimeout(function(){ map.setZoom(zoom);}, 1000*flyDuration + 50);
+      fixZoomAfterFlyToTimeOut = setTimeout(
+        function () {
+          map.setZoom(zoom);
+        },
+        1000 * flyDuration + 50
+      );
 
       // Set isFlying back to false after animation completes
-      handleBoundChangesAfterFlyToTimeOut = setTimeout(() => {
-        isFlying = false;
-        // Activate single boundschange event after flying completes
-        handleBoundsChange();
-      }, 1000*flyDuration + 50); // Slightly longer than animation duration
+      handleBoundChangesAfterFlyToTimeOut = setTimeout(
+        () => {
+          isFlying = false;
+          // Activate single boundschange event after flying completes
+          handleBoundsChange();
+        },
+        1000 * flyDuration + 50
+      ); // Slightly longer than animation duration
     }
-
-    
   }
 
   // ===== EVENT HANDLERS =====
@@ -210,8 +216,10 @@
       let isExistingMarker = false;
       if (currentMarkers.has(entry.geokey)) {
         // Reuse existing marker configuration with updated properties
-        const { existingMarker, existingClass } = currentMarkers.get(entry.geokey);
-        
+        const { existingMarker, existingClass } = currentMarkers.get(
+          entry.geokey
+        );
+
         // Only update icon if display class changed
         if (existingClass !== displayClass) {
           marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
@@ -222,7 +230,7 @@
       } else {
         marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
       }
-      
+
       // Add event handlers
       if (!isExistingMarker) {
         marker.on("click", () => {
@@ -238,9 +246,9 @@
       }
       marker.addTo(newMarkerLayer);
       newMarkers.set(entry.geokey, {
-          existingMarker: marker,
-          displayClass: displayClass,
-        });
+        existingMarker: marker,
+        displayClass: displayClass,
+      });
     }
 
     // Swap the layer groups
@@ -260,7 +268,7 @@
 
     for (const dotEntry of mapDots) {
       let marker;
-      
+
       // Simply reuse the existing marker if it exists
       if (currentDotMarkers.has(dotEntry.geokey)) {
         marker = currentDotMarkers.get(dotEntry.geokey).existingMarker;
@@ -284,8 +292,6 @@
       });
     }
 
-    
-
     // Swap the layer groups
     if (dotMarkerLayer) {
       map.removeLayer(dotMarkerLayer);
@@ -301,14 +307,9 @@
   }
 </script>
 
-<div
-  class="map-container"
-  bind:this={mapElement}
-  onresize={handleResize}
-></div>
+<div class="map-container" bind:this={mapElement} onresize={handleResize}></div>
 
 <style>
-
   .map-container {
     width: 100%;
     height: 100%;
@@ -456,23 +457,21 @@
     border-radius: 0px;
     padding: 0;
     margin: 0;
-    
   }
 
   :global(.geo-marker-popup .leaflet-popup-content) {
     margin: 0;
     padding: 0;
   }
-  
+
   :global(.geo-marker-popup .leaflet-popup-tip) {
     background-color: rgba(255, 255, 255, 0.9);
-
   }
 
   :global(.leaflet-popup-pane) {
     z-index: 499 !important;
   }
-  
+
   :global(.geo-marker-popup .leaflet-popup-content-wrapper) {
     background-color: transparent !important;
   }

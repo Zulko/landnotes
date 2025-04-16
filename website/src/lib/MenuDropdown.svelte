@@ -1,7 +1,11 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  
-  let {mode = $bindable("places"), strictDate = $bindable(false), onCloseMenu} = $props();
+
+  let {
+    mode = $bindable("places"),
+    strictDate = $bindable(false),
+    onCloseMenu,
+  } = $props();
 
   function handleMenuBlur() {
     // Small delay to allow click events on menu items to fire
@@ -10,18 +14,20 @@
 
   function handleClickOutside(event) {
     // Close menu when clicking outside
-    if (!event.target.closest('.menu-container') && 
-        !event.target.closest('.menu-button')) {
+    if (
+      !event.target.closest(".menu-container") &&
+      !event.target.closest(".menu-button")
+    ) {
       onCloseMenu();
     }
   }
 
   onMount(() => {
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
   });
 
   onDestroy(() => {
-    document.removeEventListener('click', handleClickOutside);
+    document.removeEventListener("click", handleClickOutside);
   });
 </script>
 
@@ -31,37 +37,47 @@
     <div class="menu-group">
       <span class="menu-label">Show</span>
       <div class="menu-options">
-        <button 
-          class="mode-option {mode === 'places' ? 'active' : ''}" 
-          onclick={() => mode = 'places'}
+        <button
+          class="mode-option {mode === 'places' ? 'active' : ''}"
+          onclick={() => (mode = "places")}
         >
           places
         </button>
-        <button 
-          class="mode-option {mode === 'events' ? 'active' : ''}" 
-          onclick={() => mode = 'events'}
+        <button
+          class="mode-option {mode === 'events' ? 'active' : ''}"
+          onclick={() => (mode = "events")}
         >
           events
         </button>
       </div>
     </div>
-    
+
     <!-- Date filter options - only shown for events mode -->
-    {#if mode === 'events'}
-    <div class="menu-group">
-      <span class="menu-label">Date filter</span>
-      <select class="mode-option" value={strictDate ? "strict" : "overlapping"} 
-              onchange={(e) => strictDate = e.target.value === "strict"}>
-        <option value="strict">Only events strictly within the date</option>
-        <option value="overlapping">All events overlapping with the date</option>
-      </select>
-    </div>
+    {#if mode === "events"}
+      <div class="menu-group">
+        <span class="menu-label">Date filter</span>
+        <select
+          class="mode-option"
+          value={strictDate ? "strict" : "overlapping"}
+          onchange={(e) => (strictDate = e.target.value === "strict")}
+        >
+          <option value="strict">Only events strictly within the date</option>
+          <option value="overlapping"
+            >All events overlapping with the date</option
+          >
+        </select>
+      </div>
     {/if}
-    
+
     <!-- Links section -->
     <div class="menu-links">
       <a href="/blog-post" class="menu-item">About Landnotes</a>
-      <a href="https://github.com/yourusername/yourrepo" target="_blank" rel="noopener noreferrer" class="menu-item">
+      <a
+        href="https://github.com/yourusername/yourrepo"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="menu-item"
+      >
         Go to the project source on GitHub
       </a>
     </div>
@@ -150,4 +166,4 @@
   .menu-links {
     border-top: 1px solid #eee;
   }
-</style> 
+</style>

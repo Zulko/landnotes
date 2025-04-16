@@ -1,7 +1,7 @@
 <script>
   const basePath = import.meta.env.BASE_URL;
   // Props
-  let {expanded, onPaneClose, onToggleExpand, onOpenExternal} = $props();
+  let { expanded, onPaneClose, onToggleExpand, onOpenExternal } = $props();
 </script>
 
 <div class="pane-header">

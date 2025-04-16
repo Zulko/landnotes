@@ -3,8 +3,13 @@
   import { getEntriesfromText } from "./geo/geodata";
   import MenuDropdown from "./MenuDropdown.svelte";
   import DatePicker from "./DatePicker.svelte";
-  
-  let {mode = $bindable("places"), date = $bindable(null), strictDate = $bindable(false), onSearchSelect} = $props();
+
+  let {
+    mode = $bindable("places"),
+    date = $bindable(null),
+    strictDate = $bindable(false),
+    onSearchSelect,
+  } = $props();
   let searchQuery = $state("");
   let searchResults = $state([]);
   let isActive = $state(false);
@@ -50,7 +55,7 @@
     }
   });
 
-    // Reset selected index when search results change
+  // Reset selected index when search results change
   $effect(() => {
     if (searchResults) {
       selectedIndex = -1;
@@ -74,17 +79,18 @@
 
   function handleKeydown(event) {
     if (!isActive || searchResults.length === 0) return;
-    
-    if (event.key === 'ArrowDown') {
+
+    if (event.key === "ArrowDown") {
       event.preventDefault();
       selectedIndex = (selectedIndex + 1) % searchResults.length;
-    } else if (event.key === 'ArrowUp') {
+    } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      selectedIndex = selectedIndex <= 0 ? searchResults.length - 1 : selectedIndex - 1;
-    } else if (event.key === 'Enter' && selectedIndex >= 0) {
+      selectedIndex =
+        selectedIndex <= 0 ? searchResults.length - 1 : selectedIndex - 1;
+    } else if (event.key === "Enter" && selectedIndex >= 0) {
       event.preventDefault();
       handleSelect(searchResults[selectedIndex]);
-    } else if (event.key === 'Escape') {
+    } else if (event.key === "Escape") {
       isActive = false;
     }
   }
@@ -110,7 +116,6 @@
       selectedIndex = -1;
     }
   }
-
 </script>
 
 <div class="search-container">
@@ -138,15 +143,11 @@
     <div class="search-icon">
       <img src={`${import.meta.env.BASE_URL}icons/search.svg`} alt="Search" />
     </div>
-    
+
     <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
       <button class="menu-button" onclick={toggleMenu} title="Menu">
-        <img
-          src={`${basePath}icons/menu.svg`}
-          alt="Menu"
-          class="icon"
-        />
+        <img src={`${basePath}icons/menu.svg`} alt="Menu" class="icon" />
       </button>
     </div>
   </div>
@@ -184,14 +185,10 @@
 
   <!-- Menu component -->
   {#if mode === "events" && searchResults.length == 0}
-    <DatePicker bind:date/>
+    <DatePicker bind:date />
   {/if}
   {#if isMenuOpen}
-  <MenuDropdown 
-    bind:mode
-    bind:strictDate
-    {onCloseMenu}
-  />
+    <MenuDropdown bind:mode bind:strictDate {onCloseMenu} />
   {/if}
 </div>
 
@@ -246,7 +243,7 @@
     height: 28px;
     width: 28px;
     border-radius: 50%;
-    padding: 5px
+    padding: 5px;
   }
 
   .menu-button {
