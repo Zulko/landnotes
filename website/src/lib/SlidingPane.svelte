@@ -1,54 +1,51 @@
 <script>
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
-  import { onMount } from 'svelte';
+  import { onMount } from "svelte";
 
   // ===== PROPS =====
-  let {wikiPage, onPaneClose} = $props();
-  
+  let { wikiPage, onPaneClose } = $props();
+
   let expanded = $state(false);
-  let isMobile = $state(typeof window !== "undefined" && window.innerWidth <= 768);
+  let isMobile = $state(
+    typeof window !== "undefined" && window.innerWidth <= 768
+  );
   const normalWidth = "400px"; // Default width for desktop
   const normalHeight = "35vh"; // Default height for mobile
 
   // ===== STATE VARIABLES =====
   let isInitialRender = $state(true);
-  
 
   // ===== COMPUTED VALUES =====
-  
+
   // Compute actual dimensions based on expanded state and initial render
-  let actualWidth = $derived(isInitialRender 
-    ? "0px"
-    : isMobile
-      ? "100%"
-      : expanded
-        ? `${parseInt(normalWidth) * 2}px`
-        : normalWidth
+  let actualWidth = $derived(
+    isInitialRender
+      ? "0px"
+      : isMobile
+        ? "100%"
+        : expanded
+          ? `${parseInt(normalWidth) * 2}px`
+          : normalWidth
   );
 
-  let actualHeight = $derived(isInitialRender
-    ? "0px" 
-    : isMobile
-      ? (expanded ? "100vh" : normalHeight)
-      : "100vh"
+  let actualHeight = $derived(
+    isInitialRender
+      ? "0px"
+      : isMobile
+        ? expanded
+          ? "100vh"
+          : normalHeight
+        : "100vh"
   );
 
   // Generate Wikipedia URL based on device and width
-  let wikiUrl = $derived(wikiPage
-    ? isMobile || parseInt(actualWidth) < 768
-      ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(wikiPage)}`
-      : `https://en.wikipedia.org/wiki/${encodeURIComponent(wikiPage)}`
-    : "about:blank"
+  let wikiUrl = $derived(
+    wikiPage
+      ? isMobile || parseInt(actualWidth) < 768
+        ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(wikiPage)}`
+        : `https://en.wikipedia.org/wiki/${encodeURIComponent(wikiPage)}`
+      : "about:blank"
   );
-
-  $inspect(wikiPage).with((type, value) => {
-    const style = 'background: #222; color: #bada55; font-size: 14px; padding: 4px;';
-    console.log(`%c[${type.toUpperCase()}] wikiPage: ${value}`, style);
-  });
-  $inspect(wikiUrl).with((type, value) => {
-    const style = 'background: #222; color: #bada55; font-size: 14px; padding: 4px;';
-    console.log(`%c[${type.toUpperCase()}] wikiUrl: ${value}`, style);
-  });
 
   // ===== EVENT HANDLERS =====
 
@@ -97,7 +94,8 @@
 
     <div class="pane-content">
       {#if wikiPage}
-        <iframe id="wiki-iframe"
+        <iframe
+          id="wiki-iframe"
           tabindex="-2"
           aria-hidden="true"
           title="Wikipedia Content"
