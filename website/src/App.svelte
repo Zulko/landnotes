@@ -4,7 +4,6 @@
   // -------------------------
   // Svelte lifecycle
   import { onMount } from "svelte";
-  import { fly, fade } from "svelte/transition";
 
   // Components
   import WorldMap from "./lib/WorldMap.svelte";
@@ -15,9 +14,9 @@
   import { updateURLParams, readURLParams } from "./lib/urlState";
   import {
     getGeodataFromBounds,
-    getGeodataFromGeokeys,
+    getPlaceDataFromGeokeys,
   } from "./lib/geo/geodata";
-  import app from "./main";
+  import { getEventListsFromDateAndBounds } from "./lib/events_data";
 
   // -------------------------
   // STATE VARIABLES & DEFAULTS
@@ -35,12 +34,13 @@
   let appState = $state(stateDefaults);
   let mapEntries = $state([]);
   let mapDots = $state([]);
-  let mapComponent;
   let wikiPage = $state("");
-  let cachedEntries = $state(new Map());
   let dontPushToHistory = $state(false);
   let isMobile = $state(false);
 
+  let mapComponent;
+  let cachedEntries = new Map();
+  let cachedEventsByMonthRegion = new Map();
   // -------------------------
   // LIFECYCLE HOOKS
   // -------------------------
@@ -169,7 +169,7 @@
         (entry) => entry.geokey === appState.selectedMarkerId
       )
     ) {
-      const selectedMarker = await getGeodataFromGeokeys(
+      const selectedMarker = await getPlaceDataFromGeokeys(
         [appState.selectedMarkerId],
         cachedEntries
       );
@@ -188,6 +188,12 @@
     date,
     strictDate,
   }) {
+    const events = await getEventListsFromDateAndBounds({
+      date,
+      bounds: mapBounds,
+      strictDate,
+      cachedEntries: cachedEventsByMonthRegion,
+    });
     console.log("Updating events markers");
   }
 
@@ -235,7 +241,7 @@
 
     let newMarkers;
     if (selectedMarkerId) {
-      const query = await getGeodataFromGeokeys(
+      const query = await getPlaceDataFromGeokeys(
         [selectedMarkerId],
         cachedEntries
       );

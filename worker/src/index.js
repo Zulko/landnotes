@@ -11,63 +11,20 @@
 export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
-		let stmt
-		let result
+		let result;
 		switch (url.pathname) {
-			case '/query/geo':
-				
+			case '/query/places-by-geokey':
 				const geokeys = await request.json();
-			    // Process in batches of 80 if needed
-			    const BATCH_SIZE = 80;
-			    let allResults = { rowsRead: 0, results: [] };
-			    
-                // Helper function to execute a batch of geokeys
-                async function executeGeoBatch(db, keys) {
-                    const placeholders = keys.map(() => '?').join(',');
-                    const stmt = db.prepare(
-                        `SELECT * from geodata WHERE geokey IN (${placeholders})`
-                    );
-                    const result = await stmt.bind(...keys).all();
-					console.log(result.meta.rows_read);
-					return {results: result.results, rowsRead: result.meta.rows_read}
-                }
-                
-			    if (geokeys.length <= BATCH_SIZE) {
-			        // Process in a single batch
-					allResults = await executeGeoBatch(env.geoDB, geokeys);
-			    } else {
-			        // Process in batches of 80
-			        const batchPromises = [];
-			        // Use array chunking pattern for more elegant batch processing
-			        const batches = Array.from(
-			            { length: Math.ceil(geokeys.length / BATCH_SIZE) },
-			            (_, i) => geokeys.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE)
-			        );
-			        batches.forEach(batch => batchPromises.push(executeGeoBatch(env.geoDB, batch)));
-			        const batchResults = await Promise.all(batchPromises);
-			        for (const batchResult of batchResults) {
-			            allResults.rowsRead += batchResult.rowsRead;
-			            allResults.results = allResults.results.concat(batchResult.results);
-			        }
-			    }
-				return new Response(JSON.stringify(allResults), { headers: { "Content-Type": "application/json" } });
-			case '/query/geo-text-search':
-				// Text-based search using the fts5 table - optimized version
+				results = await queryPlacesFromGeokeysByBatch(geokeys, env.geoDB);
+				return resultsToResponse(results);
+			case '/query/places-textsearch':
 				const { searchText } = await request.json();
-				
-				// Escape special characters in the search text
-				const escapedSearchText = searchText.replace(/[-"]/g, (match) => `"${match}"`);
-				stmt = env.geoDB.prepare(
-					"SELECT geodata.* " +
-					"FROM geodata " +
-					"JOIN (SELECT rowid " +
-					"      FROM text_search " +
-					"      WHERE text_search MATCH ? " +
-					"      LIMIT 10) AS top_matches " +
-					"ON geodata.rowid = top_matches.rowid "
-				);
-				result = await stmt.bind(escapedSearchText + (escapedSearchText.length > 2 ?  "*" : "")).all();
-				return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
+				result = await queryPlacesFromText(searchText, env.geoDB);
+				return resultsToResponse(result);
+			case '/query/events-by-month-region':
+				const { monthRegions } = await request.json();
+				results = await queryEventsByMonthRegion(monthRegions, env.geoDB);
+				return resultsToResponse(results);
 			case '/message':
 				return new Response('Hello, World!');
 			case '/random':
@@ -77,3 +34,64 @@ export default {
 		}
 	},
 };
+
+function resultsToResponse(results) {
+	return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json' } });
+}
+
+async function queryByBatch({ queryFn, params, db, batchSize = 80 }) {
+	let allResults = { rowsRead: 0, results: [] };
+
+	if (params.length <= batchSize) {
+		return await queryFn(db, params);
+	} else {
+		const batchPromises = [];
+		for (let i = 0; i < params.length; i += BATCH_SIZE) {
+			const batch = params.slice(i, i + BATCH_SIZE);
+			batchPromises.push(queryFn(batch, db));
+		}
+		const batchResults = await Promise.all(batchPromises);
+		for (const batchResult of batchResults) {
+			allResults.rowsRead += batchResult.rowsRead;
+			allResults.results = allResults.results.concat(batchResult.results);
+		}
+		return allResults;
+	}
+}
+
+async function queryPlacesFromGeokeys(geokeys, db) {
+	const placeholders = geokeys.map(() => '?').join(',');
+	const stmt = db.prepare(`SELECT * from geodata WHERE geokey IN (${placeholders})`);
+	const result = await stmt.bind(...geokeys).all();
+	console.log(result.meta.rows_read);
+	return { results: result.results, rowsRead: result.meta.rows_read };
+}
+
+async function queryPlacesFromGeokeysByBatch(geokeys, geoDB) {
+	return await queryByBatch({ queryFn: queryPlacesFromGeokeys, params: geokeys, db: geoDB });
+}
+
+async function queryPlacesFromText(searchText, geoDB) {
+	const escapedSearchText = searchText.replace(/[-"]/g, (match) => `"${match}"`);
+	stmt = geoDB.prepare(
+		'SELECT geodata.* ' +
+			'FROM geodata ' +
+			'JOIN (SELECT rowid ' +
+			'      FROM text_search ' +
+			'      WHERE text_search MATCH ? ' +
+			'      LIMIT 10) AS top_matches ' +
+			'ON geodata.rowid = top_matches.rowid '
+	);
+	return await stmt.bind(escapedSearchText + (escapedSearchText.length > 2 ? '*' : '')).all();
+	return result;
+}
+
+async function queryEventsByMonthRegion(monthRegions, eventsByMonthDB) {
+	const placeholders = monthRegions.map(() => '?').join(',');
+	const stmt = eventsByMonthDB.prepare(`SELECT * from events_by_month_region WHERE month_region IN (${placeholders})`);
+	return await stmt.bind(...monthRegions).all();
+}
+
+async function queryEventsByMonthRegionByBatch(monthRegions, eventsByMonthDB) {
+	return await queryByBatch({ queryFn: queryEventsByMonthRegion, params: monthRegions, db: eventsByMonthDB });
+}

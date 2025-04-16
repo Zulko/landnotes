@@ -118,16 +118,3 @@ export function dateToString(date) {
     return `${date.year}--${date.month}--${date.day}`;
   }
 }
-/**
- * Handles browser back/forward navigation by reading URL state
- * Use this to handle popstate events
- *
- * @param {Function} callback - Function to call with new state
- * @returns {Function} - Event handler function for popstate event
- */
-export function createHistoryStateHandler(callback) {
-  return function (ev) {
-    const state = ev.state || {};
-    callback(state);
-  };
-}

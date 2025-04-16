@@ -216,10 +216,8 @@ export function decodeHybridGeohash(geohash) {
  * @param {number} zoomLevel - The zoom level to search for
  * @returns {Array} - Array of hybrid geoencodings (strings) that overlap with the bounds
  */
-export function getOverlappingGeoEncodings(
-  { minLat, minLon, maxLat, maxLon },
-  zoomLevel
-) {
+export function getOverlappingGeoEncodings(bounds, zoomLevel) {
+  const { minLat, minLon, maxLat, maxLon } = bounds;
   const base32 = "0123456789bcdefghjkmnpqrstuvwxyz";
   const results = [];
 

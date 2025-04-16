@@ -3,7 +3,8 @@ import { inflate } from "pako";
 import { decodeHybridGeohash, getOverlappingGeoEncodings } from "./geohash";
 
 const decodeHybridGeohashCache = new Map();
-function cachedDecodeHybridGeohash(geohash) {
+
+export function cachedDecodeHybridGeohash(geohash) {
   if (decodeHybridGeohashCache.has(geohash)) {
     return decodeHybridGeohashCache.get(geohash);
   }
@@ -12,7 +13,7 @@ function cachedDecodeHybridGeohash(geohash) {
   return result;
 }
 
-function addLatLonToEntry(entry) {
+export function addLatLonToEntry(entry) {
   const full_geokey = `${entry.geokey}${entry.geokey_complement}`;
   const coords = cachedDecodeHybridGeohash(full_geokey);
   entry.lat = coords.lat;
@@ -40,7 +41,12 @@ function processEntriesUnderGeokey(entry) {
   }
 }
 
-async function queryWithCache({ queries, queryFn, cachedQueries, resultId }) {
+export async function queryWithCache({
+  queries,
+  queryFn,
+  cachedQueries,
+  resultId,
+}) {
   const inCachedEntries = queries.filter((query) => cachedQueries.has(query));
   const notInCachedEntries = queries.filter(
     (query) => !cachedQueries.has(query)
@@ -64,9 +70,9 @@ async function queryWithCache({ queries, queryFn, cachedQueries, resultId }) {
   return [...cachedEntriesResults, ...results];
 }
 
-async function queryGeoData(geoKeys) {
+async function queryPlacesByGeokey(geoKeys) {
   geoKeys.sort();
-  const response = await fetch("query/geo", {
+  const response = await fetch("query/places-by-geokey", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -86,10 +92,10 @@ async function queryGeoData(geoKeys) {
  * @param {Map} cachedEntries - Map of already cached entries
  * @returns {Promise<Array>} - Combined array of cached and newly fetched entries
  */
-export async function getGeodataFromGeokeys(geoKeys, cachedEntries) {
+export async function getPlaceDataFromGeokeys(geoKeys, cachedEntries) {
   return await queryWithCache({
     queries: geoKeys,
-    queryFn: queryGeoData,
+    queryFn: queryPlacesByGeokey,
     cachedQueries: cachedEntries,
     resultId: "geokey",
   });
@@ -107,7 +113,7 @@ export async function getGeodataFromBounds(
   const geoKeys = Array.from({ length: maxZoomLevel }, (_, i) => i + 1).flatMap(
     (zoomLevel) => getOverlappingGeoEncodings(bounds, zoomLevel)
   );
-  const geokeyResults = await getGeodataFromGeokeys(geoKeys, cachedEntries);
+  const geokeyResults = await getPlaceDataFromGeokeys(geoKeys, cachedEntries);
 
   // Create a list of dot markers from entries_under_geokey
   const dotMarkers = [];
@@ -147,7 +153,7 @@ export async function getGeodataFromBounds(
 
 export async function getEntriesfromText(searchText) {
   try {
-    const response = await fetch("/query/geo-text-search", {
+    const response = await fetch("/query/places-textsearch", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
