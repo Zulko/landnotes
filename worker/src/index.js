@@ -15,16 +15,17 @@ export default {
 		switch (url.pathname) {
 			case '/query/places-by-geokey':
 				const geokeys = await request.json();
-				results = await queryPlacesFromGeokeysByBatch(geokeys, env.geoDB);
-				return resultsToResponse(results);
+				result = await queryPlacesFromGeokeysByBatch(geokeys, env.geoDB);
+				return resultsToResponse(result);
 			case '/query/places-textsearch':
 				const { searchText } = await request.json();
 				result = await queryPlacesFromText(searchText, env.geoDB);
 				return resultsToResponse(result);
 			case '/query/events-by-month-region':
-				const { monthRegions } = await request.json();
-				results = await queryEventsByMonthRegion(monthRegions, env.geoDB);
-				return resultsToResponse(results);
+				const monthRegions = await request.json();
+				console.log({ monthRegions });
+				result = await queryEventsByMonthRegionByBatch(monthRegions, env.eventsByMonthDB);
+				return resultsToResponse(result);
 			case '/message':
 				return new Response('Hello, World!');
 			case '/random':
@@ -43,7 +44,7 @@ async function queryByBatch({ queryFn, params, db, batchSize = 80 }) {
 	let allResults = { rowsRead: 0, results: [] };
 
 	if (params.length <= batchSize) {
-		return await queryFn(db, params);
+		return await queryFn(params, db);
 	} else {
 		const batchPromises = [];
 		for (let i = 0; i < params.length; i += BATCH_SIZE) {
@@ -87,7 +88,19 @@ async function queryPlacesFromText(searchText, geoDB) {
 }
 
 async function queryEventsByMonthRegion(monthRegions, eventsByMonthDB) {
+	console.log({ monthRegions });
 	const placeholders = monthRegions.map(() => '?').join(',');
+	// Print the tables in eventsByMonthDB
+	try {
+		const tablesStmt = eventsByMonthDB.prepare("SELECT name FROM sqlite_schema WHERE type='table'");
+		const tables = await tablesStmt.all();
+		console.log(
+			'Tables in eventsByMonthDB:',
+			tables.results.map((table) => table.name)
+		);
+	} catch (error) {
+		console.error('Error fetching tables from eventsByMonthDB:', error);
+	}
 	const stmt = eventsByMonthDB.prepare(`SELECT * from events_by_month_region WHERE month_region IN (${placeholders})`);
 	return await stmt.bind(...monthRegions).all();
 }

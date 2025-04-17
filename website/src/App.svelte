@@ -39,7 +39,7 @@
   let isMobile = $state(false);
 
   let mapComponent;
-  let cachedEntries = new Map();
+  let cachedPlaceData = new Map();
   let cachedEventsByMonthRegion = new Map();
   // -------------------------
   // LIFECYCLE HOOKS
@@ -156,11 +156,11 @@
   }
 
   async function updateMarkersWithGeoData({ mapBounds, zoom }) {
-    const { entriesInBounds, dotMarkers } = await getGeodataFromBounds(
-      mapBounds,
-      zoom - 1,
-      cachedEntries
-    );
+    const { entriesInBounds, dotMarkers } = await getGeodataFromBounds({
+      bounds: mapBounds,
+      maxZoomLevel: zoom - 1,
+      cachedQueries: cachedPlaceData,
+    });
 
     // Make sure the selected marker is included
     if (
@@ -169,10 +169,10 @@
         (entry) => entry.geokey === appState.selectedMarkerId
       )
     ) {
-      const selectedMarker = await getPlaceDataFromGeokeys(
-        [appState.selectedMarkerId],
-        cachedEntries
-      );
+      const selectedMarker = await getPlaceDataFromGeokeys({
+        geokeys: [appState.selectedMarkerId],
+        cachedQueries: cachedPlaceData,
+      });
       entriesInBounds.push(selectedMarker[0]);
     }
 
@@ -192,9 +192,9 @@
       date,
       bounds: mapBounds,
       strictDate,
-      cachedEntries: cachedEventsByMonthRegion,
+      cachedQueries: cachedEventsByMonthRegion,
     });
-    console.log("Updating events markers");
+    console.log("boom", { events });
   }
 
   /**

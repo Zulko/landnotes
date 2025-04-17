@@ -14,8 +14,9 @@ export function cachedDecodeHybridGeohash(geohash) {
 }
 
 export function addLatLonToEntry(entry) {
-  const full_geokey = `${entry.geokey}${entry.geokey_complement}`;
-  const coords = cachedDecodeHybridGeohash(full_geokey);
+  const full_geohash =
+    entry.full_hybrid_geohash || `${entry.geokey}${entry.geokey_complement}`;
+  const coords = cachedDecodeHybridGeohash(full_geohash);
   entry.lat = coords.lat;
   entry.lon = coords.lon;
 }
@@ -47,37 +48,37 @@ export async function queryWithCache({
   cachedQueries,
   resultId,
 }) {
-  const inCachedEntries = queries.filter((query) => cachedQueries.has(query));
-  const notInCachedEntries = queries.filter(
-    (query) => !cachedQueries.has(query)
-  );
-  const cachedEntriesResults = inCachedEntries
+  const queriesInCache = queries.filter((query) => cachedQueries.has(query));
+
+  const notInCache = queries.filter((query) => !cachedQueries.has(query));
+  console.log({ queriesInCache, cachedQueries });
+  const cachedResults = queriesInCache
     .map((query) => cachedQueries.get(query))
     .filter((entry) => entry !== null);
-  if (notInCachedEntries.length === 0) {
-    return cachedEntriesResults;
+  if (notInCache.length === 0) {
+    return cachedResults;
   }
 
-  const results = await queryFn(notInCachedEntries);
-  results.forEach((result) => {
-    cachedQueries.set(result[resultId], result);
+  const newResults = await queryFn(notInCache);
+  newResults.forEach((newResult) => {
+    cachedQueries.set(newResult[resultId], newResult);
   });
-  notInCachedEntries.forEach((query) => {
+  notInCache.forEach((query) => {
     if (!cachedQueries.has(query)) {
       cachedQueries.set(query, null);
     }
   });
-  return [...cachedEntriesResults, ...results];
+  return [...cachedResults, ...newResults];
 }
 
-async function queryPlacesByGeokey(geoKeys) {
-  geoKeys.sort();
+async function queryPlacesByGeokey(geokeys) {
+  geokeys.sort();
   const response = await fetch("query/places-by-geokey", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(geoKeys),
+    body: JSON.stringify(geokeys),
   });
   const queryJSON = await response.json();
   const entries = queryJSON.results;
@@ -88,15 +89,16 @@ async function queryPlacesByGeokey(geoKeys) {
 /**
  * Fetches geodata for a list of geokeys, using cached entries when available
  *
- * @param {Array<string>} geoKeys - Array of geokeys to fetch
- * @param {Map} cachedEntries - Map of already cached entries
+ * @param {Object} params - Object containing geokeys and cachedQueries
+ * @param {Array<string>} params.geokeys - Array of geokeys to fetch
+ * @param {Map} params.cachedQueries - Map of already cached entries
  * @returns {Promise<Array>} - Combined array of cached and newly fetched entries
  */
-export async function getPlaceDataFromGeokeys(geoKeys, cachedEntries) {
+export async function getPlaceDataFromGeokeys({ geokeys, cachedQueries }) {
   return await queryWithCache({
-    queries: geoKeys,
+    queries: geokeys,
     queryFn: queryPlacesByGeokey,
-    cachedQueries: cachedEntries,
+    cachedQueries,
     resultId: "geokey",
   });
 }
@@ -104,16 +106,19 @@ export async function getPlaceDataFromGeokeys(geoKeys, cachedEntries) {
 /**
  * Fetch geodata for the specified map bounds
  */
-export async function getGeodataFromBounds(
+export async function getGeodataFromBounds({
   bounds,
   maxZoomLevel,
-  cachedEntries
-) {
+  cachedQueries,
+}) {
   // Collect geokeys for all zoom levels up to maxZoomLevel
-  const geoKeys = Array.from({ length: maxZoomLevel }, (_, i) => i + 1).flatMap(
+  const geokeys = Array.from({ length: maxZoomLevel }, (_, i) => i + 1).flatMap(
     (zoomLevel) => getOverlappingGeoEncodings(bounds, zoomLevel)
   );
-  const geokeyResults = await getPlaceDataFromGeokeys(geoKeys, cachedEntries);
+  const geokeyResults = await getPlaceDataFromGeokeys({
+    geokeys,
+    cachedQueries,
+  });
 
   // Create a list of dot markers from entries_under_geokey
   const dotMarkers = [];
