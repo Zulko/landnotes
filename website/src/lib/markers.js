@@ -60,7 +60,6 @@ function computeMarkerHtml(entry, zoom) {
     village: "city",
     waterbody: "waves",
   };
-
   const icon = iconByType[entry.category] || iconByType.other;
   const unsanitized_page_title = entry.page_title.replaceAll("_", " ");
 
@@ -101,6 +100,7 @@ export function createGeoDivIcon(entry, displayClass, zoom) {
     full: [128, 32],
     selected: [128, 32],
   };
+  console.log("here!", { entry, displayClass, markerHtml });
 
   return L.divIcon({
     className: "custom-div-icon",

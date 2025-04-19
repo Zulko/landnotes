@@ -14,8 +14,11 @@ export function cachedDecodeHybridGeohash(geohash) {
 }
 
 export function addLatLonToEntry(entry) {
+  // Todo: get rid of full_hybrid_geohash
   const full_geohash =
-    entry.full_hybrid_geohash || `${entry.geokey}${entry.geokey_complement}`;
+    entry.geohash4 ||
+    entry.full_hybrid_geohash ||
+    `${entry.geokey}${entry.geokey_complement}`;
   const coords = cachedDecodeHybridGeohash(full_geohash);
   entry.lat = coords.lat;
   entry.lon = coords.lon;
@@ -54,7 +57,6 @@ export async function queryWithCache({
   const queriesInCache = queries.filter((query) => cachedQueries.has(query));
 
   const notInCache = queries.filter((query) => !cachedQueries.has(query));
-  console.log({ queriesInCache, cachedQueries });
   const cachedResults = queriesInCache
     .map((query) => cachedQueries.get(query))
     .filter((entry) => entry !== null);

@@ -299,6 +299,7 @@
     newDotMarkerLayer.addTo(map);
     dotMarkerLayer = newDotMarkerLayer;
     currentDotMarkers = newDotMarkers;
+    console.log("here!");
   }
 
   // ===== EXPORTED FUNCTIONS =====

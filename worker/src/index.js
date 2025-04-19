@@ -25,6 +25,10 @@ export default {
 				const monthRegions = await request.json();
 				result = await queryEventsByMonthRegionByBatch(monthRegions, env.eventsByMonthDB);
 				return resultsToResponse(result);
+			case '/query/events-by-id':
+				const eventIds = await request.json();
+				result = await queryEventsByIdByBatch(eventIds, env.eventsDB);
+				return resultsToResponse(result);
 			case '/message':
 				return new Response('Hello, World!');
 			case '/random':
@@ -91,7 +95,6 @@ async function queryPlacesFromText(searchText, geoDB) {
 }
 
 async function queryEventsByMonthRegion(monthRegions, eventsByMonthDB) {
-	console.log({ monthRegions });
 	const placeholders = monthRegions.map(() => '?').join(',');
 	const stmt = eventsByMonthDB.prepare(`SELECT * from events_by_month_region WHERE month_region IN (${placeholders})`);
 	return await stmt.bind(...monthRegions).all();
@@ -99,4 +102,14 @@ async function queryEventsByMonthRegion(monthRegions, eventsByMonthDB) {
 
 async function queryEventsByMonthRegionByBatch(monthRegions, eventsByMonthDB) {
 	return await queryByBatch({ queryFn: queryEventsByMonthRegion, params: monthRegions, db: eventsByMonthDB });
+}
+
+async function queryEventsById(eventIds, eventsDB) {
+	const placeholders = eventIds.map(() => '?').join(',');
+	const stmt = eventsDB.prepare(`SELECT * from events WHERE event_id IN (${placeholders})`);
+	return await stmt.bind(...eventIds).all();
+}
+
+async function queryEventsByIdByBatch(eventIds, eventsDB) {
+	return await queryByBatch({ queryFn: queryEventsById, params: eventIds, db: eventsDB });
 }

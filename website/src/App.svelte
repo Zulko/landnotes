@@ -16,8 +16,8 @@
     getGeodataFromBounds,
     getPlaceDataFromGeokeys,
   } from "./lib/geo/geodata";
-  import { getEventListsFromDateAndBounds } from "./lib/events_data";
-
+  import * as eventsWorkerClient from "./lib/events_worker_client";
+  import { getEventsById } from "./lib/events_data";
   // -------------------------
   // STATE VARIABLES & DEFAULTS
   // -------------------------
@@ -40,7 +40,7 @@
 
   let mapComponent;
   let cachedPlaceData = new Map();
-  let cachedEventsByMonthRegion = new Map();
+  let cachedEventsById = new Map();
   // -------------------------
   // LIFECYCLE HOOKS
   // -------------------------
@@ -60,13 +60,16 @@
     if (!Object.keys(mapBounds).length) return;
     if (appState.mode === "events") {
       updateMarkersWithEventsData({
-        mapBounds,
+        mapBounds: $state.snapshot(mapBounds),
         zoom: appState.zoom,
-        date: appState.date,
+        date: $state.snapshot(appState.date),
         strictDate: appState.strictDate,
       });
     } else {
-      updateMarkersWithGeoData({ mapBounds, zoom: appState.zoom });
+      updateMarkersWithGeoData({
+        mapBounds: $state.snapshot(mapBounds),
+        zoom: appState.zoom,
+      });
     }
   });
 
@@ -189,15 +192,29 @@
     date,
     strictDate,
   }) {
-    const events = await getEventListsFromDateAndBounds({
-      date,
-      bounds: mapBounds,
-      strictDate,
-      cachedQueries: cachedEventsByMonthRegion,
+    const { events, dotEvents } =
+      await eventsWorkerClient.getEventsForBoundsAndDate({
+        date,
+        bounds: mapBounds,
+        zoom: zoom - 1,
+        strictDate,
+      });
+    const eventInfos = await getEventsById({
+      eventIds: events.map((event) => event.event_id),
+      cachedQueries: cachedEventsById,
     });
-    console.log("boom", { events });
-    mapEntries = [];
-    mapDots = events;
+    console.log({ eventInfos });
+    const eventInfosById = new Map(
+      eventInfos.map((eventInfo) => [eventInfo.event_id, eventInfo])
+    );
+    const eventsWithInfos = events.map((event) => ({
+      ...eventInfosById.get(event.event_id),
+      ...event,
+    }));
+    addMarkerClasses(eventsWithInfos, appState.zoom);
+    console.log({ eventInfosById, eventsWithInfos, dotEvents });
+    mapEntries = eventsWithInfos;
+    mapDots = dotEvents;
   }
 
   /**
@@ -249,7 +266,6 @@
         cachedQueries: cachedPlaceData,
       });
       const selectedMarker = query[0];
-      console.log({ selectedMarker });
       wikiPage = selectedMarker.page_title;
 
       if (!mapEntries.some((marker) => marker.geokey === selectedMarkerId)) {

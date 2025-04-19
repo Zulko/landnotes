@@ -25,15 +25,14 @@ cachedEvents = Map()
 async def getEventsFromWorker():
   requestId = `query_${Date.now()}_${Math.random()}`
     const queryPromise = new Promise((resolve, reject) => {
-    window.geodataWorkerPromises[requestId] = { resolve, reject };
+    window.eventsWorkerPromises[requestId] = { resolve, reject };
   });
   window.postMessage("getEventIdsForGeokeys", {geokeys, date, strictDate});
   return await queryPromise
 
 
 async def getEvents(bounds, zoom, date, strictDate):
-  geokeys = getGeokeys(bounds, zoom)
-  events = await getEventsFromWorker()
+  events = await getEventsFromWorker(bounds, zoom, date, strictDate)
   eventsById = {event.id: event for event in events}
   eventsWithInfo = queryEventsById(eventsById.keys(), cachedEvents)
   for event in eventsWithInfo:
