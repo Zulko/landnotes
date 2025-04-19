@@ -23,7 +23,6 @@ export default {
 				return resultsToResponse(result);
 			case '/query/events-by-month-region':
 				const monthRegions = await request.json();
-				console.log({ monthRegions });
 				result = await queryEventsByMonthRegionByBatch(monthRegions, env.eventsByMonthDB);
 				return resultsToResponse(result);
 			case '/message':
@@ -47,8 +46,8 @@ async function queryByBatch({ queryFn, params, db, batchSize = 80 }) {
 		return await queryFn(params, db);
 	} else {
 		const batchPromises = [];
-		for (let i = 0; i < params.length; i += BATCH_SIZE) {
-			const batch = params.slice(i, i + BATCH_SIZE);
+		for (let i = 0; i < params.length; i += batchSize) {
+			const batch = params.slice(i, i + batchSize);
 			batchPromises.push(queryFn(batch, db));
 		}
 		const batchResults = await Promise.all(batchPromises);
@@ -74,7 +73,7 @@ async function queryPlacesFromGeokeysByBatch(geokeys, geoDB) {
 
 async function queryPlacesFromText(searchText, geoDB) {
 	const escapedSearchText = searchText.replace(/[-"]/g, (match) => `"${match}"`);
-	stmt = geoDB.prepare(
+	const stmt = geoDB.prepare(
 		'SELECT geodata.* ' +
 			'FROM geodata ' +
 			'JOIN (SELECT rowid ' +
@@ -84,23 +83,11 @@ async function queryPlacesFromText(searchText, geoDB) {
 			'ON geodata.rowid = top_matches.rowid '
 	);
 	return await stmt.bind(escapedSearchText + (escapedSearchText.length > 2 ? '*' : '')).all();
-	return result;
 }
 
 async function queryEventsByMonthRegion(monthRegions, eventsByMonthDB) {
 	console.log({ monthRegions });
 	const placeholders = monthRegions.map(() => '?').join(',');
-	// Print the tables in eventsByMonthDB
-	try {
-		const tablesStmt = eventsByMonthDB.prepare("SELECT name FROM sqlite_schema WHERE type='table'");
-		const tables = await tablesStmt.all();
-		console.log(
-			'Tables in eventsByMonthDB:',
-			tables.results.map((table) => table.name)
-		);
-	} catch (error) {
-		console.error('Error fetching tables from eventsByMonthDB:', error);
-	}
 	const stmt = eventsByMonthDB.prepare(`SELECT * from events_by_month_region WHERE month_region IN (${placeholders})`);
 	return await stmt.bind(...monthRegions).all();
 }

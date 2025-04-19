@@ -204,21 +204,20 @@
 
     // Create or update markers
     for (const entry of mapEntries) {
+      const markerId = entry.geokey || entry.event_id;
       let displayClass = entry.displayClass;
       let pane = entry.displayClass;
 
-      if (hoveredMarkerId === entry.geokey && displayClass !== "selected") {
+      if (hoveredMarkerId === markerId && displayClass !== "selected") {
         displayClass = "full";
         pane = "hovered";
       }
 
       let marker;
       let isExistingMarker = false;
-      if (currentMarkers.has(entry.geokey)) {
+      if (currentMarkers.has(entry.geokey || entry.event_id)) {
         // Reuse existing marker configuration with updated properties
-        const { existingMarker, existingClass } = currentMarkers.get(
-          entry.geokey
-        );
+        const { existingMarker, existingClass } = currentMarkers.get(markerId);
 
         // Only update icon if display class changed
         if (existingClass !== displayClass) {
@@ -238,14 +237,14 @@
         });
 
         marker.on("mouseover", () => {
-          if (hoveredMarkerId !== entry.geokey) {
-            hoveredMarkerId = entry.geokey;
+          if (hoveredMarkerId !== markerId) {
+            hoveredMarkerId = markerId;
             updateMarkers();
           }
         });
       }
       marker.addTo(newMarkerLayer);
-      newMarkers.set(entry.geokey, {
+      newMarkers.set(markerId, {
         existingMarker: marker,
         displayClass: displayClass,
       });
@@ -267,11 +266,12 @@
     const newDotMarkers = new Map();
 
     for (const dotEntry of mapDots) {
+      const markerId = dotEntry.geokey || dotEntry.event_id;
       let marker;
 
       // Simply reuse the existing marker if it exists
-      if (currentDotMarkers.has(dotEntry.geokey)) {
-        marker = currentDotMarkers.get(dotEntry.geokey).existingMarker;
+      if (currentDotMarkers.has(markerId)) {
+        marker = currentDotMarkers.get(markerId).existingMarker;
         // Update position in case it changed
         marker.setLatLng([dotEntry.lat, dotEntry.lon]);
       } else {
@@ -286,7 +286,7 @@
         });
       }
       marker.addTo(newDotMarkerLayer);
-      newDotMarkers.set(dotEntry.geokey, {
+      newDotMarkers.set(markerId, {
         existingMarker: marker,
         displayClass: "dot",
       });

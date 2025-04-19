@@ -56,6 +56,7 @@
   });
 
   $effect(() => {
+    console.log("TRIGGERED");
     if (!Object.keys(mapBounds).length) return;
     if (appState.mode === "events") {
       updateMarkersWithEventsData({
@@ -195,6 +196,8 @@
       cachedQueries: cachedEventsByMonthRegion,
     });
     console.log("boom", { events });
+    mapEntries = [];
+    mapDots = events;
   }
 
   /**
@@ -241,10 +244,10 @@
 
     let newMarkers;
     if (selectedMarkerId) {
-      const query = await getPlaceDataFromGeokeys(
-        [selectedMarkerId],
-        cachedEntries
-      );
+      const query = await getPlaceDataFromGeokeys({
+        geokeys: [selectedMarkerId],
+        cachedQueries: cachedPlaceData,
+      });
       const selectedMarker = query[0];
       console.log({ selectedMarker });
       wikiPage = selectedMarker.page_title;
