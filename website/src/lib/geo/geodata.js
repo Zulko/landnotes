@@ -24,7 +24,10 @@ export function addLatLonToEntry(entry) {
 function processEntriesUnderGeokey(entry) {
   if (entry.entries_under_geokey) {
     // Decompress entries_under_geokey if it's compressed with zlib
-    const compressedData = new Uint8Array(entry.entries_under_geokey);
+    const decodedData = atob(entry.entries_under_geokey);
+    const compressedData = new Uint8Array(
+      Array.from(decodedData, (c) => c.charCodeAt(0))
+    );
     const decompressed = inflate(compressedData, { to: "string" });
     const entriesUnderGeokey = JSON.parse(decompressed);
     entry.entries_under_geokey = entriesUnderGeokey;

@@ -63,6 +63,9 @@ async function queryPlacesFromGeokeys(geokeys, db) {
 	const placeholders = geokeys.map(() => '?').join(',');
 	const stmt = db.prepare(`SELECT * from geodata WHERE geokey IN (${placeholders})`);
 	const result = await stmt.bind(...geokeys).all();
+	result.results.forEach((entry) => {
+		entry.entries_under_geokey = btoa(String.fromCharCode(...entry.entries_under_geokey));
+	});
 	console.log(result.meta.rows_read);
 	return { results: result.results, rowsRead: result.meta.rows_read };
 }

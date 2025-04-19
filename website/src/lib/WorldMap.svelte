@@ -273,7 +273,7 @@
       if (currentDotMarkers.has(markerId)) {
         marker = currentDotMarkers.get(markerId).existingMarker;
         // Update position in case it changed
-        marker.setLatLng([dotEntry.lat, dotEntry.lon]);
+        // marker.setLatLng([dotEntry.lat, dotEntry.lon]);
       } else {
         // Create new marker only for new entries
         marker = L.circleMarker([dotEntry.lat, dotEntry.lon], {
