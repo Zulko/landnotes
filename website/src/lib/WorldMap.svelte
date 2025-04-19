@@ -279,7 +279,7 @@
         marker = L.circleMarker([dotEntry.lat, dotEntry.lon], {
           radius: 4,
           weight: 1,
-          color: "#777",
+          color: map.getZoom() < 7 ? "#777" : "#111",
           fillColor: "white",
           fillOpacity: 1,
           pane: "dot",
