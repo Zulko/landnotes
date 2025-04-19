@@ -63,6 +63,8 @@ async function queryPlacesFromGeokeys(geokeys, db) {
 	const placeholders = geokeys.map(() => '?').join(',');
 	const stmt = db.prepare(`SELECT * from geodata WHERE geokey IN (${placeholders})`);
 	const result = await stmt.bind(...geokeys).all();
+	// Cloudflare returns zipped blobs as int arrays which isn't great forJSON, so let's
+	// convert them to base64 strings
 	result.results.forEach((entry) => {
 		entry.entries_under_geokey = btoa(String.fromCharCode(...entry.entries_under_geokey));
 	});
