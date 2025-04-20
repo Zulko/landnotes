@@ -1,6 +1,6 @@
 import md5 from "blueimp-md5";
 import L from "leaflet";
-
+import EventPopup from "./EventPopup.svelte";
 const basePath = import.meta.env.BASE_URL;
 
 function getWikipediaImagePath(filename) {
@@ -31,35 +31,48 @@ function getWikipediaImageUrl(imageName, domain = "commons") {
   return url;
 }
 
+const iconByPlaceType = {
+  adm1st: "map",
+  adm2nd: "map",
+  adm3rd: "map",
+  airport: "plane-takeoff",
+  building: "building",
+  church: "church",
+  city: "city",
+  country: "flag",
+  county: "map",
+  edu: "school",
+  event: "newspaper",
+  forest: "trees",
+  glacier: "mountain-snow",
+  island: "tree-palm",
+  isle: "tree-palm",
+  landmark: "landmark",
+  locality: "locality",
+  mountain: "mountain-snow",
+  other: "pin",
+  railwaystation: "train-front",
+  river: "waves",
+  school: "school",
+  settlement: "city",
+  town: "city",
+  village: "city",
+  waterbody: "waves",
+};
+const iconsByEventType = {
+  birth: "baby",
+  death: "skull",
+  award: "trophy",
+  release: "book-marked",
+  work: "briefcase-business",
+  travel: "luggage",
+};
+const iconByType = {
+  ...iconByPlaceType,
+  ...iconsByEventType,
+};
+
 function computeMarkerHtml(entry, zoom) {
-  const iconByType = {
-    adm1st: "map",
-    adm2nd: "map",
-    adm3rd: "map",
-    airport: "plane-takeoff",
-    building: "building",
-    church: "church",
-    city: "city",
-    country: "flag",
-    county: "map",
-    edu: "school",
-    event: "newspaper",
-    forest: "trees",
-    glacier: "mountain-snow",
-    island: "tree-palm",
-    isle: "tree-palm",
-    landmark: "landmark",
-    locality: "locality",
-    mountain: "mountain-snow",
-    other: "pin",
-    railwaystation: "train-front",
-    river: "waves",
-    school: "school",
-    settlement: "city",
-    town: "city",
-    village: "city",
-    waterbody: "waves",
-  };
   const icon = iconByType[entry.category] || iconByType.other;
   const unsanitized_page_title = entry.page_title.replaceAll("_", " ");
 
@@ -100,7 +113,6 @@ export function createGeoDivIcon(entry, displayClass, zoom) {
     full: [128, 32],
     selected: [128, 32],
   };
-  console.log("here!", { entry, displayClass, markerHtml });
 
   return L.divIcon({
     className: "custom-div-icon",
@@ -128,7 +140,7 @@ function bindGeomarkerPopup(marker, imageName) {
   });
 }
 
-export function createGeoMarker(entry, displayClass, pane, zoom) {
+function createGeoMarker(entry, displayClass, pane, zoom) {
   const divIcon = createGeoDivIcon(entry, displayClass, zoom);
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
@@ -139,4 +151,70 @@ export function createGeoMarker(entry, displayClass, pane, zoom) {
     bindGeomarkerPopup(marker, entry.image);
   }
   return marker;
+}
+
+function bindEventMarkerPopup(marker, entry) {
+  console.log("here!", { entry });
+  // const popupContent = EventPopup({ entry });
+  const popupContent = `
+  <div class="event-popup">
+    <div class="event-popup-section">
+      <div class="event-icon">
+        <img src="${basePath}icons/calendar-fold.svg">
+      </div>
+      <div class="event-text">${entry.when}</div>
+    </div>
+    <div class="event-popup-section">
+      <div class="event-icon">
+        <img src="${basePath}icons/person-standing.svg">
+      </div>
+      <div class="event-text">${entry.people.replaceAll("|", ", ")}</div>
+    </div>
+    <div class="event-popup-section">
+      <div class="event-icon">
+        <img src="${basePath}icons/newspaper.svg">
+      </div>
+      <div class="event-text">${entry.summary}</div>
+    </div>
+    <div class="event-popup-section">
+      <div class="event-icon">
+        <img src="${basePath}icons/map.svg">
+      </div>
+      <div class="event-text">${entry.location}</div>
+    </div>
+  </div>
+  `;
+  marker.bindPopup(popupContent, {
+    className: "event-marker-popup",
+    closeButton: false,
+    maxWidth: 300,
+    minWidth: 50,
+  });
+  marker.on("mouseover", function (e) {
+    marker.options.icon.options.iconSize[0] = 200;
+    marker.openPopup();
+  });
+
+  // marker.on("mouseout", function (e) {
+  //   marker.closePopup();
+  // });
+}
+
+function createEventMarker(entry, displayClass, pane, zoom) {
+  const divIcon = createGeoDivIcon(entry, displayClass, zoom);
+  const marker = L.marker([entry.lat, entry.lon], {
+    icon: divIcon,
+    pane: pane,
+  });
+  bindEventMarkerPopup(marker, entry);
+
+  return marker;
+}
+
+export function createMarker(entry, displayClass, pane, zoom) {
+  if (entry.when) {
+    return createEventMarker(entry, displayClass, pane, zoom);
+  } else {
+    return createGeoMarker(entry, displayClass, pane, zoom);
+  }
 }

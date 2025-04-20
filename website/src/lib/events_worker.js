@@ -15,7 +15,6 @@ let eventsByGeoKeyForDate = new Map();
 
 // Listen for messages from the main thread
 self.addEventListener("message", async (event) => {
-  console.log("Received message from main thread", event.data);
   const { type, requestId, ...data } = event.data;
 
   try {
@@ -34,7 +33,6 @@ self.addEventListener("message", async (event) => {
             bounds
           );
           self.postMessage({ type: "response", requestId, events, dotEvents });
-          console.log("Sent response to main thread", events, dotEvents);
         } catch (error) {
           console.error("Error in getEventsForBoundsAndDate", error);
           self.postMessage({
@@ -131,7 +129,6 @@ async function getEventsForGeokeys(geokeys, date, strictDate) {
   const events = geokeys
     .map((g) => eventsByGeoKeyForDate.get(g) || null)
     .filter(Boolean);
-  console.log({ eventsByGeoKeyForDate, events, geokeys });
 
   return events;
 }
@@ -165,11 +162,9 @@ async function precomputeEventsForRegionAndDate(region, date, strictDate) {
       );
     });
   }
-  console.log({ dedupEvents, filteredEvents });
 
   // Assign geokeys to the events
   assignGeokeysToEvents(filteredEvents);
-  console.log({ eventsByGeoKeyForDate });
 
   // Mark this region as processed
   processedRegions.add(region);
@@ -223,7 +218,6 @@ function assignGeokeysToEvents(events) {
     // For events with equal scores, sort by event_id
     return a.event_id.localeCompare(b.event_id);
   });
-  console.log({ events });
 
   // Assign events to geokeys
   for (const event of events) {
@@ -258,12 +252,10 @@ function daysBetweenTwoDates(date1, date2) {
   const yearGap = 365 * (date1.year - date2.year);
   const monthGap = (date1.month - date2.month) * 30;
   const dayGap = date1.day - date2.day;
-  console.log({ date1, date2 });
   return yearGap + monthGap + dayGap;
 }
 
 function isAfter(date1, date2) {
-  console.log({ date1, date2 });
   return (
     date1.year > date2.year ||
     (date1.year === date2.year &&
@@ -322,7 +314,6 @@ async function queryEventsByMonthRegion(monthRegions) {
     return { monthRegion, events };
   });
   eventsByMonthRegion.forEach(({ events }) => {
-    console.log({ events });
     events.forEach(addLatLonToEntry);
     events.forEach((event) => {
       event.start_date = parseDate(event.start_date);

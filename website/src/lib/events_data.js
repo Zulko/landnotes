@@ -13,7 +13,6 @@ async function queryEventsById(eventIds) {
   });
   const queryJSON = await response.json();
   const entries = queryJSON.results;
-  console.log({ entries });
   entries.forEach((entry) => {
     entry.geokeys = entry.geokeys.split("|");
     entry.locations_latlon = entry.geokeys.map(cachedDecodeHybridGeohash);

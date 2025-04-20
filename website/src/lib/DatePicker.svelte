@@ -21,8 +21,10 @@
   // Optional: you can also export individual props if needed
   // but they should be bound to date properties
 
-  const firstYearRequiringMonth = 1500;
-  const firstYearRequiringDay = 1920;
+  // const firstYearRequiringMonth = 1500;
+  // const firstYearRequiringDay = 1920;
+  const firstYearRequiringMonth = 3000;
+  const firstYearRequiringDay = 3000;
 
   function getDaysInMonth(year, month) {
     return new Date(year < 0 ? year + 1 : year, month, 0).getDate();

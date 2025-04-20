@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-  import { createGeoMarker, createGeoDivIcon } from "./markers";
+  import { createMarker } from "./markers";
 
   // ===== PROPS =====
   let { mapEntries, mapDots, onMapBoundsChange, onMarkerClick } = $props();
@@ -204,30 +204,33 @@
 
     // Create or update markers
     for (const entry of mapEntries) {
-      const markerId = entry.geokey || entry.event_id;
+      const markerId = entry.event_id || entry.geokey;
       let displayClass = entry.displayClass;
       let pane = entry.displayClass;
 
       if (hoveredMarkerId === markerId && displayClass !== "selected") {
+        console.log(entry.page_title, hoveredMarkerId, markerId);
         displayClass = "full";
         pane = "hovered";
       }
 
       let marker;
       let isExistingMarker = false;
-      if (currentMarkers.has(entry.geokey || entry.event_id)) {
+      if (currentMarkers.has(markerId)) {
         // Reuse existing marker configuration with updated properties
-        const { existingMarker, existingClass } = currentMarkers.get(markerId);
+        const { existingMarker, existingClass, existingPane } =
+          currentMarkers.get(markerId);
 
         // Only update icon if display class changed
-        if (existingClass !== displayClass) {
-          marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
+        // console.log(entry.page_title, existingClass, displayClass);
+        if (existingClass !== displayClass || pane !== existingPane) {
+          marker = createMarker(entry, displayClass, pane, map.getZoom());
         } else {
           marker = existingMarker;
           isExistingMarker = true;
         }
       } else {
-        marker = createGeoMarker(entry, displayClass, pane, map.getZoom());
+        marker = createMarker(entry, displayClass, pane, map.getZoom());
       }
 
       // Add event handlers
@@ -246,7 +249,8 @@
       marker.addTo(newMarkerLayer);
       newMarkers.set(markerId, {
         existingMarker: marker,
-        displayClass: displayClass,
+        existingClass: displayClass,
+        existingPane: pane,
       });
     }
 
@@ -266,7 +270,7 @@
     const newDotMarkers = new Map();
 
     for (const dotEntry of mapDots) {
-      const markerId = dotEntry.geokey || dotEntry.event_id;
+      const markerId = dotEntry.event_id || dotEntry.geokey;
       let marker;
 
       // Simply reuse the existing marker if it exists
@@ -299,7 +303,6 @@
     newDotMarkerLayer.addTo(map);
     dotMarkerLayer = newDotMarkerLayer;
     currentDotMarkers = newDotMarkers;
-    console.log("here!");
   }
 
   // ===== EXPORTED FUNCTIONS =====
@@ -481,5 +484,73 @@
     max-height: 150px;
     display: block;
     margin: 0 auto;
+  }
+
+  :global(.event-marker-popup .leaflet-popup-content-wrapper) {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 0;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  :global(.event-marker-popup .leaflet-popup-content) {
+    margin: 0;
+  }
+
+  :global(.event-popup) {
+    padding: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, sans-serif;
+  }
+
+  :global(.event-popup .event-popup-section) {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  :global(.event-popup-section:last-child) {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  :global(.event-icon) {
+    flex: 0 0 24px;
+    margin-right: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  :global(.event-icon img) {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+  }
+
+  :global(.event-text) {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #333;
+  }
+
+  /* Special styling for different types of content */
+  :global(.event-popup-section:first-child .event-text) {
+    font-weight: 600;
+    color: #1a73e8;
+  }
+
+  :global(.event-popup-section:nth-child(2) .event-text) {
+    font-weight: 500;
+  }
+
+  :global(.event-popup-section:nth-child(4) .event-text) {
+    font-style: italic;
+    color: #555;
   }
 </style>

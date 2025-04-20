@@ -81,16 +81,14 @@ export async function getEventsForBoundsAndDate({
   });
 
   // Send the request to the worker
-  const payload = {
+  worker.postMessage({
     type: "getEventsForBoundsAndDate",
     requestId,
     bounds,
     zoom,
     date,
     strictDate,
-  };
-  console.log("Sending request to worker", payload);
-  worker.postMessage(payload);
+  });
 
   // Set a timeout to reject the promise if the worker doesn't respond
   const timeoutId = setTimeout(() => {

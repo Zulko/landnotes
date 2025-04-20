@@ -192,6 +192,7 @@
     date,
     strictDate,
   }) {
+    console.time("updateMarkersWithEventsData");
     const { events, dotEvents } =
       await eventsWorkerClient.getEventsForBoundsAndDate({
         date,
@@ -203,7 +204,6 @@
       eventIds: events.map((event) => event.event_id),
       cachedQueries: cachedEventsById,
     });
-    console.log({ eventInfos });
     const eventInfosById = new Map(
       eventInfos.map((eventInfo) => [eventInfo.event_id, eventInfo])
     );
@@ -212,16 +212,16 @@
       ...event,
     }));
     addMarkerClasses(eventsWithInfos, appState.zoom);
-    console.log({ eventInfosById, eventsWithInfos, dotEvents });
     mapEntries = eventsWithInfos;
     mapDots = dotEvents;
+    console.timeEnd("updateMarkersWithEventsData");
   }
 
   /**
    * Handle marker click events
    */
-  function onMarkerClick({ geokey, lat, lon }) {
-    const selectedMarkerId = geokey;
+  function onMarkerClick({ geokey, lat, lon, event_id }) {
+    const selectedMarkerId = appState.mode === "places" ? geokey : event_id;
     const location = { lat, lon };
 
     if (appState.selectedMarkerId !== selectedMarkerId) {
@@ -260,12 +260,22 @@
     if (selectedMarkerId === appState.selectedMarkerId) return;
 
     let newMarkers;
+    let query;
     if (selectedMarkerId) {
-      const query = await getPlaceDataFromGeokeys({
-        geokeys: [selectedMarkerId],
-        cachedQueries: cachedPlaceData,
-      });
+      if (appState.mode === "places") {
+        query = await getPlaceDataFromGeokeys({
+          geokeys: [selectedMarkerId],
+          cachedQueries: cachedPlaceData,
+        });
+      } else {
+        query = await getEventsById({
+          eventIds: [selectedMarkerId],
+          cachedQueries: cachedEventsById,
+        });
+      }
+
       const selectedMarker = query[0];
+      console.log({ selectedMarkerId, selectedMarker });
       wikiPage = selectedMarker.page_title;
 
       if (!mapEntries.some((marker) => marker.geokey === selectedMarkerId)) {
@@ -288,7 +298,7 @@
     for (const entry of entries) {
       if (
         appState.selectedMarkerId &&
-        entry.geokey == appState.selectedMarkerId
+        (entry.event_id || entry.geokey) == appState.selectedMarkerId
       ) {
         entry.displayClass = "selected";
       } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
