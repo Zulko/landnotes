@@ -1,6 +1,7 @@
 import md5 from "blueimp-md5";
 import L from "leaflet";
 import EventPopup from "./EventPopup.svelte";
+import { mount, unmount } from "svelte";
 const basePath = import.meta.env.BASE_URL;
 
 function getWikipediaImagePath(filename) {
@@ -155,44 +156,27 @@ function createGeoMarker(entry, displayClass, pane, zoom) {
 
 function bindEventMarkerPopup(marker, entry) {
   console.log("here!", { entry });
-  // const popupContent = EventPopup({ entry });
-  const popupContent = `
-  <div class="event-popup">
-    <div class="event-popup-section">
-      <div class="event-icon">
-        <img src="${basePath}icons/calendar-fold.svg">
-      </div>
-      <div class="event-text">${entry.when}</div>
-    </div>
-    <div class="event-popup-section">
-      <div class="event-icon">
-        <img src="${basePath}icons/person-standing.svg">
-      </div>
-      <div class="event-text">${entry.people.replaceAll("|", ", ")}</div>
-    </div>
-    <div class="event-popup-section">
-      <div class="event-icon">
-        <img src="${basePath}icons/newspaper.svg">
-      </div>
-      <div class="event-text">${entry.summary}</div>
-    </div>
-    <div class="event-popup-section">
-      <div class="event-icon">
-        <img src="${basePath}icons/map.svg">
-      </div>
-      <div class="event-text">${entry.location}</div>
-    </div>
-  </div>
-  `;
-  marker.bindPopup(popupContent, {
+  const popupDiv = document.createElement("div");
+  let popupComponent;
+  marker.bindPopup(popupDiv, {
     className: "event-marker-popup",
     closeButton: false,
     maxWidth: 300,
-    minWidth: 50,
+    minWidth: 300,
   });
+
   marker.on("mouseover", function (e) {
     marker.options.icon.options.iconSize[0] = 200;
     marker.openPopup();
+  });
+  marker.on("popupclose", () => {
+    unmount(popupComponent);
+  });
+  marker.on("popupopen", () => {
+    popupComponent = mount(EventPopup, {
+      target: popupDiv,
+      props: { entry },
+    });
   });
 
   // marker.on("mouseout", function (e) {
