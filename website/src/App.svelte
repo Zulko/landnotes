@@ -204,13 +204,22 @@
       eventIds: events.map((event) => event.event_id),
       cachedQueries: cachedEventsById,
     });
-    const eventInfosById = new Map(
+
+    // Add type annotation to make it clear this is a Map of objects
+    const eventInfosById: Map<string, Record<string, any>> = new Map(
       eventInfos.map((eventInfo) => [eventInfo.event_id, eventInfo])
     );
-    const eventsWithInfos = events.map((event) => ({
-      ...eventInfosById.get(event.event_id),
-      ...event,
-    }));
+
+    const eventsWithInfos = events.map((event) => {
+      // Cast to object type or use type assertion
+      const eventInfo =
+        eventInfosById.get(event.event_id) || ({} as Record<string, any>);
+      return {
+        ...eventInfo,
+        ...event,
+      };
+    });
+
     addMarkerClasses(eventsWithInfos, appState.zoom);
     mapEntries = eventsWithInfos;
     mapDots = dotEvents;
