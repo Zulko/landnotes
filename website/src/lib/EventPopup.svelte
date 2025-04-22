@@ -1,9 +1,16 @@
 <script>
-  let { entry, onPageClick } = $props();
+  let { entry, startPopupCloseTimeout, stopPopupCloseTimeout } = $props();
   const basePath = import.meta.env.BASE_URL;
 </script>
 
-<div class="event-popup">
+<div
+  class="event-popup"
+  role="tooltip"
+  onmouseover={stopPopupCloseTimeout}
+  onmouseout={startPopupCloseTimeout}
+  onblur={startPopupCloseTimeout}
+  onfocus={stopPopupCloseTimeout}
+>
   <div class="event-popup-section">
     <div class="event-icon">
       <img src="{basePath}icons/calendar-fold.svg" alt="calendar" />

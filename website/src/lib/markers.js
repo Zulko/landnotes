@@ -157,6 +157,17 @@ function bindMarkerPopup(marker, entry) {
   if (entry.isEvent) {
     // Event popup handling
     const popupDiv = document.createElement("div");
+    let popupCloseTimeout = null;
+
+    function startPopupCloseTimeout() {
+      popupCloseTimeout = setTimeout(() => {
+        marker.closePopup();
+      }, 100);
+    }
+    function stopPopupCloseTimeout() {
+      clearTimeout(popupCloseTimeout);
+    }
+
     let popupComponent;
 
     marker.bindPopup(popupDiv, {
@@ -167,8 +178,13 @@ function bindMarkerPopup(marker, entry) {
     });
 
     marker.on("mouseover", function () {
+      stopPopupCloseTimeout();
       marker.options.icon.options.iconSize[0] = 200;
       marker.openPopup();
+    });
+
+    marker.on("mouseout", function () {
+      startPopupCloseTimeout();
     });
 
     marker.on("popupclose", () => {
@@ -178,7 +194,7 @@ function bindMarkerPopup(marker, entry) {
     marker.on("popupopen", () => {
       popupComponent = mount(EventPopup, {
         target: popupDiv,
-        props: { entry },
+        props: { entry, startPopupCloseTimeout, stopPopupCloseTimeout },
       });
     });
   } else if (entry.image) {
