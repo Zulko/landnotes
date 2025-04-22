@@ -1,5 +1,6 @@
 import md5 from "blueimp-md5";
 import L from "leaflet";
+// @ts-ignore
 import EventPopup from "./EventPopup.svelte";
 import { mount, unmount } from "svelte";
 const basePath = import.meta.env.BASE_URL;
@@ -73,24 +74,49 @@ const iconByType = {
   ...iconsByEventType,
 };
 
+/**
+ * Adapts marker data to a consistent format regardless of type (place or event)
+ * @param {Object} entry - Original data entry
+ * @returns {Object} - Normalized marker data
+ */
+export function normalizeMarkerData(entry) {
+  // Determine marker type
+  const isEvent = Boolean(entry.when);
+
+  // Return a normalized object with consistent property names
+
+  const normalizedEntry = {
+    ...entry,
+    id: isEvent ? entry.event_id : entry.geokey,
+    name:
+      entry.name ||
+      (entry.page_title ? entry.page_title.replaceAll("_", " ") : ""),
+    pageTitle: entry.page_title ? entry.page_title.replaceAll("_", " ") : "",
+    displayClass: entry.displayClass || "dot",
+    category: entry.category || "other",
+    isEvent,
+    getIconName: function () {
+      return iconByType[this.category] || iconByType.other;
+    },
+  };
+  console.log({ normalizedEntry });
+  return normalizedEntry;
+}
+
 function computeMarkerHtml(entry, zoom) {
-  const icon = iconByType[entry.category] || iconByType.other;
-  const unsanitized_page_title = entry.page_title.replaceAll("_", " ");
+  // No longer need to normalize here as the entry should already be normalized
+  const icon = entry.getIconName();
 
   let label = entry.name;
-  if (!entry.name) {
-    label = unsanitized_page_title;
-  } else if (unsanitized_page_title.includes(entry.name)) {
-    label = unsanitized_page_title;
-  } else {
-    const fullLabel = entry.name + " - " + unsanitized_page_title;
+  if (entry.name !== entry.pageTitle) {
+    const fullLabel = entry.name + " - " + entry.pageTitle;
     if (fullLabel.length <= 30) {
       label = fullLabel;
     }
   }
+
   let markerCountDiv = "";
   return `
-    
     <div class="map-marker marker-display-${entry.displayClass}" >
         ${markerCountDiv}
         <div class="marker-icon-circle">
@@ -122,83 +148,80 @@ export function createGeoDivIcon(entry, displayClass, zoom) {
   });
 }
 
-function bindGeomarkerPopup(marker, imageName) {
-  const wikiImageUrl = getWikipediaImageUrl(imageName);
-  const popupContent = `<img class="geo-popup-img" src="${wikiImageUrl}" alt="" class="popup-img">`;
-  marker.bindPopup(popupContent, {
-    className: "geo-marker-popup",
-    closeButton: false,
-    maxWidth: 120,
-    minWidth: 120,
-  });
-  marker.on("mouseover", function (e) {
-    marker.options.icon.options.iconSize[0] = 120;
-    marker.openPopup();
-  });
+/**
+ * Create appropriate popup based on marker type
+ * @param {L.Marker} marker - Leaflet marker object
+ * @param {Object} entry - Normalized marker data
+ */
+function bindMarkerPopup(marker, entry) {
+  if (entry.isEvent) {
+    // Event popup handling
+    const popupDiv = document.createElement("div");
+    let popupComponent;
 
-  marker.on("mouseout", function (e) {
-    marker.closePopup();
-  });
-}
-
-function createGeoMarker(entry, displayClass, pane, zoom) {
-  const divIcon = createGeoDivIcon(entry, displayClass, zoom);
-  const marker = L.marker([entry.lat, entry.lon], {
-    icon: divIcon,
-    pane: pane,
-  });
-
-  if (entry.image) {
-    bindGeomarkerPopup(marker, entry.image);
-  }
-  return marker;
-}
-
-function bindEventMarkerPopup(marker, entry) {
-  console.log("here!", { entry });
-  const popupDiv = document.createElement("div");
-  let popupComponent;
-  marker.bindPopup(popupDiv, {
-    className: "event-marker-popup",
-    closeButton: false,
-    maxWidth: 300,
-    minWidth: 300,
-  });
-
-  marker.on("mouseover", function (e) {
-    marker.options.icon.options.iconSize[0] = 200;
-    marker.openPopup();
-  });
-  marker.on("popupclose", () => {
-    unmount(popupComponent);
-  });
-  marker.on("popupopen", () => {
-    popupComponent = mount(EventPopup, {
-      target: popupDiv,
-      props: { entry },
+    marker.bindPopup(popupDiv, {
+      className: "event-marker-popup",
+      closeButton: false,
+      maxWidth: 300,
+      minWidth: 300,
     });
-  });
 
-  // marker.on("mouseout", function (e) {
-  //   marker.closePopup();
-  // });
+    marker.on("mouseover", function () {
+      marker.options.icon.options.iconSize[0] = 200;
+      marker.openPopup();
+    });
+
+    marker.on("popupclose", () => {
+      unmount(popupComponent);
+    });
+
+    marker.on("popupopen", () => {
+      popupComponent = mount(EventPopup, {
+        target: popupDiv,
+        props: { entry },
+      });
+    });
+  } else if (entry.image) {
+    // Place popup with image
+    const wikiImageUrl = getWikipediaImageUrl(entry.image);
+    const popupContent = `<img class="geo-popup-img" src="${wikiImageUrl}" alt="" class="popup-img">`;
+
+    marker.bindPopup(popupContent, {
+      className: "geo-marker-popup",
+      closeButton: false,
+      maxWidth: 120,
+      minWidth: 120,
+    });
+
+    marker.on("mouseover", function () {
+      marker.options.icon.options.iconSize[0] = 120;
+      marker.openPopup();
+    });
+
+    marker.on("mouseout", function () {
+      marker.closePopup();
+    });
+  }
 }
 
-function createEventMarker(entry, displayClass, pane, zoom) {
+/**
+ * Creates a marker with appropriate behavior based on type
+ * @param {Object} entry - Normalized marker data
+ * @param {string} displayClass - Display class
+ * @param {string} pane - Map pane to place marker on
+ * @param {number} zoom - Current zoom level
+ * @returns {L.Marker} - Leaflet marker
+ */
+export function createMarker(entry, displayClass, pane, zoom) {
+  // No longer need to normalize here as the entry should already be normalized
   const divIcon = createGeoDivIcon(entry, displayClass, zoom);
+
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
     pane: pane,
   });
-  bindEventMarkerPopup(marker, entry);
+
+  bindMarkerPopup(marker, entry);
 
   return marker;
-}
-
-export function createMarker(entry, displayClass, pane, zoom) {
-  if (entry.when) {
-    return createEventMarker(entry, displayClass, pane, zoom);
-  } else {
-    return createGeoMarker(entry, displayClass, pane, zoom);
-  }
 }

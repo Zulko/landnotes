@@ -18,6 +18,7 @@
   } from "./lib/geo/geodata";
   import * as eventsWorkerClient from "./lib/events_worker_client";
   import { getEventsById } from "./lib/events_data";
+  import { normalizeMarkerData } from "./lib/markers";
   // -------------------------
   // STATE VARIABLES & DEFAULTS
   // -------------------------
@@ -180,9 +181,14 @@
       entriesInBounds.push(selectedMarker[0]);
     }
 
+    // Normalize all markers at once here
+    const normalizedEntries = entriesInBounds.map((entry) =>
+      normalizeMarkerData(entry)
+    );
+
     // Update markers with display classes
-    addMarkerClasses(entriesInBounds, appState.zoom);
-    mapEntries = entriesInBounds;
+    addMarkerClasses(normalizedEntries, appState.zoom);
+    mapEntries = normalizedEntries;
     mapDots = dotMarkers;
   }
 
@@ -220,8 +226,13 @@
       };
     });
 
-    addMarkerClasses(eventsWithInfos, appState.zoom);
-    mapEntries = eventsWithInfos;
+    // Normalize all events at once here
+    const normalizedEvents = eventsWithInfos.map((event) =>
+      normalizeMarkerData(event)
+    );
+
+    addMarkerClasses(normalizedEvents, appState.zoom);
+    mapEntries = normalizedEvents;
     mapDots = dotEvents;
     console.timeEnd("updateMarkersWithEventsData");
   }
@@ -283,11 +294,10 @@
         });
       }
 
-      const selectedMarker = query[0];
-      console.log({ selectedMarkerId, selectedMarker });
-      wikiPage = selectedMarker.page_title;
+      const selectedMarker = normalizeMarkerData(query[0]);
+      wikiPage = selectedMarker.pageTitle;
 
-      if (!mapEntries.some((marker) => marker.geokey === selectedMarkerId)) {
+      if (!mapEntries.some((marker) => marker.id === selectedMarkerId)) {
         newMarkers = [...mapEntries, selectedMarker];
       } else {
         newMarkers = [...mapEntries];
@@ -305,10 +315,8 @@
    */
   function addMarkerClasses(entries, zoomLevel) {
     for (const entry of entries) {
-      if (
-        appState.selectedMarkerId &&
-        (entry.event_id || entry.geokey) == appState.selectedMarkerId
-      ) {
+      const markerId = entry.id;
+      if (appState.selectedMarkerId && markerId == appState.selectedMarkerId) {
         entry.displayClass = "selected";
       } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
         entry.displayClass = "full";

@@ -204,12 +204,12 @@
 
     // Create or update markers
     for (const entry of mapEntries) {
-      const markerId = entry.event_id || entry.geokey;
+      const markerId = entry.id;
       let displayClass = entry.displayClass;
       let pane = entry.displayClass;
 
       if (hoveredMarkerId === markerId && displayClass !== "selected") {
-        console.log(entry.page_title, hoveredMarkerId, markerId);
+        console.log(entry.pageTitle, hoveredMarkerId, markerId);
         displayClass = "full";
         pane = "hovered";
       }
@@ -222,7 +222,6 @@
           currentMarkers.get(markerId);
 
         // Only update icon if display class changed
-        // console.log(entry.page_title, existingClass, displayClass);
         if (existingClass !== displayClass || pane !== existingPane) {
           marker = createMarker(entry, displayClass, pane, map.getZoom());
         } else {
@@ -270,7 +269,7 @@
     const newDotMarkers = new Map();
 
     for (const dotEntry of mapDots) {
-      const markerId = dotEntry.event_id || dotEntry.geokey;
+      const markerId = dotEntry.id || `${dotEntry.lat}-${dotEntry.lon}`;
       let marker;
 
       // Simply reuse the existing marker if it exists
