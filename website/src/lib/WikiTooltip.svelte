@@ -4,7 +4,6 @@
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
   let isOpen = $state(false); // Popup visibility
-  let coords = $state({ x: 0, y: 0 }); // Popup position
 
   $inspect(isOpen);
 
@@ -32,7 +31,6 @@
     if (!summary.length) {
       fetchWikiInfos();
     }
-    coords = { x: event.pageX + 10, y: event.pageY + 10 };
     isOpen = true;
   }
 
@@ -42,13 +40,22 @@
 </script>
 
 {#if isOpen}
-  <div class="wiki-popup">
-    <!-- style="top: -200px; left: -175px;"-->
-    {#if thumbnail}
-      <img src={thumbnail} alt="{pageTitle} thumbnail" class="thumb" />
-    {/if}
-    <b> From Wikipedia: </b>
-    {@html summary}
+  <div
+    class="wiki-popup"
+    onmouseenter={handleMouseEnter}
+    onmouseleave={handleMouseLeave}
+    tabindex="-1"
+    role="tooltip"
+  >
+    <div class="wiki-content">
+      {#if thumbnail}
+        <img src={thumbnail} alt="{pageTitle} thumbnail" class="thumb" />
+      {/if}
+      <div class="wiki-header">
+        <h3>From Wikipedia</h3>
+      </div>
+      {@html summary}
+    </div>
   </div>
 {/if}
 
@@ -67,30 +74,51 @@
   .wiki-popup {
     position: absolute;
     width: 350px;
-    max-height: 200px;
-    overflow: scroll;
+    max-height: 300px;
+    overflow-y: auto;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
-    padding: 0.5rem;
-    transform: translateY(-100%) translateX(-50%);
+    padding: 0;
+    transform: translateY(-100%) translateX(-110px);
+    top: 10px;
 
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 0.25rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background: #fff;
+    border: 1px solid #a2a9b1;
+    border-radius: 2px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
     transition: opacity 0.2s ease-out;
-    /* opacity: 0; */
-    z-index: 2000;
+    z-index: 299 !important;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .wiki-popup::-webkit-scrollbar {
+    display: none;
+  }
+
+  .wiki-content {
+    padding: 12px 16px;
+  }
+
+  .wiki-header h3 {
+    font-family: "Linux Libertine", "Georgia", "Times", serif;
+    font-size: 1.2rem;
+    font-weight: normal;
+    margin: 0 0 8px 0;
+    color: #222;
+    border-bottom: none;
   }
 
   .thumb {
-    max-width: 50%;
-    max-height: 100px;
+    max-width: 120px;
+    max-height: 140px;
     height: auto;
     margin-bottom: 0.5rem;
-    float: left;
-    margin-right: 0.5rem;
-    border-radius: 0.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    float: right;
+    margin-left: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 2px;
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      0 0 2px rgba(0, 0, 0, 0.1);
   }
 </style>

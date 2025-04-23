@@ -204,26 +204,6 @@ function bindMarkerPopup(marker, entry) {
         props: { entry, startPopupCloseTimeout, stopPopupCloseTimeout },
       });
     });
-  } else if (entry.image) {
-    // Place popup with image
-    const wikiImageUrl = getWikipediaImageUrl(entry.image);
-    const popupContent = `<img class="geo-popup-img" src="${wikiImageUrl}" alt="" class="popup-img">`;
-
-    marker.bindPopup(popupContent, {
-      className: "geo-marker-popup",
-      closeButton: false,
-      maxWidth: 120,
-      minWidth: 120,
-    });
-
-    marker.on("mouseover", function () {
-      marker.options.icon.options.iconSize[0] = 120;
-      marker.openPopup();
-    });
-
-    marker.on("mouseout", function () {
-      marker.closePopup();
-    });
   }
 }
 
