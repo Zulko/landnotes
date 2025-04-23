@@ -2,6 +2,8 @@ import md5 from "blueimp-md5";
 import L from "leaflet";
 // @ts-ignore
 import EventPopup from "./EventPopup.svelte";
+// @ts-ignore
+import Marker from "./Marker.svelte";
 import { mount, unmount } from "svelte";
 const basePath = import.meta.env.BASE_URL;
 
@@ -99,7 +101,6 @@ export function normalizeMarkerData(entry) {
       return iconByType[this.category] || iconByType.other;
     },
   };
-  console.log({ normalizedEntry });
   return normalizedEntry;
 }
 
@@ -131,8 +132,12 @@ function computeMarkerHtml(entry, zoom) {
     `;
 }
 
-export function createGeoDivIcon(entry, displayClass, zoom) {
-  const markerHtml = computeMarkerHtml(entry, zoom);
+export function createDivIcon(entry, displayClass) {
+  const markerDiv = document.createElement("div");
+  const markerComponent = mount(Marker, {
+    target: markerDiv,
+    props: { entry },
+  });
 
   const iconSizesByDisplayClass = {
     dot: [18, 18],
@@ -141,11 +146,14 @@ export function createGeoDivIcon(entry, displayClass, zoom) {
     selected: [128, 32],
   };
 
-  return L.divIcon({
-    className: "custom-div-icon",
-    html: markerHtml,
-    iconSize: iconSizesByDisplayClass[displayClass],
-  });
+  return {
+    divIcon: L.divIcon({
+      className: "custom-div-icon",
+      html: markerDiv,
+      iconSize: iconSizesByDisplayClass[displayClass],
+    }),
+    markerComponent,
+  };
 }
 
 /**
@@ -158,6 +166,7 @@ function bindMarkerPopup(marker, entry) {
     // Event popup handling
     const popupDiv = document.createElement("div");
     let popupCloseTimeout = null;
+    let popupComponent;
 
     function startPopupCloseTimeout() {
       popupCloseTimeout = setTimeout(() => {
@@ -167,8 +176,6 @@ function bindMarkerPopup(marker, entry) {
     function stopPopupCloseTimeout() {
       clearTimeout(popupCloseTimeout);
     }
-
-    let popupComponent;
 
     marker.bindPopup(popupDiv, {
       className: "event-marker-popup",
@@ -230,7 +237,7 @@ function bindMarkerPopup(marker, entry) {
  */
 export function createMarker(entry, displayClass, pane, zoom) {
   // No longer need to normalize here as the entry should already be normalized
-  const divIcon = createGeoDivIcon(entry, displayClass, zoom);
+  const { divIcon, markerComponent } = createDivIcon(entry, displayClass);
 
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
