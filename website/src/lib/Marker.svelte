@@ -54,12 +54,12 @@
     &.marker-display-selected > .marker-icon-circle {
       --circle-size: 32px !important;
       box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
-      z-index: 1000 !important;
+      z-index: 900 !important;
     }
 
     &.marker-display-selected {
       /* Ensure hovered markers appear above others */
-      z-index: 1000 !important;
+      z-index: 900 !important;
     }
 
     &:hover > .marker-text-container,

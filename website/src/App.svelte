@@ -314,6 +314,7 @@
    * Classify markers for display based on importance and zoom level
    */
   function addMarkerClasses(entries, zoomLevel) {
+    console.log("addMarkerClasses", entries, zoomLevel);
     for (const entry of entries) {
       const markerId = entry.id;
       if (appState.selectedMarkerId && markerId == appState.selectedMarkerId) {

@@ -4,8 +4,10 @@
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
   let isOpen = $state(false); // Popup visibility
-
-  $inspect(isOpen);
+  let isShown = $state(false); // Popup visibility
+  let tooltipElement = $state(null); // Reference to tooltip element
+  let triggerElement = $state(null); // Reference to trigger span
+  let tooltipStyle = $state(""); // Dynamic style for positioning
 
   // Fetch summary from Wikipedia REST API
   async function fetchWikiInfos() {
@@ -17,7 +19,29 @@
     if (res.ok) {
       const data = await res.json();
       console.log("data", data);
-      summary = data.extract_html; // Plain-text extract :contentReference[oaicite:5]{index=5}
+      // Get HTML extract and limit to 300 characters if needed
+      // Find the last period before 300 characters to cut at the end of a sentence
+      if (data.extract_html?.length > 350) {
+        // Find the last period that's not followed by a digit (to avoid cutting at "2.5" etc.)
+        let cutoff = -1;
+        const text = data.extract_html.substring(0, 350);
+        for (let i = text.length - 1; i >= 0; i--) {
+          if (
+            text[i] === "." &&
+            (i === text.length - 1 || !/\d/.test(text[i + 1]))
+          ) {
+            cutoff = i;
+            break;
+          }
+        }
+        summary =
+          cutoff > 0
+            ? data.extract_html.substring(0, cutoff + 1)
+            : data.extract_html.substring(0, 347) + "...";
+      } else {
+        summary = data.extract_html;
+      }
+
       thumbnail = data.thumbnail?.source || "";
     } else {
       summary = "No information available.";
@@ -25,25 +49,84 @@
     }
   }
 
+  // Position the tooltip based on available screen space
+  function updateTooltipPosition() {
+    if (!tooltipElement || !triggerElement) return;
+
+    const triggerRect = triggerElement.getBoundingClientRect();
+    const tooltipRect = tooltipElement.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Default position (above and centered)
+    let top = -tooltipRect.height - 2;
+    let left = -(tooltipRect.width / 2) + triggerRect.width / 2;
+
+    // Check right edge
+    if (triggerRect.left + left + tooltipRect.width > viewportWidth) {
+      left = viewportWidth - tooltipRect.width - triggerRect.left - 10;
+    }
+
+    // Check left edge
+    if (triggerRect.left + left < 10) {
+      left = 10 - triggerRect.left;
+    }
+
+    // Check if tooltip would appear above viewport
+    if (triggerRect.top + top < 10) {
+      // Position below the trigger instead of above
+      top = triggerRect.height + 5;
+    }
+
+    tooltipStyle = `transform: translate(${left}px, ${top}px);`;
+  }
+
   // Handlers
-  function handleMouseEnter(event) {
+  async function handleMouseEnter(event) {
     console.log("handleMouseEnter", pageTitle);
     if (!summary.length) {
-      fetchWikiInfos();
+      await fetchWikiInfos();
     }
     isOpen = true;
+    setTimeout(() => {
+      isShown = true;
+    }, 100);
+
+    // Update position after render
+    setTimeout(updateTooltipPosition, 0);
   }
 
   function handleMouseLeave() {
     isOpen = false;
   }
+
+  // Update position when window is resized
+  function handleResize() {
+    if (isOpen) {
+      updateTooltipPosition();
+    }
+  }
+
+  // Lifecycle
+  $effect(() => {
+    if (isOpen) {
+      window.addEventListener("resize", handleResize);
+      updateTooltipPosition();
+    } else {
+      window.removeEventListener("resize", handleResize);
+    }
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  });
 </script>
 
 {#if isOpen}
   <div
     class="wiki-popup"
-    onmouseenter={handleMouseEnter}
-    onmouseleave={handleMouseLeave}
+    bind:this={tooltipElement}
+    style={tooltipStyle}
     tabindex="-1"
     role="tooltip"
   >
@@ -60,6 +143,7 @@
 {/if}
 
 <span
+  bind:this={triggerElement}
   onmouseenter={handleMouseEnter}
   onmouseleave={handleMouseLeave}
   onfocus={handleMouseEnter}
@@ -74,29 +158,30 @@
   .wiki-popup {
     position: absolute;
     width: 350px;
-    max-height: 300px;
-    overflow-y: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
+    max-height: 250px;
+    overflow-y: hidden;
     padding: 0;
-    transform: translateY(-100%) translateX(-110px);
-    top: 10px;
 
     background: #fff;
     border: 1px solid #a2a9b1;
     border-radius: 2px;
     box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
     transition: opacity 0.2s ease-out;
-    z-index: 299 !important;
+    z-index: 8000 !important;
+    font-size: 14px;
   }
 
   /* Hide scrollbar for Chrome, Safari and Opera */
-  .wiki-popup::-webkit-scrollbar {
+  /* .wiki-popup::-webkit-scrollbar {
     display: none;
-  }
+  } */
 
   .wiki-content {
-    padding: 12px 16px;
+    padding: 12px 12px;
+  }
+
+  .wiki-content p {
+    margin: 0;
   }
 
   .wiki-header h3 {
@@ -112,10 +197,9 @@
     max-width: 120px;
     max-height: 140px;
     height: auto;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.2rem;
     float: right;
     margin-left: 1rem;
-    margin-bottom: 0.5rem;
     border-radius: 2px;
     box-shadow:
       0 2px 4px rgba(0, 0, 0, 0.15),
