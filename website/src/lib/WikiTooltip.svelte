@@ -11,6 +11,7 @@
   let tooltipStyle = $state(""); // Dynamic style for positioning
   let imageHeight = $state(140);
   let imageWidth = $state(120);
+  let imageHasWhiteBackground = $state(false);
 
   // Fetch summary from Wikipedia REST API
   async function fetchWikiInfos() {
@@ -68,6 +69,7 @@
       summary = "No information available.";
       thumbnail = "";
     }
+    checkImageCornersForWhiteBackground(thumbnail);
   }
 
   // Position the tooltip based on available screen space
@@ -142,6 +144,45 @@
       window.removeEventListener("resize", handleResize);
     };
   });
+
+  function isWhitePixel(r, g, b, a, tolerance = 20) {
+    return (
+      a <= tolerance ||
+      (r >= 255 - tolerance && g >= 255 - tolerance && b >= 255 - tolerance)
+    );
+  }
+
+  function checkImageCornersForWhiteBackground(imgSrc) {
+    // the best vanity feature!
+    const img = new Image();
+    img.crossOrigin = "anonymous"; // Enable CORS if needed
+    img.src = imgSrc;
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+
+      const positions = [
+        [0, 0], // top-left
+        [img.width - 1, 0], // top-right
+        [0, img.height - 1], // bottom-left
+        [img.width - 1, img.height - 1], // bottom-right
+      ];
+
+      let whiteCorners = 0;
+      positions.forEach(([x, y]) => {
+        const pixel = ctx.getImageData(x, y, 1, 1).data;
+        if (isWhitePixel(pixel[0], pixel[1], pixel[2], pixel[3])) {
+          whiteCorners++;
+        }
+      });
+
+      imageHasWhiteBackground = whiteCorners >= 3; // Adjust threshold as needed
+    };
+  }
 </script>
 
 <div
@@ -156,7 +197,7 @@
       <img
         src={thumbnail}
         alt="{pageTitle} thumbnail"
-        class="thumb"
+        class="thumb {imageHasWhiteBackground ? '' : 'with-shadow'}"
         fetchpriority="high"
         style={`height: ${imageHeight}px; width: ${imageWidth}px;`}
       />
@@ -224,8 +265,11 @@
     float: right;
     margin-left: 1rem;
     border-radius: 2px;
-    box-shadow:
-      0 2px 4px rgba(0, 0, 0, 0.15),
-      0 0 2px rgba(0, 0, 0, 0.1);
+
+    &.with-shadow {
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.15),
+        0 0 2px rgba(0, 0, 0, 0.1);
+    }
   }
 </style>
