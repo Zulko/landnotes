@@ -1,4 +1,3 @@
-import md5 from "blueimp-md5";
 import L from "leaflet";
 // @ts-ignore
 import EventPopup from "./EventPopup.svelte";
@@ -6,34 +5,6 @@ import EventPopup from "./EventPopup.svelte";
 import Marker from "./Marker.svelte";
 import { mount, unmount } from "svelte";
 const basePath = import.meta.env.BASE_URL;
-
-function getWikipediaImagePath(filename) {
-  // Handle special characters in Wikipedia image filenames
-  // This function properly encodes URI components for Wikipedia's URL structure
-  const filenameClean = filename.replace(/ /g, "_");
-  const md5Hex = md5(filenameClean);
-
-  // Extract directory path
-  const first = md5Hex.charAt(0);
-  const second = md5Hex.charAt(1);
-
-  const path = `${first}/${first}${second}`;
-  return path;
-}
-
-function getWikipediaImageUrl(imageName, domain = "commons") {
-  const wikiImageSubpath = getWikipediaImagePath(imageName);
-  const wikiEndpoint = `https://upload.wikimedia.org/wikipedia/${domain}/thumb`;
-  const sanitizedImageName = imageName.replace(/ /g, "_");
-  let url = `${wikiEndpoint}/${wikiImageSubpath}/${sanitizedImageName}/120px-${sanitizedImageName}`;
-  // Check if the URL doesn't end with jpg or png (case insensitive)
-  const lowerUrl = url.toLowerCase();
-  if (!lowerUrl.endsWith(".jpg") && !lowerUrl.endsWith(".png")) {
-    url += ".png";
-  }
-
-  return url;
-}
 
 const iconByPlaceType = {
   adm1st: "map",
