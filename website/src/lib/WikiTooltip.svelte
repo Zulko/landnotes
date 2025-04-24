@@ -8,6 +8,8 @@
   let tooltipElement = $state(null); // Reference to tooltip element
   let triggerElement = $state(null); // Reference to trigger span
   let tooltipStyle = $state(""); // Dynamic style for positioning
+  let imageHeight = $state(140);
+  let imageWidth = $state(120);
 
   // Fetch summary from Wikipedia REST API
   async function fetchWikiInfos() {
@@ -18,7 +20,6 @@
     });
     if (res.ok) {
       const data = await res.json();
-      console.log("data", data);
       // Get HTML extract and limit to 300 characters if needed
       // Find the last period before 300 characters to cut at the end of a sentence
       if (data.extract_html?.length > 350) {
@@ -43,6 +44,25 @@
       }
 
       thumbnail = data.thumbnail?.source || "";
+
+      // Calculate dimensions that maintain aspect ratio within our constraints
+      if (data.thumbnail) {
+        const maxWidth = 120;
+        const maxHeight = 140;
+        const origWidth = data.thumbnail.width;
+        const origHeight = data.thumbnail.height;
+
+        // Calculate scaling factor based on both constraints
+        const widthRatio = maxWidth / origWidth;
+        const heightRatio = maxHeight / origHeight;
+        const ratio = Math.min(widthRatio, heightRatio);
+
+        // Set dimensions scaled proportionally
+        imageWidth = Math.floor(origWidth * ratio);
+        imageHeight = Math.floor(origHeight * ratio);
+      }
+
+      console.log({ imageHeight, imageWidth, data });
     } else {
       summary = "No information available.";
       thumbnail = "";
@@ -83,7 +103,6 @@
 
   // Handlers
   async function handleMouseEnter(event) {
-    console.log("handleMouseEnter", pageTitle);
     if (!summary.length) {
       await fetchWikiInfos();
     }
@@ -132,7 +151,13 @@
   >
     <div class="wiki-content">
       {#if thumbnail}
-        <img src={thumbnail} alt="{pageTitle} thumbnail" class="thumb" />
+        <img
+          src={thumbnail}
+          alt="{pageTitle} thumbnail"
+          class="thumb"
+          fetchpriority="high"
+          style={`height: ${imageHeight}px; width: ${imageWidth}px;`}
+        />
       {/if}
       <div class="wiki-header">
         <h3>From Wikipedia</h3>
@@ -194,9 +219,6 @@
   }
 
   .thumb {
-    max-width: 120px;
-    max-height: 140px;
-    height: auto;
     margin-bottom: 0.2rem;
     float: right;
     margin-left: 1rem;
