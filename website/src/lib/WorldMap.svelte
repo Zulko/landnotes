@@ -99,6 +99,8 @@
     // Create layer groups for different marker types
     map.createPane("markers");
     map.getPane("markers").style.zIndex = 300;
+    map.createPane("markers-top");
+    map.getPane("markers-top").style.zIndex = 8000;
     map.createPane("dots");
     map.getPane("dots").style.zIndex = 200;
 
@@ -222,29 +224,25 @@
 
       // Add event handlers
       if (!isExistingMarker) {
+        let isHovered = false;
         marker.on("mouseover", () => {
+          if (isHovered) return;
           console.log("mouseover", entry.displayClass);
-          if (
-            entry.isHovered ||
-            entry.displayClass === "selected" ||
-            entry.displayClass === "full"
-          ) {
-            return;
-          }
           const { divIcon } = createDivIcon(entry, "full");
           marker.setIcon(divIcon);
-          entry.isHovered = true;
+          map.removeLayer(marker);
+          marker.options.pane = "markers-top";
+          marker.addTo(map);
+          console.log({ marker });
+          isHovered = true;
         });
         marker.on("mouseout", () => {
-          if (
-            entry.displayClass === "selected" ||
-            entry.displayClass === "full"
-          ) {
-            return;
-          }
           const { divIcon } = createDivIcon(entry, entry.displayClass);
           marker.setIcon(divIcon);
-          entry.isHovered = false;
+          map.removeLayer(marker);
+          marker.options.pane = "markers";
+          marker.addTo(map);
+          isHovered = false;
         });
       }
       marker.addTo(newMarkerLayer);
