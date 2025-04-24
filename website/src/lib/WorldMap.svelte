@@ -101,8 +101,8 @@
       { name: "dot", zIndex: 200 },
       { name: "reduced", zIndex: 300 },
       { name: "full", zIndex: 400 },
-      { name: "hovered", zIndex: 500 },
-      { name: "selected", zIndex: 600 },
+      { name: "hovered", zIndex: 600 },
+      { name: "selected", zIndex: 500 },
     ];
 
     markerLayers.forEach((layer) => {
@@ -323,32 +323,16 @@
     width: 100%;
   }
 
-  :global(.geo-marker-popup) {
-    border-radius: 0px;
-    padding: 0;
-    margin: 0;
-  }
-
-  :global(.geo-marker-popup .leaflet-popup-content) {
+  :global(.leaflet-popup-content) {
     margin: 0;
     padding: 0;
   }
 
-  :global(.geo-marker-popup .leaflet-popup-tip) {
+  :global(.leaflet-popup-tip) {
     background-color: rgba(255, 255, 255, 0.9);
   }
 
   :global(.leaflet-popup-pane) {
-    z-index: 499 !important;
-  }
-
-  :global(.geo-marker-popup .leaflet-popup-content-wrapper) {
-    background-color: transparent !important;
-  }
-  :global(.geo-marker-popup img) {
-    max-width: 150px;
-    max-height: 150px;
-    display: block;
-    margin: 0 auto;
+    z-index: 599 !important;
   }
 </style>
