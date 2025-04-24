@@ -106,10 +106,12 @@ export function createDivIcon(entry, displayClass) {
  * @param {L.Marker} marker - Leaflet marker object
  * @param {Object} entry - Normalized marker data
  */
-function bindMarkerPopup(marker, entry, onMarkerClick, goTo) {
+function bindClickEvents(marker, entry, onMarkerClick, goTo) {
   if (entry.isEvent) {
     // Event popup handling
     const popupDiv = document.createElement("div");
+    popupDiv.style.zIndex = "9999 !important"; // Set maximum z-order
+
     let popupCloseTimeout = null;
     let popupComponent;
     let touchListener = null;
@@ -131,6 +133,7 @@ function bindMarkerPopup(marker, entry, onMarkerClick, goTo) {
     });
 
     if (isTouchDevice) {
+      console.log("touch device!");
       // Use only one event handler for opening popup on touch devices
       marker.on("click", function () {
         console.log("clicked!", entry.id, lastTappedMarkerEntry?.id);
@@ -148,6 +151,7 @@ function bindMarkerPopup(marker, entry, onMarkerClick, goTo) {
       });
     } else {
       marker.on("click", function () {
+        console.log("clicked!", entry.id, lastTappedMarkerEntry?.id);
         onMarkerClick(entry);
       });
 
@@ -207,22 +211,20 @@ function bindMarkerPopup(marker, entry, onMarkerClick, goTo) {
 /**
  * Creates a marker with appropriate behavior based on type
  * @param {Object} entry - Normalized marker data
- * @param {string} displayClass - Display class
- * @param {string} pane - Map pane to place marker on
  * @param {function} onMarkerClick - Function to call when marker is clicked
  * @param {function} goTo - Function to call when marker is clicked
  * @returns {L.Marker} - Leaflet marker
  */
-export function createMarker(entry, displayClass, pane, onMarkerClick, goTo) {
+export function createMarker(entry, onMarkerClick, goTo) {
   // No longer need to normalize here as the entry should already be normalized
-  const { divIcon, markerComponent } = createDivIcon(entry, displayClass);
+  const { divIcon } = createDivIcon(entry, entry.displayClass);
 
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
-    pane: "selected",
+    pane: "markers",
   });
 
-  bindMarkerPopup(marker, entry, onMarkerClick, goTo);
+  bindClickEvents(marker, entry, onMarkerClick, goTo);
 
   return marker;
 }

@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-  import { createMarker } from "./markers";
+  import { createMarker, createDivIcon } from "./markers";
 
   // ===== PROPS =====
   let { mapEntries, mapDots, onMapBoundsChange, onMarkerClick } = $props();
@@ -97,18 +97,10 @@
       })
       .addTo(map);
     // Create layer groups for different marker types
-    const markerLayers = [
-      { name: "dot", zIndex: 200 },
-      { name: "reduced", zIndex: 300 },
-      { name: "full", zIndex: 400 },
-      { name: "hovered", zIndex: 600 },
-      { name: "selected", zIndex: 500 },
-    ];
-
-    markerLayers.forEach((layer) => {
-      map.createPane(layer.name);
-      map.getPane(layer.name).style.zIndex = layer.zIndex;
-    });
+    map.createPane("markers");
+    map.getPane("markers").style.zIndex = 300;
+    map.createPane("dots");
+    map.getPane("dots").style.zIndex = 200;
 
     markerLayer = L.layerGroup().addTo(map);
     dotMarkerLayer = L.layerGroup().addTo(map);
@@ -209,46 +201,56 @@
     for (const entry of mapEntries) {
       const markerId = entry.id;
       let displayClass = entry.displayClass;
-      let pane = entry.displayClass;
-
-      if (hoveredMarkerId === markerId && displayClass !== "selected") {
-        console.log(entry.pageTitle, hoveredMarkerId, markerId);
-        displayClass = "full";
-        pane = "hovered";
-      }
 
       let marker;
       let isExistingMarker = false;
       if (currentMarkers.has(markerId)) {
         // Reuse existing marker configuration with updated properties
-        const { existingMarker, existingClass, existingPane } =
-          currentMarkers.get(markerId);
+        const { existingMarker, existingClass } = currentMarkers.get(markerId);
+
+        marker = existingMarker;
+        isExistingMarker = true;
 
         // Only update icon if display class changed
-        if (existingClass !== displayClass || pane !== existingPane) {
-          marker = createMarker(entry, displayClass, pane, onMarkerClick, goTo);
-        } else {
-          marker = existingMarker;
-          isExistingMarker = true;
+        if (existingClass !== entry.displayClass) {
+          const { divIcon } = createDivIcon(entry, entry.displayClass);
+          marker.setIcon(divIcon);
         }
       } else {
-        marker = createMarker(entry, displayClass, pane, onMarkerClick, goTo);
+        marker = createMarker(entry, onMarkerClick, goTo);
       }
 
       // Add event handlers
       if (!isExistingMarker) {
         marker.on("mouseover", () => {
-          if (hoveredMarkerId !== markerId) {
-            hoveredMarkerId = markerId;
-            updateMarkers();
+          console.log("mouseover", entry.displayClass);
+          if (
+            entry.isHovered ||
+            entry.displayClass === "selected" ||
+            entry.displayClass === "full"
+          ) {
+            return;
           }
+          const { divIcon } = createDivIcon(entry, "full");
+          marker.setIcon(divIcon);
+          entry.isHovered = true;
+        });
+        marker.on("mouseout", () => {
+          if (
+            entry.displayClass === "selected" ||
+            entry.displayClass === "full"
+          ) {
+            return;
+          }
+          const { divIcon } = createDivIcon(entry, entry.displayClass);
+          marker.setIcon(divIcon);
+          entry.isHovered = false;
         });
       }
       marker.addTo(newMarkerLayer);
       newMarkers.set(markerId, {
         existingMarker: marker,
         existingClass: displayClass,
-        existingPane: pane,
       });
     }
 
@@ -284,7 +286,7 @@
           color: map.getZoom() < 7 ? "#777" : "#111",
           fillColor: "white",
           fillOpacity: 1,
-          pane: "dot",
+          pane: "dots",
         });
       }
       marker.addTo(newDotMarkerLayer);
