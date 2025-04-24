@@ -15,7 +15,6 @@
 
   // Fetch summary from Wikipedia REST API
   async function fetchWikiInfos() {
-    console.log("fetchWikiInfos", pageTitle);
     const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle.replaceAll(" ", "_"))}`; // Summary endpoint :contentReference[oaicite:4]{index=4}
     const res = await fetch(url, {
       headers: { "User-Agent": "landnotes/1.0 (youremail@example.com)" },
@@ -63,8 +62,6 @@
         imageWidth = Math.floor(origWidth * ratio);
         imageHeight = Math.floor(origHeight * ratio);
       }
-
-      console.log({ imageHeight, imageWidth, data });
     } else {
       summary = "No information available.";
       thumbnail = "";
@@ -162,7 +159,7 @@
       const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       ctx.drawImage(img, 0, 0);
 
       const positions = [

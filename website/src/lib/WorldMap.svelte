@@ -98,9 +98,9 @@
       .addTo(map);
     // Create layer groups for different marker types
     map.createPane("markers");
-    map.getPane("markers").style.zIndex = 300;
+    map.getPane("markers").style.zIndex = 500;
     map.createPane("markers-top");
-    map.getPane("markers-top").style.zIndex = 800;
+    map.getPane("markers-top").style.zIndex = 620;
     map.createPane("dots");
     map.getPane("dots").style.zIndex = 200;
 
@@ -205,13 +205,11 @@
       let displayClass = entry.displayClass;
 
       let marker;
-      let isExistingMarker = false;
       if (currentMarkers.has(markerId)) {
         // Reuse existing marker configuration with updated properties
         const { existingMarker, existingClass } = currentMarkers.get(markerId);
 
         marker = existingMarker;
-        isExistingMarker = true;
 
         // Only update icon if display class changed
         if (existingClass !== entry.displayClass) {
@@ -306,7 +304,10 @@
     background-color: rgba(255, 255, 255, 0.9);
   }
 
-  :global(.leaflet-popup-pane) {
+  /* :global(.leaflet-popup-pane) {
     z-index: 599 !important;
+  } */
+  :global(.leaflet-popup-tip) {
+    display: none;
   }
 </style>

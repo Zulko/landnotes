@@ -111,10 +111,14 @@ export function setMarkerSize(marker, displayClass) {
  * @param {Object} entry - Normalized marker data
  */
 function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
+  let isHovered = false;
+  let unhoverTimeout = null;
+
   if (!isTouchDevice) {
-    let isHovered = false;
     marker.on("mouseover", () => {
+      clearTimeout(unhoverTimeout);
       if (isHovered) return;
+      console.log("mouseover", entry.id);
       map.removeLayer(marker);
       const [width, height] = iconSizesByDisplayClass["full"];
       marker.options.icon.options.iconSize = [width, height];
@@ -123,18 +127,20 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
       isHovered = true;
     });
     marker.on("mouseout", () => {
-      const { divIcon } = createDivIcon(entry, entry.displayClass);
-
-      map.removeLayer(marker);
-      marker.setIcon(divIcon);
-      marker.options.pane = "markers";
-      marker.addTo(map);
-      isHovered = false;
+      unhoverTimeout = setTimeout(() => {
+        const { divIcon } = createDivIcon(entry, entry.displayClass);
+        map.removeLayer(marker);
+        marker.setIcon(divIcon);
+        marker.options.pane = "markers";
+        marker.addTo(map);
+        isHovered = false;
+      }, 100);
     });
   }
 
   if (entry.isEvent) {
-    // Event popup handling
+    // Event popup handling on mobile and device:
+    // first set up the popup and functions to open/close.
     const popupDiv = document.createElement("div");
     popupDiv.style.zIndex = "9999 !important"; // Set maximum z-order
 
@@ -148,7 +154,9 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
       }, 100);
     }
     function stopPopupCloseTimeout() {
+      console.log("PREVENT CLOSING");
       clearTimeout(popupCloseTimeout);
+      clearTimeout(unhoverTimeout);
     }
 
     marker.bindPopup(popupDiv, {
@@ -159,7 +167,7 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
     });
 
     if (isTouchDevice) {
-      console.log("touch device!");
+      // Event markers with popup on touch devices
       // Use only one event handler for opening popup on touch devices
       marker.on("click", function () {
         console.log("clicked!", entry.id, lastTappedMarkerEntry?.id);
@@ -176,8 +184,8 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
         }
       });
     } else {
+      // Event markers with popup on mouse/desktop devices
       marker.on("click", function () {
-        console.log("clicked!", entry.id, lastTappedMarkerEntry?.id);
         onMarkerClick(entry);
       });
 
@@ -231,6 +239,18 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
         document.addEventListener("touchstart", touchListener);
       }
     });
+  } else {
+    // marker is a place marker
+    if (isTouchDevice) {
+      marker.on("click", function () {
+        onMarkerClick(entry);
+      });
+    } else {
+      marker.on("click", function () {
+        console.log("WAAAAAAAS CLICKED");
+        onMarkerClick(entry);
+      });
+    }
   }
 }
 
@@ -244,7 +264,6 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
 export function createMarker(entry, onMarkerClick, goTo, map) {
   // No longer need to normalize here as the entry should already be normalized
   const { divIcon } = createDivIcon(entry, entry.displayClass);
-
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
     pane: "markers",

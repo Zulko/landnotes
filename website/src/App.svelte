@@ -196,14 +196,22 @@
       entriesInBounds.push(selectedMarker[0]);
     }
 
-    // Normalize all markers at once here
-    const normalizedEntries = entriesInBounds.map((entry) =>
+    // We only crate new markers for new entries. This is important because
+    // we are counting on reactivity and components "staying on" for markers
+    const normalizedEntriesInBound = entriesInBounds.map((entry) =>
       normalizeMarkerData(entry)
     );
+    const mapEntriesInBounds = mapEntries.filter((entry) =>
+      normalizedEntriesInBound.some((e) => e.id === entry.id)
+    );
+    const entriesNotInMapEntries = normalizedEntriesInBound.filter(
+      (entry) => !mapEntries.some((e) => e.id === entry.id)
+    );
+    const allEntries = [...mapEntriesInBounds, ...entriesNotInMapEntries];
 
     // Update markers with display classes
-    addMarkerClasses(normalizedEntries, appState.zoom);
-    mapEntries = normalizedEntries;
+    addMarkerClasses(allEntries, appState.zoom);
+    mapEntries = allEntries;
     mapDots = dotMarkers;
   }
 
@@ -292,6 +300,7 @@
    * Update the selected marker and associated data
    */
   async function handleNewSelectedMarker(selectedMarkerId) {
+    console.log("handleNewSelectedMarker", selectedMarkerId);
     if (selectedMarkerId === appState.selectedMarkerId) return;
 
     let newMarkers;
@@ -329,10 +338,9 @@
    * Classify markers for display based on importance and zoom level
    */
   function addMarkerClasses(entries, zoomLevel) {
-    console.log("addMarkerClasses", entries, zoomLevel);
+    console.log("addMarkerClasses", appState.selectedMarkerId);
     for (const entry of entries) {
-      const markerId = entry.id;
-      if (appState.selectedMarkerId && markerId == appState.selectedMarkerId) {
+      if (appState.selectedMarkerId && entry.id == appState.selectedMarkerId) {
         entry.displayClass = "selected";
       } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
         entry.displayClass = "full";
