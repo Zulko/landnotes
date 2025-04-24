@@ -59,23 +59,26 @@ export function normalizeMarkerData(entry) {
   const isEvent = Boolean(entry.when);
 
   // Return a normalized object with consistent property names
-
-  const normalizedEntry = {
+  const pageTitle = entry.page_title
+    ? entry.page_title.replaceAll("_", " ")
+    : "";
+  return {
     ...entry,
     id: isEvent ? entry.event_id : entry.geokey,
-    name:
-      entry.name ||
-      (entry.page_title ? entry.page_title.replaceAll("_", " ") : ""),
-    pageTitle: entry.page_title ? entry.page_title.replaceAll("_", " ") : "",
+    name: entry.name || pageTitle,
+    pageTitle,
     displayClass: entry.displayClass || "dot",
     category: entry.category || "other",
     isEvent,
-    getIconName: function () {
-      return iconByType[this.category] || iconByType.other;
-    },
+    iconName: iconByType[entry.category] || iconByType.other,
   };
-  return normalizedEntry;
 }
+const iconSizesByDisplayClass = {
+  dot: [18, 18],
+  reduced: [28, 28],
+  full: [128, 32],
+  selected: [128, 32],
+};
 
 export function createDivIcon(entry, displayClass) {
   const markerDiv = document.createElement("div");
@@ -83,13 +86,6 @@ export function createDivIcon(entry, displayClass) {
     target: markerDiv,
     props: { entry },
   });
-
-  const iconSizesByDisplayClass = {
-    dot: [18, 18],
-    reduced: [28, 28],
-    full: [128, 32],
-    selected: [128, 32],
-  };
 
   return {
     divIcon: L.divIcon({
@@ -100,13 +96,43 @@ export function createDivIcon(entry, displayClass) {
     markerComponent,
   };
 }
+export function setMarkerSize(marker, displayClass) {
+  const element = marker.getElement();
+  const [width, height] = iconSizesByDisplayClass[displayClass];
+  if (element) {
+    element.style.height = `${height}px`;
+    element.style.width = `${width}px`;
+  }
+}
 
 /**
  * Create appropriate popup based on marker type
  * @param {L.Marker} marker - Leaflet marker object
  * @param {Object} entry - Normalized marker data
  */
-function bindClickEvents(marker, entry, onMarkerClick, goTo) {
+function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
+  if (!isTouchDevice) {
+    let isHovered = false;
+    marker.on("mouseover", () => {
+      if (isHovered) return;
+      map.removeLayer(marker);
+      const [width, height] = iconSizesByDisplayClass["full"];
+      marker.options.icon.options.iconSize = [width, height];
+      marker.options.pane = "markers-top";
+      marker.addTo(map);
+      isHovered = true;
+    });
+    marker.on("mouseout", () => {
+      const { divIcon } = createDivIcon(entry, entry.displayClass);
+
+      map.removeLayer(marker);
+      marker.setIcon(divIcon);
+      marker.options.pane = "markers";
+      marker.addTo(map);
+      isHovered = false;
+    });
+  }
+
   if (entry.isEvent) {
     // Event popup handling
     const popupDiv = document.createElement("div");
@@ -215,7 +241,7 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo) {
  * @param {function} goTo - Function to call when marker is clicked
  * @returns {L.Marker} - Leaflet marker
  */
-export function createMarker(entry, onMarkerClick, goTo) {
+export function createMarker(entry, onMarkerClick, goTo, map) {
   // No longer need to normalize here as the entry should already be normalized
   const { divIcon } = createDivIcon(entry, entry.displayClass);
 
@@ -224,7 +250,8 @@ export function createMarker(entry, onMarkerClick, goTo) {
     pane: "markers",
   });
 
-  bindClickEvents(marker, entry, onMarkerClick, goTo);
+  // bindHoverPopping(marker, entry, map);
+  bindClickEvents(marker, entry, onMarkerClick, goTo, map);
 
   return marker;
 }

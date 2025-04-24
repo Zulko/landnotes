@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-  import { createMarker, createDivIcon } from "./markers";
+  import { createMarker, setMarkerSize } from "./markers";
 
   // ===== PROPS =====
   let { mapEntries, mapDots, onMapBoundsChange, onMarkerClick } = $props();
@@ -100,7 +100,7 @@
     map.createPane("markers");
     map.getPane("markers").style.zIndex = 300;
     map.createPane("markers-top");
-    map.getPane("markers-top").style.zIndex = 8000;
+    map.getPane("markers-top").style.zIndex = 800;
     map.createPane("dots");
     map.getPane("dots").style.zIndex = 200;
 
@@ -215,35 +215,10 @@
 
         // Only update icon if display class changed
         if (existingClass !== entry.displayClass) {
-          const { divIcon } = createDivIcon(entry, entry.displayClass);
-          marker.setIcon(divIcon);
+          setMarkerSize(marker, entry.displayClass);
         }
       } else {
-        marker = createMarker(entry, onMarkerClick, goTo);
-      }
-
-      // Add event handlers
-      if (!isExistingMarker) {
-        let isHovered = false;
-        marker.on("mouseover", () => {
-          if (isHovered) return;
-          console.log("mouseover", entry.displayClass);
-          const { divIcon } = createDivIcon(entry, "full");
-          marker.setIcon(divIcon);
-          map.removeLayer(marker);
-          marker.options.pane = "markers-top";
-          marker.addTo(map);
-          console.log({ marker });
-          isHovered = true;
-        });
-        marker.on("mouseout", () => {
-          const { divIcon } = createDivIcon(entry, entry.displayClass);
-          marker.setIcon(divIcon);
-          map.removeLayer(marker);
-          marker.options.pane = "markers";
-          marker.addTo(map);
-          isHovered = false;
-        });
+        marker = createMarker(entry, onMarkerClick, goTo, map);
       }
       marker.addTo(newMarkerLayer);
       newMarkers.set(markerId, {

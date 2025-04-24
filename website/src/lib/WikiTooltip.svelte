@@ -4,9 +4,10 @@
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
   let isOpen = $state(false); // Popup visibility
-  let isShown = $state(false); // Popup visibility
   let tooltipElement = $state(null); // Reference to tooltip element
   let triggerElement = $state(null); // Reference to trigger span
+  let toolTipTop = $state(0);
+  let toolTipLeft = $state(0);
   let tooltipStyle = $state(""); // Dynamic style for positioning
   let imageHeight = $state(140);
   let imageWidth = $state(120);
@@ -97,9 +98,14 @@
       // Position below the trigger instead of above
       top = triggerRect.height + 5;
     }
-
-    tooltipStyle = `transform: translate(${left}px, ${top}px);`;
+    [toolTipTop, toolTipLeft] = [top, left];
   }
+
+  $effect(() => {
+    tooltipStyle = `transform: translate(${toolTipLeft}px, ${toolTipTop}px); ${
+      isOpen ? "visibility: visible;" : "visibility: hidden;"
+    }`;
+  });
 
   // Handlers
   async function handleMouseEnter(event) {
@@ -107,9 +113,6 @@
       await fetchWikiInfos();
     }
     isOpen = true;
-    setTimeout(() => {
-      isShown = true;
-    }, 100);
 
     // Update position after render
     setTimeout(updateTooltipPosition, 0);
@@ -141,31 +144,29 @@
   });
 </script>
 
-{#if isOpen}
-  <div
-    class="wiki-popup"
-    bind:this={tooltipElement}
-    style={tooltipStyle}
-    tabindex="-1"
-    role="tooltip"
-  >
-    <div class="wiki-content">
-      {#if thumbnail}
-        <img
-          src={thumbnail}
-          alt="{pageTitle} thumbnail"
-          class="thumb"
-          fetchpriority="high"
-          style={`height: ${imageHeight}px; width: ${imageWidth}px;`}
-        />
-      {/if}
-      <div class="wiki-header">
-        <h3>From Wikipedia</h3>
-      </div>
-      {@html summary}
+<div
+  class="wiki-popup"
+  bind:this={tooltipElement}
+  style={tooltipStyle}
+  tabindex="-1"
+  role="tooltip"
+>
+  <div class="wiki-content">
+    {#if thumbnail}
+      <img
+        src={thumbnail}
+        alt="{pageTitle} thumbnail"
+        class="thumb"
+        fetchpriority="high"
+        style={`height: ${imageHeight}px; width: ${imageWidth}px;`}
+      />
+    {/if}
+    <div class="wiki-header">
+      <h3>From Wikipedia</h3>
     </div>
+    {@html summary}
   </div>
-{/if}
+</div>
 
 <span
   bind:this={triggerElement}

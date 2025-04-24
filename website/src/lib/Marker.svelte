@@ -16,14 +16,9 @@
 </script>
 
 {#snippet marker()}
-  <div
-    class={`map-marker marker-display-${entry.displayClass} ${entry.isHovered ? "marker-display-hovered" : ""}`}
-  >
+  <div class={`map-marker marker-display-${entry.displayClass}`}>
     <div class="marker-icon-circle">
-      <img
-        src={basePath + "icons/" + entry.getIconName() + ".svg"}
-        alt="icon"
-      />
+      <img src={basePath + "icons/" + entry.iconName + ".svg"} alt="icon" />
     </div>
 
     <div class="marker-text-container">
