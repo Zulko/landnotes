@@ -38,6 +38,7 @@
   let wikiPage = $state("");
   let dontPushToHistory = $state(false);
   let isMobile = $state(false);
+  let currentMode = $state("places");
 
   let mapComponent;
   let cachedPlaceData = new Map();
@@ -55,6 +56,20 @@
   $effect(() => {
     debouncedUpdateURLParams($state.snapshot(appState));
   });
+
+  $effect(() => {
+    if (appState.mode !== currentMode) {
+      console.log("deselecting marker");
+      deselectMarker();
+      currentMode = appState.mode;
+    }
+  });
+
+  function deselectMarker() {
+    appState.selectedMarkerId = null;
+    wikiPage = "";
+    addMarkerClasses(mapEntries, appState.zoom);
+  }
 
   $effect(() => {
     console.log("TRIGGERED");
