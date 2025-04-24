@@ -5,6 +5,8 @@ import EventPopup from "./EventPopup.svelte";
 import Marker from "./Marker.svelte";
 import { mount, unmount } from "svelte";
 const basePath = import.meta.env.BASE_URL;
+let lastTappedMarkerEntry = null;
+import { isTouchDevice } from "./device";
 
 const iconByPlaceType = {
   adm1st: "map",
@@ -75,34 +77,6 @@ export function normalizeMarkerData(entry) {
   return normalizedEntry;
 }
 
-function computeMarkerHtml(entry, zoom) {
-  // No longer need to normalize here as the entry should already be normalized
-  const icon = entry.getIconName();
-
-  let label = entry.name;
-  if (entry.name !== entry.pageTitle) {
-    const fullLabel = entry.name + " - " + entry.pageTitle;
-    if (fullLabel.length <= 30) {
-      label = fullLabel;
-    }
-  }
-
-  let markerCountDiv = "";
-  return `
-    <div class="map-marker marker-display-${entry.displayClass}" >
-        ${markerCountDiv}
-        <div class="marker-icon-circle">
-          <img src="${basePath}icons/${icon}.svg">
-        </div>
-        
-        <div class="marker-text-container">
-          <div class="marker-text marker-text-outline">${label}</div>
-          <div class="marker-text">${label}</div>
-        </div>
-      </div>
-    `;
-}
-
 export function createDivIcon(entry, displayClass) {
   const markerDiv = document.createElement("div");
   const markerComponent = mount(Marker, {
@@ -132,12 +106,13 @@ export function createDivIcon(entry, displayClass) {
  * @param {L.Marker} marker - Leaflet marker object
  * @param {Object} entry - Normalized marker data
  */
-function bindMarkerPopup(marker, entry) {
+function bindMarkerPopup(marker, entry, onMarkerClick, goTo) {
   if (entry.isEvent) {
     // Event popup handling
     const popupDiv = document.createElement("div");
     let popupCloseTimeout = null;
     let popupComponent;
+    let touchListener = null;
 
     function startPopupCloseTimeout() {
       popupCloseTimeout = setTimeout(() => {
@@ -155,18 +130,45 @@ function bindMarkerPopup(marker, entry) {
       minWidth: 300,
     });
 
-    marker.on("mouseover", function () {
-      stopPopupCloseTimeout();
-      marker.options.icon.options.iconSize[0] = 200;
-      marker.openPopup();
-    });
+    if (isTouchDevice) {
+      // Use only one event handler for opening popup on touch devices
+      marker.on("click", function () {
+        console.log("clicked!", entry.id, lastTappedMarkerEntry?.id);
+        goTo({
+          location: { lat: entry.lat, lon: entry.lon },
+          flyDuration: 0.3,
+        });
+        if (lastTappedMarkerEntry?.id === entry.id) {
+          onMarkerClick(entry);
+        } else {
+          // First tap → show popup
+          lastTappedMarkerEntry = entry;
+          console.log("setting last tapped marker entry", entry.id);
+        }
+      });
+    } else {
+      marker.on("click", function () {
+        onMarkerClick(entry);
+      });
 
-    marker.on("mouseout", function () {
-      startPopupCloseTimeout();
-    });
+      marker.on("mouseover", function () {
+        stopPopupCloseTimeout();
+        marker.options.icon.options.iconSize[0] = 200;
+        marker.openPopup();
+      });
+
+      marker.on("mouseout", function () {
+        startPopupCloseTimeout();
+      });
+    }
 
     marker.on("popupclose", () => {
       unmount(popupComponent);
+      // Remove the touch listener when popup closes
+      if (isTouchDevice && touchListener) {
+        document.removeEventListener("touchstart", touchListener);
+        touchListener = null;
+      }
     });
 
     marker.on("popupopen", () => {
@@ -174,6 +176,30 @@ function bindMarkerPopup(marker, entry) {
         target: popupDiv,
         props: { entry, startPopupCloseTimeout, stopPopupCloseTimeout },
       });
+
+      // Setup touch listener when popup opens
+      if (isTouchDevice) {
+        function handleTouchOutside(e) {
+          // Check if popup is open and the touch is not on the popup
+          console.log("touch outside!");
+          lastTappedMarkerEntry = null;
+          if (marker.isPopupOpen()) {
+            const popup = marker.getPopup();
+            const popupEl = popup.getElement();
+
+            // If touch target is not inside the popup and not the marker element
+            if (
+              !popupEl.contains(e.target) &&
+              !e.target.closest(".custom-div-icon")
+            ) {
+              console.log("closing popup!");
+              marker.closePopup();
+            }
+          }
+        }
+        touchListener = handleTouchOutside;
+        document.addEventListener("touchstart", touchListener);
+      }
     });
   }
 }
@@ -183,19 +209,20 @@ function bindMarkerPopup(marker, entry) {
  * @param {Object} entry - Normalized marker data
  * @param {string} displayClass - Display class
  * @param {string} pane - Map pane to place marker on
- * @param {number} zoom - Current zoom level
+ * @param {function} onMarkerClick - Function to call when marker is clicked
+ * @param {function} goTo - Function to call when marker is clicked
  * @returns {L.Marker} - Leaflet marker
  */
-export function createMarker(entry, displayClass, pane, zoom) {
+export function createMarker(entry, displayClass, pane, onMarkerClick, goTo) {
   // No longer need to normalize here as the entry should already be normalized
   const { divIcon, markerComponent } = createDivIcon(entry, displayClass);
 
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
-    pane: pane,
+    pane: "selected",
   });
 
-  bindMarkerPopup(marker, entry);
+  bindMarkerPopup(marker, entry, onMarkerClick, goTo);
 
   return marker;
 }

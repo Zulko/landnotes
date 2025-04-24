@@ -122,10 +122,12 @@
   // ===== MAP CONTROL FUNCTIONS =====
   export function goTo({ location, zoom, flyDuration }) {
     const { lat, lon } = location;
+    console.log({ location, zoom, flyDuration });
     clearTimeout(handleBoundChangesAfterFlyToTimeOut);
     clearTimeout(fixZoomAfterFlyToTimeOut);
 
     // If target zoom is less than current zoom, clear markers first
+    zoom = zoom || map.getZoom();
     if (zoom < map.getZoom()) {
       markerLayer.clearLayers();
     }
@@ -141,6 +143,7 @@
         animate: true,
         duration: flyDuration, // Duration in seconds
       });
+      console.log("flew!", flyDuration);
       // this fixes a bug in leaflet where it looses track of the zoom level after a flyto
       fixZoomAfterFlyToTimeOut = setTimeout(
         function () {
@@ -223,21 +226,17 @@
 
         // Only update icon if display class changed
         if (existingClass !== displayClass || pane !== existingPane) {
-          marker = createMarker(entry, displayClass, pane, map.getZoom());
+          marker = createMarker(entry, displayClass, pane, onMarkerClick, goTo);
         } else {
           marker = existingMarker;
           isExistingMarker = true;
         }
       } else {
-        marker = createMarker(entry, displayClass, pane, map.getZoom());
+        marker = createMarker(entry, displayClass, pane, onMarkerClick, goTo);
       }
 
       // Add event handlers
       if (!isExistingMarker) {
-        marker.on("click", () => {
-          onMarkerClick(entry);
-        });
-
         marker.on("mouseover", () => {
           if (hoveredMarkerId !== markerId) {
             hoveredMarkerId = markerId;

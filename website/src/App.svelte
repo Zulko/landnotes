@@ -240,8 +240,8 @@
   /**
    * Handle marker click events
    */
-  function onMarkerClick({ geokey, lat, lon, event_id }) {
-    const selectedMarkerId = appState.mode === "places" ? geokey : event_id;
+  function onMarkerClick({ lat, lon, id }) {
+    const selectedMarkerId = id;
     const location = { lat, lon };
 
     if (appState.selectedMarkerId !== selectedMarkerId) {
