@@ -202,7 +202,7 @@
     <div class="wiki-header">
       <h3>From Wikipedia</h3>
     </div>
-    {@html summary}
+    <div class="wiki-summary">{@html summary}</div>
   </div>
 </div>
 
@@ -268,5 +268,9 @@
         0 2px 4px rgba(0, 0, 0, 0.15),
         0 0 2px rgba(0, 0, 0, 0.1);
     }
+  }
+
+  .wiki-summary {
+    font-weight: normal;
   }
 </style>

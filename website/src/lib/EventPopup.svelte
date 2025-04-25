@@ -98,7 +98,7 @@
 </script>
 
 {#snippet linkedPage(pageTitle)}
-  <span class="linked-wiki-page"> {pageTitle} </span>
+  <span class="wiki-link"> {pageTitle} </span>
 {/snippet}
 
 <div
@@ -160,6 +160,9 @@
     </div>
     <div class="event-text">
       {entry.summary}
+      <span class="wiki-link" onclick={openWikiPage(pageTitle)}>
+        (learn more)
+      </span>
     </div>
   </div>
 </div>
@@ -233,7 +236,7 @@
     font-style: italic;
   }
 
-  .linked-wiki-page {
+  .wiki-link {
     color: #1a73e8; !important
     text-decoration: none;
     cursor: pointer;
