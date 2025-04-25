@@ -3,7 +3,8 @@
   import WikiTooltip from "./WikiTooltip.svelte";
   const basePath = import.meta.env.BASE_URL;
 
-  let { entry, startPopupCloseTimeout, stopPopupCloseTimeout } = $props();
+  let { entry, startPopupCloseTimeout, stopPopupCloseTimeout, openWikiPage } =
+    $props();
   let people = $state([]);
   let places = $state([]);
 
@@ -122,7 +123,11 @@
     <div class="event-text">
       {#each places as place, index}
         {#if place.hasPage}
-          <WikiTooltip pageTitle={place.name} snippet={linkedPage} />
+          <WikiTooltip
+            pageTitle={place.name}
+            snippet={linkedPage}
+            {openWikiPage}
+          />
         {:else}
           {place.name}
         {/if}
@@ -143,7 +148,11 @@
       <div class="event-text">
         {#each people as person, index}
           {#if person.hasPage}
-            <WikiTooltip pageTitle={person.name} snippet={linkedPage} />
+            <WikiTooltip
+              pageTitle={person.name}
+              snippet={linkedPage}
+              {openWikiPage}
+            />
           {:else}
             {person.name}
           {/if}
@@ -160,7 +169,13 @@
     </div>
     <div class="event-text">
       {entry.summary}
-      <span class="wiki-link" onclick={openWikiPage(pageTitle)}>
+      <span
+        class="wiki-link"
+        onclick={() => openWikiPage(entry.pageTitle)}
+        onkeydown={(e) => e.key === "Enter" && openWikiPage(entry.pageTitle)()}
+        role="button"
+        tabindex="0"
+      >
         (learn more)
       </span>
     </div>
@@ -237,7 +252,7 @@
   }
 
   .wiki-link {
-    color: #1a73e8; !important
+    color: #1a73e8 !important;
     text-decoration: none;
     cursor: pointer;
   }

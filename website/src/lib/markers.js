@@ -110,7 +110,14 @@ export function setMarkerSize(marker, displayClass) {
  * @param {L.Marker} marker - Leaflet marker object
  * @param {Object} entry - Normalized marker data
  */
-function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
+function bindClickEvents({
+  marker,
+  entry,
+  onMarkerClick,
+  goTo,
+  map,
+  openWikiPage,
+}) {
   let isHovered = false;
   let unhoverTimeout = null;
 
@@ -212,7 +219,12 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
     marker.on("popupopen", () => {
       popupComponent = mount(EventPopup, {
         target: popupDiv,
-        props: { entry, startPopupCloseTimeout, stopPopupCloseTimeout },
+        props: {
+          entry,
+          startPopupCloseTimeout,
+          stopPopupCloseTimeout,
+          openWikiPage,
+        },
       });
 
       // Setup touch listener when popup opens
@@ -261,7 +273,13 @@ function bindClickEvents(marker, entry, onMarkerClick, goTo, map) {
  * @param {function} goTo - Function to call when marker is clicked
  * @returns {L.Marker} - Leaflet marker
  */
-export function createMarker(entry, onMarkerClick, goTo, map) {
+export function createMarker({
+  entry,
+  onMarkerClick,
+  goTo,
+  map,
+  openWikiPage,
+}) {
   // No longer need to normalize here as the entry should already be normalized
   const { divIcon } = createDivIcon(entry, entry.displayClass);
   const marker = L.marker([entry.lat, entry.lon], {
@@ -270,7 +288,7 @@ export function createMarker(entry, onMarkerClick, goTo, map) {
   });
 
   // bindHoverPopping(marker, entry, map);
-  bindClickEvents(marker, entry, onMarkerClick, goTo, map);
+  bindClickEvents({ marker, entry, onMarkerClick, goTo, map, openWikiPage });
 
   return marker;
 }

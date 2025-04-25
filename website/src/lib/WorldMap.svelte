@@ -5,7 +5,8 @@
   import { createMarker, setMarkerSize } from "./markers";
 
   // ===== PROPS =====
-  let { mapEntries, mapDots, onMapBoundsChange, onMarkerClick } = $props();
+  let { mapEntries, mapDots, onMapBoundsChange, onMarkerClick, openWikiPage } =
+    $props();
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
@@ -216,7 +217,13 @@
           setMarkerSize(marker, entry.displayClass);
         }
       } else {
-        marker = createMarker(entry, onMarkerClick, goTo, map);
+        marker = createMarker({
+          entry,
+          onMarkerClick,
+          goTo,
+          map,
+          openWikiPage,
+        });
       }
       marker.addTo(newMarkerLayer);
       newMarkers.set(markerId, {

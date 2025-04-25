@@ -334,6 +334,11 @@
     mapEntries = newMarkers;
   }
 
+  function openWikiPage(pageTitle) {
+    console.log("openWikiPage", pageTitle);
+    wikiPage = pageTitle;
+  }
+
   /**
    * Classify markers for display based on importance and zoom level
    */
@@ -358,7 +363,7 @@
 
 <main class:is-mobile={isMobile} tabindex="-1" data-focus-target id="main">
   <div class="content-container">
-    {#if appState.selectedMarkerId}
+    {#if wikiPage}
       <div class="wiki-pane-container">
         <SlidingPane {onPaneClose} {wikiPage} />
       </div>
@@ -371,6 +376,7 @@
         {mapDots}
         {onMapBoundsChange}
         {onMarkerClick}
+        {openWikiPage}
       />
       <div class="search-wrapper">
         <SearchBar
