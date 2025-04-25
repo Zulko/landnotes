@@ -1,7 +1,105 @@
 <script>
-  let { entry, startPopupCloseTimeout, stopPopupCloseTimeout } = $props();
+  import { onMount } from "svelte";
+  import WikiTooltip from "./WikiTooltip.svelte";
   const basePath = import.meta.env.BASE_URL;
+
+  let { entry, startPopupCloseTimeout, stopPopupCloseTimeout } = $props();
+  let people = $state([]);
+  let places = $state([]);
+
+  function deduplicate(array, idKey) {
+    const seen = new Map();
+    return array.filter((item) => {
+      const value = item[idKey];
+      if (seen.has(value)) {
+        return false;
+      }
+      seen.set(value, true);
+      return true;
+    });
+  }
+  function parsePeople() {
+    const peopleList = entry.people
+      .split("|")
+      .map((person) => {
+        const hasPage = !person.trim().endsWith("(?)");
+        return {
+          name: person
+            .trim()
+            .replace(/\(\?\)$/, "")
+            .trim(),
+          hasPage,
+        };
+      })
+      .map((person) => {
+        // Check if entry.pageTitle starts with person.name or vice versa
+        if (
+          entry.pageTitle &&
+          (entry.pageTitle.startsWith(person.name) ||
+            person.name.startsWith(entry.pageTitle))
+        ) {
+          return {
+            name: entry.pageTitle,
+            hasPage: true,
+          };
+        }
+        return person;
+      });
+    console.log({ places, peopleList });
+    const filteredList = peopleList
+      .filter((person) => person.name.toLowerCase() !== "unknown")
+      .filter((person) => !places.some((place) => place.name === person.name));
+    return deduplicate(filteredList, "name");
+  }
+
+  function parsePlaces() {
+    const placeList = entry.location
+      .split(/[\|,]/)
+      .map((location) => {
+        const hasPage = !location.trim().endsWith("(?)");
+        const isGuess = location.trim().endsWith("?");
+        return {
+          name: location
+            .trim()
+            .replace(/\(\?\)$/, "")
+            .replace("?", "")
+            .trim(),
+          hasPage,
+          isGuess,
+        };
+      })
+      .filter((location) => location.name.length > 0)
+      .map((location) => {
+        // Check if entry.pageTitle starts with location.name or vice versa
+        if (
+          entry.pageTitle &&
+          (entry.pageTitle.startsWith(location.name) ||
+            location.name.startsWith(entry.pageTitle))
+        ) {
+          return {
+            name: entry.pageTitle,
+            hasPage: true,
+          };
+        }
+        return location;
+      });
+    const filteredList = placeList
+      .filter((location) => location.name.toLowerCase() !== "unknown")
+      .filter((location) => location.name.length > 0);
+    return deduplicate(filteredList, "name");
+  }
+  onMount(() => {
+    console.log("entry", entry);
+    places = parsePlaces();
+    people = parsePeople();
+    console.log("places", places);
+    console.log("people", people);
+  });
 </script>
+
+{#snippet linkedPage(pageTitle)}
+  <span class="linked-wiki-page"> {pageTitle} </span>
+{/snippet}
 
 <div
   class="event-popup"
@@ -11,29 +109,58 @@
   onblur={startPopupCloseTimeout}
   onfocus={stopPopupCloseTimeout}
 >
-  <div class="event-popup-section">
+  <div class="event-popup-section when">
     <div class="event-icon">
       <img src="{basePath}icons/calendar-fold.svg" alt="calendar" />
     </div>
     <div class="event-text">{entry.when}</div>
   </div>
-  <div class="event-popup-section">
-    <div class="event-icon">
-      <img src="{basePath}icons/square-user-round.svg" alt="person" />
-    </div>
-    <div class="event-text">{entry.people.replaceAll("|", ", ")}</div>
-  </div>
-  <div class="event-popup-section">
-    <div class="event-icon">
-      <img src="{basePath}icons/newspaper.svg" alt="newspaper" />
-    </div>
-    <div class="event-text">{entry.summary}</div>
-  </div>
-  <div class="event-popup-section">
+  <div class="event-popup-section location">
     <div class="event-icon">
       <img src="{basePath}icons/map.svg" alt="map" />
     </div>
-    <div class="event-text">{entry.location}</div>
+    <div class="event-text">
+      {#each places as place, index}
+        {#if place.hasPage}
+          <WikiTooltip pageTitle={place.name} snippet={linkedPage} />
+        {:else}
+          {place.name}
+        {/if}
+        {#if place.isGuess}
+          <span class="guess">(likely)</span>
+        {/if}
+        {#if index < places.length - 1}
+          <br />
+        {/if}
+      {/each}
+    </div>
+  </div>
+  {#if people.length > 0}
+    <div class="event-popup-section people">
+      <div class="event-icon">
+        <img src="{basePath}icons/square-user-round.svg" alt="person" />
+      </div>
+      <div class="event-text">
+        {#each people as person, index}
+          {#if person.hasPage}
+            <WikiTooltip pageTitle={person.name} snippet={linkedPage} />
+          {:else}
+            {person.name}
+          {/if}
+          {#if index < people.length - 1}
+            <br />
+          {/if}
+        {/each}
+      </div>
+    </div>
+  {/if}
+  <div class="event-popup-section summary">
+    <div class="event-icon">
+      <img src="{basePath}icons/newspaper.svg" alt="newspaper" />
+    </div>
+    <div class="event-text">
+      {entry.summary}
+    </div>
   </div>
 </div>
 
@@ -59,8 +186,8 @@
   .event-popup .event-popup-section {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   }
 
@@ -88,21 +215,27 @@
     flex: 1;
     font-size: 14px;
     line-height: 1.4;
+  }
+
+  .event-popup-section.when .event-text {
+    color: #333;
+  }
+  .event-popup-section.location .event-text {
     color: #333;
   }
 
-  /* Special styling for different types of content */
-  .event-popup .event-popup-section:first-child .event-text {
-    font-weight: 600;
-    color: #1a73e8;
-  }
-
-  .event-popup-section:nth-child(2) .event-text {
+  .event-popup-section.people .event-text {
     font-weight: 500;
   }
 
-  .event-popup-section:nth-child(4) .event-text {
+  .event-popup-section.summary .event-text {
+    color: #333;
     font-style: italic;
-    color: #555;
+  }
+
+  .linked-wiki-page {
+    color: #1a73e8; !important
+    text-decoration: none;
+    cursor: pointer;
   }
 </style>

@@ -215,7 +215,7 @@
   tabindex="-1"
   role="button"
 >
-  {@render snippet()}
+  {@render snippet(pageTitle)}
 </span>
 
 <style>
