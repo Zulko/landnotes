@@ -6,9 +6,9 @@
   import { onMount } from "svelte";
 
   // Components
-  import WorldMap from "./lib/WorldMap/WorldMap.svelte";
+  import WorldMap from "./lib/map/WorldMap.svelte";
   import SlidingPane from "./lib/SlidingPane/SlidingPane.svelte";
-  import SearchBarMenu from "./lib/SearchBarMenu/SearchBarMenu.svelte";
+  import SearchBarMenu from "./lib/menu/SearchBarMenu.svelte";
 
   // Utilities
   import { appState, setStateFromURLParams } from "./lib/appState.svelte";

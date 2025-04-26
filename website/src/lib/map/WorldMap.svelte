@@ -7,7 +7,7 @@
     updateMarkerIcon,
     updateMarkerPane,
   } from "./createMarker";
-  import { mapEntries, mapBounds } from "../mapEntries/mapEntries.svelte";
+  import { mapEntries, mapBounds } from "../data/mapEntries.svelte";
   import { appState } from "../appState.svelte";
 
   // ===== STATE VARIABLES =====

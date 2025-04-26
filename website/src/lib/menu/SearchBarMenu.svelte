@@ -1,6 +1,6 @@
 <script>
   import { onDestroy } from "svelte";
-  import { getEntriesfromText } from "../mapEntries/places_data";
+  import { getEntriesfromText } from "../data/places_data";
   import MenuDropdown from "./MenuDropdown.svelte";
   import DatePicker from "./DatePicker.svelte";
 
