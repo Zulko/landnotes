@@ -145,7 +145,7 @@
 <svelte:window on:resize={handleResize} />
 
 <main
-  class:is-mobile={isNarrowScreen}
+  class:narrow-screen={isNarrowScreen}
   tabindex="-1"
   data-focus-target
   id="main"
@@ -160,12 +160,7 @@
     <div class="map-container">
       <WorldMap bind:this={mapComponent} {onMarkerClick} {openWikiPage} />
       <div class="search-wrapper">
-        <SearchBar
-          {onSearchSelect}
-          bind:mode={appState.mode}
-          bind:date={appState.date}
-          bind:strictDate={appState.strictDate}
-        />
+        <SearchBar {onSearchSelect} />
       </div>
     </div>
   </div>
@@ -205,22 +200,22 @@
   }
 
   /* Mobile layout */
-  main.is-mobile .content-container {
+  main.narrow-screen .content-container {
     flex-direction: column;
   }
 
-  main.is-mobile .wiki-pane-container {
+  main.narrow-screen .wiki-pane-container {
     flex: 0 0 0;
     order: 2; /* Put wiki pane at the bottom */
   }
 
-  main.is-mobile .map-container {
+  main.narrow-screen .map-container {
     order: 1; /* Put map at the top */
     flex: 1;
   }
 
   /* Mobile adjustments for search bar */
-  main.is-mobile .search-wrapper {
+  main.narrow-screen .search-wrapper {
     top: 3px;
     width: 90%;
     padding: 0;

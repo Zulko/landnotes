@@ -4,12 +4,9 @@
   import MenuDropdown from "./MenuDropdown.svelte";
   import DatePicker from "./DatePicker.svelte";
 
-  let {
-    mode = $bindable("places"),
-    date = $bindable(null),
-    strictDate = $bindable(false),
-    onSearchSelect,
-  } = $props();
+  import { appState } from "./appState.svelte";
+
+  let { onSearchSelect } = $props();
   let searchQuery = $state("");
   let searchResults = $state([]);
   let isActive = $state(false);
@@ -184,11 +181,15 @@
   {/if}
 
   <!-- Menu component -->
-  {#if mode === "events" && searchResults.length == 0}
-    <DatePicker bind:date />
+  {#if appState.mode === "events" && searchResults.length == 0}
+    <DatePicker bind:date={appState.date} />
   {/if}
   {#if isMenuOpen}
-    <MenuDropdown bind:mode bind:strictDate {onCloseMenu} />
+    <MenuDropdown
+      bind:mode={appState.mode}
+      bind:strictDate={appState.strictDate}
+      {onCloseMenu}
+    />
   {/if}
 </div>
 

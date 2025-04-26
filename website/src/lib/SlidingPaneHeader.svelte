@@ -1,14 +1,17 @@
 <script>
   const basePath = import.meta.env.BASE_URL;
-  // Props
-  let { expanded, onPaneClose, onToggleExpand, onOpenExternal } = $props();
+  let {
+    expanded = $bindable(false),
+    closePane,
+    openWikiPageInNewTab,
+  } = $props();
 </script>
 
 <div class="pane-header">
   <div class="header-buttons">
     <button
       class="icon-button external-link-button"
-      onclick={onOpenExternal}
+      onclick={openWikiPageInNewTab}
       title="Open in new tab"
       aria-label="Open in new tab"
     >
@@ -22,7 +25,7 @@
     <button
       class="icon-button expand-button desktop-only"
       class:active={expanded}
-      onclick={onToggleExpand}
+      onclick={() => (expanded = !expanded)}
       title={expanded ? "Shrink pane" : "Expand pane"}
       aria-label={expanded ? "Shrink pane" : "Expand pane"}
     >
@@ -38,7 +41,7 @@
     <button
       class="icon-button expand-button mobile-only"
       class:active={expanded}
-      onclick={onToggleExpand}
+      onclick={() => (expanded = !expanded)}
       title={expanded ? "Shrink pane" : "Expand pane"}
       aria-label={expanded ? "Shrink pane" : "Expand pane"}
     >
@@ -50,7 +53,7 @@
         class="icon"
       />
     </button>
-    <button class="close-button" onclick={onPaneClose} aria-label="Close panel">
+    <button class="close-button" onclick={closePane} aria-label="Close panel">
       &times;
     </button>
   </div>

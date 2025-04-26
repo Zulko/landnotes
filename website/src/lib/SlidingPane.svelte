@@ -1,12 +1,10 @@
 <script>
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
   import { onMount } from "svelte";
-
-  // ===== PROPS =====
-  let { wikiPage, onPaneClose } = $props();
+  import { appState } from "./appState.svelte";
 
   let expanded = $state(false);
-  let isMobile = $state(
+  let isNarrowScreen = $state(
     typeof window !== "undefined" && window.innerWidth <= 768
   );
   const normalWidth = "400px"; // Default width for desktop
@@ -21,7 +19,7 @@
   let actualWidth = $derived(
     isInitialRender
       ? "0px"
-      : isMobile
+      : isNarrowScreen
         ? "100%"
         : expanded
           ? `${parseInt(normalWidth) * 2}px`
@@ -31,7 +29,7 @@
   let actualHeight = $derived(
     isInitialRender
       ? "0px"
-      : isMobile
+      : isNarrowScreen
         ? expanded
           ? "100vh"
           : normalHeight
@@ -40,23 +38,24 @@
 
   // Generate Wikipedia URL based on device and width
   let wikiUrl = $derived(
-    wikiPage
-      ? isMobile || parseInt(actualWidth) < 768
-        ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(wikiPage)}`
-        : `https://en.wikipedia.org/wiki/${encodeURIComponent(wikiPage)}`
+    appState.wikiPage
+      ? isNarrowScreen || parseInt(actualWidth) < 768
+        ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(appState.wikiPage)}`
+        : `https://en.wikipedia.org/wiki/${encodeURIComponent(appState.wikiPage)}`
       : "about:blank"
   );
 
   // ===== EVENT HANDLERS =====
 
   // Toggle expanded mode (works for both desktop and mobile)
-  function onToggleExpand() {
-    expanded = !expanded;
+  function closePane() {
+    appState.wikiPage = null;
+    appState.selectedMarkerId = null;
   }
 
   // Open in new tab
-  function onOpenExternal() {
-    if (wikiPage) {
+  function openWikiPageInNewTab() {
+    if (appState.wikiPage) {
       window.open(wikiUrl, "_blank");
     }
   }
@@ -65,7 +64,7 @@
   function handleResize() {
     if (typeof window !== "undefined") {
       // Update mobile detection
-      isMobile = window.innerWidth <= 768;
+      isNarrowScreen = window.innerWidth <= 768;
     }
   }
 
@@ -79,21 +78,16 @@
 </script>
 
 <svelte:window
-  onkeydown={(e) => e.key === "Escape" && onPaneClose()}
+  onkeydown={(e) => e.key === "Escape" && closePane()}
   onresize={handleResize}
 />
 
 <div class="pane-container">
   <div class="pane" style="width: {actualWidth}; height: {actualHeight};">
-    <SlidingPaneHeader
-      {expanded}
-      {onPaneClose}
-      {onToggleExpand}
-      {onOpenExternal}
-    />
+    <SlidingPaneHeader bind:expanded {openWikiPageInNewTab} {closePane} />
 
     <div class="pane-content">
-      {#if wikiPage}
+      {#if appState.wikiPage}
         <iframe
           id="wiki-iframe"
           tabindex="-2"
