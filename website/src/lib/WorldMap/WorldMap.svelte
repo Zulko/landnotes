@@ -7,11 +7,9 @@
     updateMarkerIcon,
     updateMarkerPane,
   } from "./createMarker";
-  import { mapEntries, mapBounds } from "./mapEntries.svelte";
-  import { appState } from "./appState.svelte";
+  import { mapEntries, mapBounds } from "../mapEntries/mapEntries.svelte";
+  import { appState } from "../appState.svelte";
 
-  // ===== PROPS =====
-  const { onMarkerClick } = $props();
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
@@ -123,7 +121,7 @@
   }
 
   // ===== MAP CONTROL FUNCTIONS =====
-  export function goTo({ location, zoom, flyDuration }) {
+  export function mapTravel({ location, zoom, flyDuration }) {
     const { lat, lon } = location;
     console.log({ location, zoom, flyDuration });
     clearTimeout(handleBoundChangesAfterFlyToTimeOut);
@@ -232,8 +230,7 @@
       } else {
         marker = createMarker({
           entry,
-          onMarkerClick,
-          goTo,
+          mapTravel,
           map,
         });
       }
@@ -328,5 +325,9 @@
   } */
   :global(.leaflet-popup-tip) {
     display: none;
+  }
+
+  :global(.leaflet-fade-anim .leaflet-popup) {
+    transition: none;
   }
 </style>

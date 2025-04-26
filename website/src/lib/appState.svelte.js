@@ -18,7 +18,7 @@
  * - Other application-wide settings
  */
 
-import { geohashToLatLon, latLonToGeohash } from "./geo/geohash";
+import { geohashToLatLon, latLonToGeohash } from "./mapEntries/geohash";
 
 const stateDefaults = {
   mode: "places",

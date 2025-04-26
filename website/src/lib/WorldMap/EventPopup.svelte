@@ -1,12 +1,16 @@
 <script>
   import { onMount } from "svelte";
-  import WikiTooltip from "./WikiTooltip.svelte";
+  import WikiTooltip from "../WikiTooltip.svelte";
+  import { appState } from "../appState.svelte";
   const basePath = import.meta.env.BASE_URL;
 
-  let { entry, startPopupCloseTimeout, stopPopupCloseTimeout, openWikiPage } =
-    $props();
+  let { entry, startPopupCloseTimeout, stopPopupCloseTimeout } = $props();
   let people = $state([]);
   let places = $state([]);
+
+  function openWikiPage(pageTitle) {
+    appState.wikiPage = pageTitle;
+  }
 
   function deduplicate(array, idKey) {
     const seen = new Map();
@@ -95,7 +99,19 @@
 </script>
 
 {#snippet linkedPage(pageTitle)}
-  <span class="wiki-link"> {pageTitle} </span>
+  <span
+    class="wiki-link"
+    onclick={() => openWikiPage(pageTitle)}
+    role="button"
+    tabindex="0"
+    onkeydown={(e) => {
+      if (e.key === "Enter") {
+        openWikiPage(pageTitle);
+      }
+    }}
+  >
+    {pageTitle}
+  </span>
 {/snippet}
 
 <div
@@ -168,7 +184,11 @@
       <span
         class="wiki-link"
         onclick={() => openWikiPage(entry.pageTitle)}
-        onkeydown={(e) => e.key === "Enter" && openWikiPage(entry.pageTitle)()}
+        onkeydown={(e) => {
+          if (e.key === "Enter") {
+            openWikiPage(entry.pageTitle);
+          }
+        }}
         role="button"
         tabindex="0"
       >

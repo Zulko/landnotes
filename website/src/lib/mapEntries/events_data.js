@@ -1,6 +1,6 @@
 import { inflate } from "pako";
 
-import { cachedDecodeHybridGeohash, queryWithCache } from "./geo/geodata";
+import { cachedDecodeHybridGeohash, queryWithCache } from "./places_data";
 
 let worker = null;
 // Store for pending request promises

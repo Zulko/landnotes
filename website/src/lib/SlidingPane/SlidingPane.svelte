@@ -1,7 +1,7 @@
 <script>
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
   import { onMount } from "svelte";
-  import { appState } from "./appState.svelte";
+  import { appState } from "../appState.svelte";
 
   let expanded = $state(false);
   let isNarrowScreen = $state(

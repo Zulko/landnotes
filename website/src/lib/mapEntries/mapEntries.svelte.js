@@ -14,9 +14,8 @@
  * state changes occur, such as mode switches, date changes, or map movement.
  */
 
-import { appState } from "./appState.svelte";
-import { getGeodataFromBounds } from "./geo/geodata";
-import { getPlaceDataFromGeokeys } from "./geo/geodata";
+import { appState } from "../appState.svelte";
+import { getPlaceDataFromGeokeys, getGeodataFromBounds } from "./places_data";
 import { getEventsById, getEventsForBoundsAndDate } from "./events_data";
 
 export const mapEntries = $state({ markerInfos: [], dots: [] });
@@ -115,6 +114,7 @@ async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
     const eventInfo = eventInfosById.get(event.event_id) || {};
     return { ...eventInfo, ...event };
   });
+  console.timeEnd("updateMarkersWithEventsData");
 
   updateMapEntriesFromQueryResults({
     entryInfos: eventsWithInfos,

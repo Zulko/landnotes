@@ -4,8 +4,8 @@ import EventPopup from "./EventPopup.svelte";
 // @ts-ignore
 import MarkerIcon from "./MarkerIcon.svelte";
 import { mount, unmount } from "svelte";
-import { isTouchDevice } from "./device";
-import { appState } from "./appState.svelte";
+import { isTouchDevice } from "../device";
+import { appState } from "../appState.svelte";
 
 let lastTappedMarkerEntry = null;
 
@@ -20,12 +20,11 @@ const iconSizesByDisplayClass = {
  * Creates a marker with appropriate behavior based on type
  * @param {Object} options - Options object
  * @param {Object} options.entry - Normalized marker data
- * @param {function} options.onMarkerClick - Function to call when marker is clicked
- * @param {function} options.goTo - Function to navigate to a location on the map
+ * @param {function} options.mapTravel - Function to navigate to a location on the map
  * @param {Object} options.map - Leaflet map instance
  * @returns {L.Marker} - Leaflet marker
  */
-export function createMarker({ entry, onMarkerClick, goTo, map }) {
+export function createMarker({ entry, mapTravel, map }) {
   // No longer need to normalize here as the entry should already be normalized
   const { divIcon } = createDivIcon(entry, entry.displayClass);
   const marker = L.marker([entry.lat, entry.lon], {
@@ -34,7 +33,7 @@ export function createMarker({ entry, onMarkerClick, goTo, map }) {
   });
 
   // bindHoverPopping(marker, entry, map);
-  bindClickEvents({ marker, entry, onMarkerClick, goTo, map });
+  bindClickEvents({ marker, entry, mapTravel, map });
 
   return marker;
 }
@@ -71,11 +70,10 @@ function createDivIcon(entry, displayClass) {
  * @param {Object} options - Configuration options
  * @param {L.Marker} options.marker - Leaflet marker object
  * @param {Object} options.entry - Normalized marker data
- * @param {Function} options.onMarkerClick - Callback for marker click events
- * @param {Function} options.goTo - Function to navigate to a location on the map
+ * @param {Function} options.mapTravel - Function to navigate to a location on the map
  * @param {L.Map} options.map - Leaflet map instance
  */
-function bindClickEvents({ marker, entry, onMarkerClick, goTo, map }) {
+function bindClickEvents({ marker, entry, mapTravel, map }) {
   let isHovered = false;
   let unhoverTimeout = null;
 
@@ -108,7 +106,6 @@ function bindClickEvents({ marker, entry, onMarkerClick, goTo, map }) {
     // Event popup handling on mobile and device:
     // first set up the popup and functions to open/close.
     const popupDiv = document.createElement("div");
-    popupDiv.style.zIndex = "9999 !important"; // Set maximum z-order
 
     let popupCloseTimeout = null;
     let popupComponent;
@@ -136,12 +133,12 @@ function bindClickEvents({ marker, entry, onMarkerClick, goTo, map }) {
       // Use only one event handler for opening popup on touch devices
       marker.on("click", function () {
         console.log("clicked!", entry.id, lastTappedMarkerEntry?.id);
-        goTo({
+        mapTravel({
           location: { lat: entry.lat, lon: entry.lon },
           flyDuration: 0.3,
         });
         if (lastTappedMarkerEntry?.id === entry.id) {
-          onMarkerClick(entry);
+          selectMarkerAndCenterOnIt(entry, mapTravel);
         } else {
           // First tap → show popup
           lastTappedMarkerEntry = entry;
@@ -151,7 +148,7 @@ function bindClickEvents({ marker, entry, onMarkerClick, goTo, map }) {
     } else {
       // Event markers with popup on mouse/desktop devices
       marker.on("click", function () {
-        onMarkerClick(entry);
+        selectMarkerAndCenterOnIt(entry, mapTravel);
       });
 
       marker.on("mouseover", function () {
@@ -212,23 +209,21 @@ function bindClickEvents({ marker, entry, onMarkerClick, goTo, map }) {
     // marker is a place marker
     if (isTouchDevice) {
       marker.on("click", function () {
-        appState.selectedMarkerId = entry.id;
-        appState.wikiPage = entry.pageTitle;
-        goTo({
-          location: { lat: entry.lat, lon: entry.lon },
-          flyDuration: 0.3,
-        });
+        selectMarkerAndCenterOnIt(entry, mapTravel);
       });
     } else {
       marker.on("click", function () {
-        console.log("clicked", entry.id);
-        appState.selectedMarkerId = entry.id;
-        appState.wikiPage = entry.pageTitle;
-        goTo({
-          location: { lat: entry.lat, lon: entry.lon },
-          flyDuration: 0.3,
-        });
+        selectMarkerAndCenterOnIt(entry, mapTravel);
       });
     }
   }
+}
+
+function selectMarkerAndCenterOnIt(entry, mapTravel) {
+  appState.selectedMarkerId = entry.id;
+  appState.wikiPage = entry.pageTitle;
+  mapTravel({
+    location: { lat: entry.lat, lon: entry.lon },
+    flyDuration: 0.3,
+  });
 }

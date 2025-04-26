@@ -1,7 +1,7 @@
 import { inflate } from "pako";
 
-import { addLatLonToEntry, queryWithCache } from "./geo/geodata";
-import { getOverlappingGeoEncodings } from "./geo/geohash";
+import { addLatLonToEntry, queryWithCache } from "./places_data";
+import { getOverlappingGeoEncodings } from "./geohash";
 
 // Event worker for processing and caching geographic event data
 

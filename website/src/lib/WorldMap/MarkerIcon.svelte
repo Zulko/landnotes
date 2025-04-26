@@ -1,5 +1,5 @@
 <script>
-  import WikiTooltip from "./WikiTooltip.svelte";
+  import WikiTooltip from "../WikiTooltip.svelte";
   const { entry } = $props();
   const basePath = import.meta.env.BASE_URL;
 

@@ -1,10 +1,10 @@
 <script>
   import { onDestroy } from "svelte";
-  import { getEntriesfromText } from "./geo/geodata";
+  import { getEntriesfromText } from "../mapEntries/places_data";
   import MenuDropdown from "./MenuDropdown.svelte";
   import DatePicker from "./DatePicker.svelte";
 
-  import { appState } from "./appState.svelte";
+  import { appState } from "../appState.svelte";
 
   let { onSearchSelect } = $props();
   let searchQuery = $state("");

@@ -6,9 +6,9 @@
   import { onMount } from "svelte";
 
   // Components
-  import WorldMap from "./lib/WorldMap.svelte";
-  import SlidingPane from "./lib/SlidingPane.svelte";
-  import SearchBar from "./lib/SearchBar.svelte";
+  import WorldMap from "./lib/WorldMap/WorldMap.svelte";
+  import SlidingPane from "./lib/SlidingPane/SlidingPane.svelte";
+  import SearchBarMenu from "./lib/SearchBarMenu/SearchBarMenu.svelte";
 
   // Utilities
   import { appState, setStateFromURLParams } from "./lib/appState.svelte";
@@ -23,7 +23,6 @@
     location: null,
     selectedMarkerId: null,
   };
-  let mapBounds = $state({});
   let isNarrowScreen = $state(false);
   let currentMode = $state("places");
 
@@ -55,13 +54,13 @@
   function setStateFromURLParamsAndMoveMap() {
     const urlState = setStateFromURLParams();
     if (urlState.location) {
-      mapComponent.goTo({
+      mapComponent.mapTravel({
         location: urlState.location,
         zoom: urlState.zoom,
         flyDuration: 0.3,
       });
     } else {
-      mapComponent.goTo({
+      mapComponent.mapTravel({
         location: { lat: 0, lon: 0 },
         zoom: 3,
         flyDuration: 0.3,
@@ -85,23 +84,6 @@
   }
 
   /**
-   * Handle marker click events
-   */
-  function onMarkerClick({ lat, lon, id }) {
-    console.log("onMarkerClick", lat, lon, id);
-    const selectedMarkerId = id;
-    const location = { lat, lon };
-
-    if (appState.selectedMarkerId !== selectedMarkerId) {
-      appState.selectedMarkerId = selectedMarkerId;
-      mapComponent.goTo({ location, zoom: appState.zoom, flyDuration: 0.3 });
-    } else {
-      const newZoom = Math.min(17, Math.max(12, appState.zoom + 2));
-      mapComponent.goTo({ location, zoom: newZoom, flyDuration: 0.4 });
-    }
-  }
-
-  /**
    * Handle search selection
    */
   function onSearchSelect({ geokey, lat, lon }) {
@@ -109,7 +91,7 @@
     if (appState.selectedMarkerId !== selectedMarkerId) {
       appState.selectedMarkerId = selectedMarkerId;
     }
-    mapComponent.goTo({
+    mapComponent.mapTravel({
       location: { lat, lon },
       zoom: Math.max(12, appState.zoom),
       flyDuration: 1,
@@ -122,11 +104,6 @@
   /**
    * Update the selected marker and associated data
    */
-
-  function openWikiPage(pageTitle) {
-    console.log("openWikiPage", pageTitle);
-    appState.wikiPage = pageTitle;
-  }
 </script>
 
 <svelte:window on:resize={handleResize} />
@@ -145,9 +122,9 @@
     {/if}
 
     <div class="map-container">
-      <WorldMap bind:this={mapComponent} {onMarkerClick} {openWikiPage} />
+      <WorldMap bind:this={mapComponent} />
       <div class="search-wrapper">
-        <SearchBar {onSearchSelect} />
+        <SearchBarMenu {onSearchSelect} />
       </div>
     </div>
   </div>
