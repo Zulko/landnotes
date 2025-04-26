@@ -161,7 +161,6 @@ function bindClickEvents({
       }, 100);
     }
     function stopPopupCloseTimeout() {
-      console.log("PREVENT CLOSING");
       clearTimeout(popupCloseTimeout);
       clearTimeout(unhoverTimeout);
     }

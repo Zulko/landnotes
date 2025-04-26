@@ -12,12 +12,6 @@
 
   // Utilities
   import { appState, setStateFromURLParams } from "./lib/appState.svelte";
-  import {
-    getGeodataFromBounds,
-    getPlaceDataFromGeokeys,
-  } from "./lib/geo/geodata";
-  import { getEventsById } from "./lib/events_data";
-  import { normalizeMarkerData } from "./lib/markers";
   // -------------------------
   // STATE VARIABLES & DEFAULTS
   // -------------------------
@@ -30,8 +24,6 @@
     selectedMarkerId: null,
   };
   let mapBounds = $state({});
-  let mapEntries = $state([]);
-  let mapDots = $state([]);
   let isNarrowScreen = $state(false);
   let currentMode = $state("places");
 
@@ -54,14 +46,6 @@
       currentMode = appState.mode;
     }
   });
-
-  // -------------------------
-  // HELPER FUNCTIONS
-  // -------------------------
-  /**
-   * Debounce function to limit how often a function is called
-   */
-
   // -------------------------
   // STATE MANAGEMENT FUNCTIONS
   // -------------------------

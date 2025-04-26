@@ -123,7 +123,6 @@ async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
 }
 
 function updateMapEntriesFromQueryResults({ entryInfos, dots }) {
-  console.log({ entryInfos, dots });
   const normalizedInfos = entryInfos.map(normalizeMapEntryInfo);
   const preExistingEntries = mapEntries.markerInfos.filter((entry) =>
     normalizedInfos.some((e) => e.id === entry.id)

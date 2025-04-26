@@ -46,7 +46,6 @@
         }
         return person;
       });
-    console.log({ places, peopleList });
     const filteredList = peopleList
       .filter((person) => person.name.toLowerCase() !== "unknown")
       .filter((person) => !places.some((place) => place.name === person.name));
@@ -90,11 +89,8 @@
     return deduplicate(filteredList, "name");
   }
   onMount(() => {
-    console.log("entry", entry);
     places = parsePlaces();
     people = parsePeople();
-    console.log("places", places);
-    console.log("people", people);
   });
 </script>
 
