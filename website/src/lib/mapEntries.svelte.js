@@ -150,81 +150,12 @@ function updateDisplayClasses(entries) {
     }
   }
 }
-function updateMarkerInfosDisplayClasses() {
-  updateDisplayClasses(mapEntries.markerInfos);
-}
-
-const iconByPlaceType = {
-  adm1st: "map",
-  adm2nd: "map",
-  adm3rd: "map",
-  airport: "plane-takeoff",
-  building: "building",
-  church: "church",
-  city: "city",
-  country: "flag",
-  county: "map",
-  edu: "school",
-  event: "newspaper",
-  forest: "trees",
-  glacier: "mountain-snow",
-  island: "tree-palm",
-  isle: "tree-palm",
-  landmark: "landmark",
-  locality: "locality",
-  mountain: "mountain-snow",
-  other: "pin",
-  railwaystation: "train-front",
-  river: "waves",
-  school: "school",
-  settlement: "city",
-  town: "city",
-  village: "city",
-  waterbody: "waves",
-};
-const iconsByEventType = {
-  birth: "baby",
-  death: "skull",
-  award: "trophy",
-  release: "book-marked",
-  work: "briefcase-business",
-  travel: "luggage",
-};
-const iconByType = {
-  ...iconByPlaceType,
-  ...iconsByEventType,
-};
-
-/**
- * Adapts marker data to a consistent format regardless of type (place or event)
- * @param {Object} entry - Original data entry
- * @returns {Object} - Normalized marker data
- */
-export function normalizeMapEntryInfo(entry) {
-  // Determine marker type
-  const isEvent = Boolean(entry.when);
-
-  // Return a normalized object with consistent property names
-  const pageTitle = entry.page_title
-    ? entry.page_title.replaceAll("_", " ")
-    : "";
-  return {
-    ...entry,
-    id: isEvent ? entry.event_id : entry.geokey,
-    name: entry.name || pageTitle,
-    pageTitle,
-    displayClass: entry.displayClass || "dot",
-    category: entry.category || "other",
-    isEvent,
-    iconName: iconByType[entry.category] || iconByType.other,
-  };
-}
-
 async function handleNewSelectedMarker(selectedMarkerId) {
   console.log("handleNewSelectedMarker", selectedMarkerId);
   if (selectedMarkerId === appState.selectedMarkerId) return;
   if (!selectedMarkerId) {
-    updateMarkerInfosDisplayClasses();
+    // a marker got deselected. Let's just update the display classes
+    updateDisplayClasses(mapEntries.markerInfos);
     return;
   }
 
@@ -251,4 +182,28 @@ async function handleNewSelectedMarker(selectedMarkerId) {
   }
   updateDisplayClasses(newMarkers);
   mapEntries.markerInfos = newMarkers;
+}
+
+/**
+ * Adapts marker data to a consistent format regardless of type (place or event)
+ * @param {Object} entry - Original data entry
+ * @returns {Object} - Normalized marker data
+ */
+export function normalizeMapEntryInfo(entry) {
+  // Determine marker type
+  const isEvent = Boolean(entry.when);
+
+  // Return a normalized object with consistent property names
+  const pageTitle = entry.page_title
+    ? entry.page_title.replaceAll("_", " ")
+    : "";
+  return {
+    ...entry,
+    id: isEvent ? entry.event_id : entry.geokey,
+    name: entry.name || pageTitle,
+    pageTitle,
+    displayClass: entry.displayClass || "dot",
+    category: entry.category || "other",
+    isEvent,
+  };
 }

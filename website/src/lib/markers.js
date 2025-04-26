@@ -8,71 +8,6 @@ const basePath = import.meta.env.BASE_URL;
 let lastTappedMarkerEntry = null;
 import { isTouchDevice } from "./device";
 
-const iconByPlaceType = {
-  adm1st: "map",
-  adm2nd: "map",
-  adm3rd: "map",
-  airport: "plane-takeoff",
-  building: "building",
-  church: "church",
-  city: "city",
-  country: "flag",
-  county: "map",
-  edu: "school",
-  event: "newspaper",
-  forest: "trees",
-  glacier: "mountain-snow",
-  island: "tree-palm",
-  isle: "tree-palm",
-  landmark: "landmark",
-  locality: "locality",
-  mountain: "mountain-snow",
-  other: "pin",
-  railwaystation: "train-front",
-  river: "waves",
-  school: "school",
-  settlement: "city",
-  town: "city",
-  village: "city",
-  waterbody: "waves",
-};
-const iconsByEventType = {
-  birth: "baby",
-  death: "skull",
-  award: "trophy",
-  release: "book-marked",
-  work: "briefcase-business",
-  travel: "luggage",
-};
-const iconByType = {
-  ...iconByPlaceType,
-  ...iconsByEventType,
-};
-
-/**
- * Adapts marker data to a consistent format regardless of type (place or event)
- * @param {Object} entry - Original data entry
- * @returns {Object} - Normalized marker data
- */
-export function normalizeMarkerData(entry) {
-  // Determine marker type
-  const isEvent = Boolean(entry.when);
-
-  // Return a normalized object with consistent property names
-  const pageTitle = entry.page_title
-    ? entry.page_title.replaceAll("_", " ")
-    : "";
-  return {
-    ...entry,
-    id: isEvent ? entry.event_id : entry.geokey,
-    name: entry.name || pageTitle,
-    pageTitle,
-    displayClass: entry.displayClass || "dot",
-    category: entry.category || "other",
-    isEvent,
-    iconName: iconByType[entry.category] || iconByType.other,
-  };
-}
 const iconSizesByDisplayClass = {
   dot: [18, 18],
   reduced: [28, 28],
@@ -106,9 +41,14 @@ export function setMarkerSize(marker, displayClass) {
 }
 
 /**
- * Create appropriate popup based on marker type
- * @param {L.Marker} marker - Leaflet marker object
- * @param {Object} entry - Normalized marker data
+ * Create appropriate popup based on marker type and bind click events
+ * @param {Object} options - Configuration options
+ * @param {L.Marker} options.marker - Leaflet marker object
+ * @param {Object} options.entry - Normalized marker data
+ * @param {Function} options.onMarkerClick - Callback for marker click events
+ * @param {Function} options.goTo - Function to navigate to a location on the map
+ * @param {L.Map} options.map - Leaflet map instance
+ * @param {Function} options.openWikiPage - Function to open a Wikipedia page
  */
 function bindClickEvents({
   marker,
@@ -267,9 +207,12 @@ function bindClickEvents({
 
 /**
  * Creates a marker with appropriate behavior based on type
- * @param {Object} entry - Normalized marker data
- * @param {function} onMarkerClick - Function to call when marker is clicked
- * @param {function} goTo - Function to call when marker is clicked
+ * @param {Object} options - Options object
+ * @param {Object} options.entry - Normalized marker data
+ * @param {function} options.onMarkerClick - Function to call when marker is clicked
+ * @param {function} options.goTo - Function to navigate to a location on the map
+ * @param {Object} options.map - Leaflet map instance
+ * @param {function} options.openWikiPage - Function to open a Wikipedia page
  * @returns {L.Marker} - Leaflet marker
  */
 export function createMarker({

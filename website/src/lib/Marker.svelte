@@ -3,6 +3,49 @@
   const { entry } = $props();
   const basePath = import.meta.env.BASE_URL;
 
+  const iconByPlaceType = {
+    adm1st: "map",
+    adm2nd: "map",
+    adm3rd: "map",
+    airport: "plane-takeoff",
+    building: "building",
+    church: "church",
+    city: "city",
+    country: "flag",
+    county: "map",
+    edu: "school",
+    event: "newspaper",
+    forest: "trees",
+    glacier: "mountain-snow",
+    island: "tree-palm",
+    isle: "tree-palm",
+    landmark: "landmark",
+    locality: "locality",
+    mountain: "mountain-snow",
+    other: "pin",
+    railwaystation: "train-front",
+    river: "waves",
+    school: "school",
+    settlement: "city",
+    town: "city",
+    village: "city",
+    waterbody: "waves",
+  };
+  const iconsByEventType = {
+    birth: "baby",
+    death: "skull",
+    award: "trophy",
+    release: "book-marked",
+    work: "briefcase-business",
+    travel: "luggage",
+  };
+  const iconByType = {
+    ...iconByPlaceType,
+    ...iconsByEventType,
+  };
+
+  const iconName = $derived(iconByType[entry.category] || iconByType.other);
+
   // Compute the label based on entry name and page title
   const label = $derived(() => {
     if (entry.name !== entry.pageTitle) {
@@ -18,7 +61,7 @@
 {#snippet marker()}
   <div class={`map-marker marker-display-${entry.displayClass}`}>
     <div class="marker-icon-circle">
-      <img src={basePath + "icons/" + entry.iconName + ".svg"} alt="icon" />
+      <img src={basePath + "icons/" + iconName + ".svg"} alt="icon" />
     </div>
 
     <div class="marker-text-container">

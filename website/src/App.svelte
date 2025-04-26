@@ -76,11 +76,6 @@
   /**
    * Handle closing of the sliding pane
    */
-  function onPaneClose() {
-    appState.selectedMarkerId = null;
-    appState.wikiPage = "";
-    setTimeout(() => mapComponent.invalidateMapSize(), 50);
-  }
 
   /**
    * Update mobile status based on window size
@@ -90,18 +85,10 @@
   }
 
   /**
-   * Process map bounds changes and fetch new markers
-   */
-  function onMapBoundsChange({ bounds, center, zoom }) {
-    mapBounds = bounds;
-    appState.zoom = zoom;
-    appState.location = { lat: center.lat, lon: center.lng };
-  }
-
-  /**
    * Handle marker click events
    */
   function onMarkerClick({ lat, lon, id }) {
+    console.log("onMarkerClick", lat, lon, id);
     const selectedMarkerId = id;
     const location = { lat, lon };
 
@@ -153,7 +140,7 @@
   <div class="content-container">
     {#if appState.wikiPage}
       <div class="wiki-pane-container">
-        <SlidingPane {onPaneClose} wikiPage={appState.wikiPage} />
+        <SlidingPane />
       </div>
     {/if}
 
