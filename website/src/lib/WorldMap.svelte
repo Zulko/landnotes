@@ -2,7 +2,11 @@
   import { onMount, onDestroy } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-  import { createMarker, setMarkerSize } from "./createMarker";
+  import {
+    createMarker,
+    updateMarkerIcon,
+    updateMarkerPane,
+  } from "./createMarker";
   import { mapEntries, mapBounds } from "./mapEntries.svelte";
   import { appState } from "./appState.svelte";
 
@@ -98,12 +102,16 @@
       })
       .addTo(map);
     // Create layer groups for different marker types
-    map.createPane("markers");
-    map.getPane("markers").style.zIndex = 500;
-    map.createPane("markers-top");
-    map.getPane("markers-top").style.zIndex = 620;
-    map.createPane("dots");
-    map.getPane("dots").style.zIndex = 200;
+    const panes = {
+      dots: 200,
+      markers: 500,
+      selectedMarker: 550,
+      topPane: 620,
+    };
+    for (const [key, value] of Object.entries(panes)) {
+      map.createPane(key);
+      map.getPane(key).style.zIndex = value;
+    }
 
     markerLayer = L.layerGroup().addTo(map);
     dotMarkerLayer = L.layerGroup().addTo(map);
@@ -213,8 +221,13 @@
         marker = existingMarker;
 
         // Only update icon if display class changed
-        if (existingClass !== entry.displayClass) {
-          setMarkerSize(marker, entry.displayClass);
+        if (existingClass !== displayClass) {
+          updateMarkerIcon(marker, entry);
+          if (displayClass === "selected" || existingClass === "selected") {
+            const pane =
+              displayClass === "selected" ? "selectedMarker" : "markers";
+            updateMarkerPane(marker, map, pane);
+          }
         }
       } else {
         marker = createMarker({

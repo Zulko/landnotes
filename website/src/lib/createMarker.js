@@ -30,7 +30,7 @@ export function createMarker({ entry, onMarkerClick, goTo, map }) {
   const { divIcon } = createDivIcon(entry, entry.displayClass);
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
-    pane: "markers",
+    pane: entry.displayClass === "selected" ? "selectedMarker" : "markers",
   });
 
   // bindHoverPopping(marker, entry, map);
@@ -39,13 +39,14 @@ export function createMarker({ entry, onMarkerClick, goTo, map }) {
   return marker;
 }
 
-export function setMarkerSize(marker, displayClass) {
-  const element = marker.getElement();
-  const [width, height] = iconSizesByDisplayClass[displayClass];
-  if (element) {
-    element.style.height = `${height}px`;
-    element.style.width = `${width}px`;
-  }
+export function updateMarkerIcon(marker, entry) {
+  const { divIcon } = createDivIcon(entry, entry.displayClass);
+  marker.setIcon(divIcon);
+}
+export function updateMarkerPane(marker, map, pane) {
+  map.removeLayer(marker);
+  marker.options.pane = pane;
+  marker.addTo(map);
 }
 
 function createDivIcon(entry, displayClass) {
@@ -82,11 +83,11 @@ function bindClickEvents({ marker, entry, onMarkerClick, goTo, map }) {
     marker.on("mouseover", () => {
       clearTimeout(unhoverTimeout);
       if (isHovered) return;
-      console.log("mouseover", entry.id);
       map.removeLayer(marker);
       const [width, height] = iconSizesByDisplayClass["full"];
       marker.options.icon.options.iconSize = [width, height];
-      marker.options.pane = "markers-top";
+      marker.options.pane = "topPane";
+      console.log(map.getPanes(), marker);
       marker.addTo(map);
       isHovered = true;
     });
@@ -95,7 +96,8 @@ function bindClickEvents({ marker, entry, onMarkerClick, goTo, map }) {
         const { divIcon } = createDivIcon(entry, entry.displayClass);
         map.removeLayer(marker);
         marker.setIcon(divIcon);
-        marker.options.pane = "markers";
+        marker.options.pane =
+          entry.displayClass === "selected" ? "selectedMarker" : "markers";
         marker.addTo(map);
         isHovered = false;
       }, 100);
