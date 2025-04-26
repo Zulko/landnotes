@@ -1,5 +1,4 @@
 <script>
-  import { appState } from "./appState.svelte";
   // Reactive state
   let { pageTitle, snippet, openWikiPage } = $props(); // Title to look up
   let summary = $state(""); // Fetched extract
@@ -215,12 +214,14 @@
   onblur={handleMouseLeave}
   tabindex="-1"
   role="button"
-  onclick={() => openWikiPage(pageTitle)}
-  onkeydown={(e) => {
-    if (e.key === "Enter") {
-      openWikiPage(pageTitle);
-    }
-  }}
+  onclick={openWikiPage ? () => openWikiPage(pageTitle) : null}
+  onkeydown={openWikiPage
+    ? (e) => {
+        if (e.key === "Enter") {
+          openWikiPage(pageTitle);
+        }
+      }
+    : null}
 >
   {@render snippet(pageTitle)}
 </span>
