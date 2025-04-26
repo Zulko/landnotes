@@ -1,6 +1,7 @@
 <script>
+  import { appState } from "./appState.svelte";
   // Reactive state
-  let { pageTitle, snippet, openWikiPage } = $props(); // Title to look up
+  let { pageTitle, snippet } = $props(); // Title to look up
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
   let isOpen = $state(false); // Popup visibility
@@ -214,8 +215,6 @@
   onblur={handleMouseLeave}
   tabindex="-1"
   role="button"
-  onclick={() => openWikiPage(pageTitle)}
-  onkeydown={(e) => e.key === "Enter" && openWikiPage(pageTitle)()}
 >
   {@render snippet(pageTitle)}
 </span>

@@ -2,12 +2,12 @@
   import { onMount, onDestroy } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-  import { createMarker, setMarkerSize } from "./markers";
+  import { createMarker, setMarkerSize } from "./createMarker";
   import { mapEntries, mapBounds } from "./mapEntries.svelte";
   import { appState } from "./appState.svelte";
 
   // ===== PROPS =====
-  const { onMarkerClick, openWikiPage } = $props();
+  const { onMarkerClick } = $props();
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
@@ -222,7 +222,6 @@
           onMarkerClick,
           goTo,
           map,
-          openWikiPage,
         });
       }
       marker.addTo(newMarkerLayer);

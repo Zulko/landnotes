@@ -2,11 +2,12 @@ import L from "leaflet";
 // @ts-ignore
 import EventPopup from "./EventPopup.svelte";
 // @ts-ignore
-import Marker from "./Marker.svelte";
+import MarkerIcon from "./MarkerIcon.svelte";
 import { mount, unmount } from "svelte";
-const basePath = import.meta.env.BASE_URL;
-let lastTappedMarkerEntry = null;
 import { isTouchDevice } from "./device";
+import { appState } from "./appState.svelte";
+
+let lastTappedMarkerEntry = null;
 
 const iconSizesByDisplayClass = {
   dot: [18, 18],
@@ -15,9 +16,41 @@ const iconSizesByDisplayClass = {
   selected: [128, 32],
 };
 
-export function createDivIcon(entry, displayClass) {
+/**
+ * Creates a marker with appropriate behavior based on type
+ * @param {Object} options - Options object
+ * @param {Object} options.entry - Normalized marker data
+ * @param {function} options.onMarkerClick - Function to call when marker is clicked
+ * @param {function} options.goTo - Function to navigate to a location on the map
+ * @param {Object} options.map - Leaflet map instance
+ * @returns {L.Marker} - Leaflet marker
+ */
+export function createMarker({ entry, onMarkerClick, goTo, map }) {
+  // No longer need to normalize here as the entry should already be normalized
+  const { divIcon } = createDivIcon(entry, entry.displayClass);
+  const marker = L.marker([entry.lat, entry.lon], {
+    icon: divIcon,
+    pane: "markers",
+  });
+
+  // bindHoverPopping(marker, entry, map);
+  bindClickEvents({ marker, entry, onMarkerClick, goTo, map });
+
+  return marker;
+}
+
+export function setMarkerSize(marker, displayClass) {
+  const element = marker.getElement();
+  const [width, height] = iconSizesByDisplayClass[displayClass];
+  if (element) {
+    element.style.height = `${height}px`;
+    element.style.width = `${width}px`;
+  }
+}
+
+function createDivIcon(entry, displayClass) {
   const markerDiv = document.createElement("div");
-  const markerComponent = mount(Marker, {
+  const markerComponent = mount(MarkerIcon, {
     target: markerDiv,
     props: { entry },
   });
@@ -31,14 +64,6 @@ export function createDivIcon(entry, displayClass) {
     markerComponent,
   };
 }
-export function setMarkerSize(marker, displayClass) {
-  const element = marker.getElement();
-  const [width, height] = iconSizesByDisplayClass[displayClass];
-  if (element) {
-    element.style.height = `${height}px`;
-    element.style.width = `${width}px`;
-  }
-}
 
 /**
  * Create appropriate popup based on marker type and bind click events
@@ -48,16 +73,8 @@ export function setMarkerSize(marker, displayClass) {
  * @param {Function} options.onMarkerClick - Callback for marker click events
  * @param {Function} options.goTo - Function to navigate to a location on the map
  * @param {L.Map} options.map - Leaflet map instance
- * @param {Function} options.openWikiPage - Function to open a Wikipedia page
  */
-function bindClickEvents({
-  marker,
-  entry,
-  onMarkerClick,
-  goTo,
-  map,
-  openWikiPage,
-}) {
+function bindClickEvents({ marker, entry, onMarkerClick, goTo, map }) {
   let isHovered = false;
   let unhoverTimeout = null;
 
@@ -162,7 +179,6 @@ function bindClickEvents({
           entry,
           startPopupCloseTimeout,
           stopPopupCloseTimeout,
-          openWikiPage,
         },
       });
 
@@ -194,43 +210,23 @@ function bindClickEvents({
     // marker is a place marker
     if (isTouchDevice) {
       marker.on("click", function () {
-        onMarkerClick(entry);
+        appState.selectedMarkerId = entry.id;
+        appState.wikiPage = entry.pageTitle;
+        goTo({
+          location: { lat: entry.lat, lon: entry.lon },
+          flyDuration: 0.3,
+        });
       });
     } else {
       marker.on("click", function () {
-        console.log("WAAAAAAAS CLICKED");
-        onMarkerClick(entry);
+        console.log("clicked", entry.id);
+        appState.selectedMarkerId = entry.id;
+        appState.wikiPage = entry.pageTitle;
+        goTo({
+          location: { lat: entry.lat, lon: entry.lon },
+          flyDuration: 0.3,
+        });
       });
     }
   }
-}
-
-/**
- * Creates a marker with appropriate behavior based on type
- * @param {Object} options - Options object
- * @param {Object} options.entry - Normalized marker data
- * @param {function} options.onMarkerClick - Function to call when marker is clicked
- * @param {function} options.goTo - Function to navigate to a location on the map
- * @param {Object} options.map - Leaflet map instance
- * @param {function} options.openWikiPage - Function to open a Wikipedia page
- * @returns {L.Marker} - Leaflet marker
- */
-export function createMarker({
-  entry,
-  onMarkerClick,
-  goTo,
-  map,
-  openWikiPage,
-}) {
-  // No longer need to normalize here as the entry should already be normalized
-  const { divIcon } = createDivIcon(entry, entry.displayClass);
-  const marker = L.marker([entry.lat, entry.lon], {
-    icon: divIcon,
-    pane: "markers",
-  });
-
-  // bindHoverPopping(marker, entry, map);
-  bindClickEvents({ marker, entry, onMarkerClick, goTo, map, openWikiPage });
-
-  return marker;
 }

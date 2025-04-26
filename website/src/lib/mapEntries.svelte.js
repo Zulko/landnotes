@@ -150,6 +150,7 @@ function updateDisplayClasses(entries) {
     }
   }
 }
+
 async function handleNewSelectedMarker(selectedMarkerId) {
   console.log("handleNewSelectedMarker", selectedMarkerId);
   if (selectedMarkerId === appState.selectedMarkerId) return;
