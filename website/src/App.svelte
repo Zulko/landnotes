@@ -11,12 +11,11 @@
   import SearchBar from "./lib/SearchBar.svelte";
 
   // Utilities
-  import { updateURLParams, readURLParams } from "./lib/urlState";
+  import { appState, setStateFromURLParams } from "./lib/appState.svelte";
   import {
     getGeodataFromBounds,
     getPlaceDataFromGeokeys,
   } from "./lib/geo/geodata";
-  import * as eventsWorkerClient from "./lib/events_worker_client";
   import { getEventsById } from "./lib/events_data";
   import { normalizeMarkerData } from "./lib/markers";
   // -------------------------
@@ -30,62 +29,29 @@
     location: null,
     selectedMarkerId: null,
   };
-
   let mapBounds = $state({});
-  let appState = $state(stateDefaults);
   let mapEntries = $state([]);
   let mapDots = $state([]);
-  let wikiPage = $state("");
-  let dontPushToHistory = $state(false);
-  let isMobile = $state(false);
+  let isNarrowScreen = $state(false);
   let currentMode = $state("places");
 
   let mapComponent;
-  let cachedPlaceData = new Map();
-  let cachedEventsById = new Map();
+
   // -------------------------
   // LIFECYCLE HOOKS
   // -------------------------
   onMount(async () => {
     console.log("App starting!");
     handleResize(); // Initialize mobile detection
-    setStateFromURLParams();
-    window.addEventListener("popstate", setStateFromURLParams);
-  });
-
-  $effect(() => {
-    debouncedUpdateURLParams($state.snapshot(appState));
+    setStateFromURLParamsAndMoveMap();
+    window.addEventListener("popstate", setStateFromURLParamsAndMoveMap);
   });
 
   $effect(() => {
     if (appState.mode !== currentMode) {
       console.log("deselecting marker");
-      deselectMarker();
+      appState.selectedMarkerId = null;
       currentMode = appState.mode;
-    }
-  });
-
-  function deselectMarker() {
-    appState.selectedMarkerId = null;
-    wikiPage = "";
-    addMarkerClasses(mapEntries, appState.zoom);
-  }
-
-  $effect(() => {
-    console.log("TRIGGERED");
-    if (!Object.keys(mapBounds).length) return;
-    if (appState.mode === "events") {
-      updateMarkersWithEventsData({
-        mapBounds: $state.snapshot(mapBounds),
-        zoom: appState.zoom,
-        date: $state.snapshot(appState.date),
-        strictDate: appState.strictDate,
-      });
-    } else {
-      updateMarkersWithGeoData({
-        mapBounds: $state.snapshot(mapBounds),
-        zoom: appState.zoom,
-      });
     }
   });
 
@@ -95,13 +61,6 @@
   /**
    * Debounce function to limit how often a function is called
    */
-  function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-  }
 
   // -------------------------
   // STATE MANAGEMENT FUNCTIONS
@@ -109,14 +68,8 @@
   /**
    * Initialize app state from URL parameters
    */
-  function setStateFromURLParams() {
-    dontPushToHistory = true;
-    const urlState = readURLParams();
-    if (urlState.selectedMarkerId) {
-      handleNewSelectedMarker(urlState.selectedMarkerId);
-    }
-    appState = { ...stateDefaults, ...urlState };
-
+  function setStateFromURLParamsAndMoveMap() {
+    const urlState = setStateFromURLParams();
     if (urlState.location) {
       mapComponent.goTo({
         location: urlState.location,
@@ -130,21 +83,7 @@
         flyDuration: 0.3,
       });
     }
-
-    setTimeout(() => {
-      dontPushToHistory = false;
-    }, 3000);
   }
-
-  /**
-   * Update URL parameters when state changes
-   */
-  function updateURLParamsOnStateChange(appState) {
-    if (dontPushToHistory) return;
-    updateURLParams(appState, true);
-  }
-
-  const debouncedUpdateURLParams = debounce(updateURLParamsOnStateChange, 500);
 
   // -------------------------
   // EVENT HANDLERS
@@ -155,7 +94,7 @@
    */
   function onPaneClose() {
     appState.selectedMarkerId = null;
-    handleNewSelectedMarker(null);
+    appState.wikiPage = "";
     setTimeout(() => mapComponent.invalidateMapSize(), 50);
   }
 
@@ -163,7 +102,7 @@
    * Update mobile status based on window size
    */
   function handleResize() {
-    isMobile = window.innerWidth <= 768;
+    isNarrowScreen = window.innerWidth <= 768;
   }
 
   /**
@@ -175,91 +114,6 @@
     appState.location = { lat: center.lat, lon: center.lng };
   }
 
-  async function updateMarkersWithGeoData({ mapBounds, zoom }) {
-    const { entriesInBounds, dotMarkers } = await getGeodataFromBounds({
-      bounds: mapBounds,
-      maxZoomLevel: zoom - 1,
-      cachedQueries: cachedPlaceData,
-    });
-
-    // Make sure the selected marker is included
-    if (
-      appState.selectedMarkerId &&
-      !entriesInBounds.some(
-        (entry) => entry.geokey === appState.selectedMarkerId
-      )
-    ) {
-      const selectedMarker = await getPlaceDataFromGeokeys({
-        geokeys: [appState.selectedMarkerId],
-        cachedQueries: cachedPlaceData,
-      });
-      entriesInBounds.push(selectedMarker[0]);
-    }
-
-    // We only crate new markers for new entries. This is important because
-    // we are counting on reactivity and components "staying on" for markers
-    const normalizedEntriesInBound = entriesInBounds.map((entry) =>
-      normalizeMarkerData(entry)
-    );
-    const mapEntriesInBounds = mapEntries.filter((entry) =>
-      normalizedEntriesInBound.some((e) => e.id === entry.id)
-    );
-    const entriesNotInMapEntries = normalizedEntriesInBound.filter(
-      (entry) => !mapEntries.some((e) => e.id === entry.id)
-    );
-    const allEntries = [...mapEntriesInBounds, ...entriesNotInMapEntries];
-
-    // Update markers with display classes
-    addMarkerClasses(allEntries, appState.zoom);
-    mapEntries = allEntries;
-    mapDots = dotMarkers;
-  }
-
-  async function updateMarkersWithEventsData({
-    mapBounds,
-    zoom,
-    date,
-    strictDate,
-  }) {
-    console.time("updateMarkersWithEventsData");
-    const { events, dotEvents } =
-      await eventsWorkerClient.getEventsForBoundsAndDate({
-        date,
-        bounds: mapBounds,
-        zoom: zoom - 1,
-        strictDate,
-      });
-    const eventInfos = await getEventsById({
-      eventIds: events.map((event) => event.event_id),
-      cachedQueries: cachedEventsById,
-    });
-
-    // Add type annotation to make it clear this is a Map of objects
-    const eventInfosById: Map<string, Record<string, any>> = new Map(
-      eventInfos.map((eventInfo) => [eventInfo.event_id, eventInfo])
-    );
-
-    const eventsWithInfos = events.map((event) => {
-      // Cast to object type or use type assertion
-      const eventInfo =
-        eventInfosById.get(event.event_id) || ({} as Record<string, any>);
-      return {
-        ...eventInfo,
-        ...event,
-      };
-    });
-
-    // Normalize all events at once here
-    const normalizedEvents = eventsWithInfos.map((event) =>
-      normalizeMarkerData(event)
-    );
-
-    addMarkerClasses(normalizedEvents, appState.zoom);
-    mapEntries = normalizedEvents;
-    mapDots = dotEvents;
-    console.timeEnd("updateMarkersWithEventsData");
-  }
-
   /**
    * Handle marker click events
    */
@@ -268,7 +122,6 @@
     const location = { lat, lon };
 
     if (appState.selectedMarkerId !== selectedMarkerId) {
-      handleNewSelectedMarker(selectedMarkerId);
       appState.selectedMarkerId = selectedMarkerId;
       mapComponent.goTo({ location, zoom: appState.zoom, flyDuration: 0.3 });
     } else {
@@ -283,7 +136,6 @@
   function onSearchSelect({ geokey, lat, lon }) {
     const selectedMarkerId = geokey;
     if (appState.selectedMarkerId !== selectedMarkerId) {
-      handleNewSelectedMarker(selectedMarkerId);
       appState.selectedMarkerId = selectedMarkerId;
     }
     mapComponent.goTo({
@@ -299,85 +151,30 @@
   /**
    * Update the selected marker and associated data
    */
-  async function handleNewSelectedMarker(selectedMarkerId) {
-    console.log("handleNewSelectedMarker", selectedMarkerId);
-    if (selectedMarkerId === appState.selectedMarkerId) return;
-
-    let newMarkers;
-    let query;
-    if (selectedMarkerId) {
-      if (appState.mode === "places") {
-        query = await getPlaceDataFromGeokeys({
-          geokeys: [selectedMarkerId],
-          cachedQueries: cachedPlaceData,
-        });
-      } else {
-        query = await getEventsById({
-          eventIds: [selectedMarkerId],
-          cachedQueries: cachedEventsById,
-        });
-      }
-
-      const selectedMarker = normalizeMarkerData(query[0]);
-      wikiPage = selectedMarker.pageTitle;
-
-      if (!mapEntries.some((marker) => marker.id === selectedMarkerId)) {
-        newMarkers = [...mapEntries, selectedMarker];
-      } else {
-        newMarkers = [...mapEntries];
-      }
-    } else {
-      newMarkers = [...mapEntries];
-    }
-
-    addMarkerClasses(newMarkers, appState.zoom);
-    mapEntries = newMarkers;
-  }
 
   function openWikiPage(pageTitle) {
     console.log("openWikiPage", pageTitle);
-    wikiPage = pageTitle;
-  }
-
-  /**
-   * Classify markers for display based on importance and zoom level
-   */
-  function addMarkerClasses(entries, zoomLevel) {
-    console.log("addMarkerClasses", appState.selectedMarkerId);
-    for (const entry of entries) {
-      if (appState.selectedMarkerId && entry.id == appState.selectedMarkerId) {
-        entry.displayClass = "selected";
-      } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
-        entry.displayClass = "full";
-      } else if (entry.geokey.length <= zoomLevel - 1) {
-        entry.displayClass = "reduced";
-      } else {
-        entry.displayClass = "dot";
-      }
-    }
-    return entries;
+    appState.wikiPage = pageTitle;
   }
 </script>
 
 <svelte:window on:resize={handleResize} />
 
-<main class:is-mobile={isMobile} tabindex="-1" data-focus-target id="main">
+<main
+  class:is-mobile={isNarrowScreen}
+  tabindex="-1"
+  data-focus-target
+  id="main"
+>
   <div class="content-container">
-    {#if wikiPage}
+    {#if appState.wikiPage}
       <div class="wiki-pane-container">
-        <SlidingPane {onPaneClose} {wikiPage} />
+        <SlidingPane {onPaneClose} wikiPage={appState.wikiPage} />
       </div>
     {/if}
 
     <div class="map-container">
-      <WorldMap
-        bind:this={mapComponent}
-        {mapEntries}
-        {mapDots}
-        {onMapBoundsChange}
-        {onMarkerClick}
-        {openWikiPage}
-      />
+      <WorldMap bind:this={mapComponent} {onMarkerClick} {openWikiPage} />
       <div class="search-wrapper">
         <SearchBar
           {onSearchSelect}

@@ -3,17 +3,17 @@
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { createMarker, setMarkerSize } from "./markers";
+  import { mapEntries, mapBounds } from "./mapEntries.svelte";
+  import { appState } from "./appState.svelte";
 
   // ===== PROPS =====
-  let { mapEntries, mapDots, onMapBoundsChange, onMarkerClick, openWikiPage } =
-    $props();
+  const { onMarkerClick, openWikiPage } = $props();
   // ===== STATE VARIABLES =====
   let mapElement;
   let map;
   let markerLayer = null;
   let dotMarkerLayer = null;
   let isFlying = false;
-  let hoveredMarkerId = null;
   let currentMarkers = new Map(); // key: marker.geokey, value: L.marker object
   let currentDotMarkers = new Map(); // key: marker.geokey, value: L.marker object
   let resizeObserver;
@@ -50,13 +50,13 @@
   // ===== REACTIVE DECLARATIONS =====
 
   $effect(() => {
-    if (mapEntries && map) {
+    if (mapEntries.markerInfos && map) {
       updateMarkers();
     }
   });
 
   $effect(() => {
-    if (mapDots && map) {
+    if (mapEntries.dots && map) {
       updateDotMarkers();
     }
   });
@@ -174,11 +174,11 @@
     // Debounce the effect to avoid too frequent updates
     clearTimeout(boundsChangeTimeout);
     boundsChangeTimeout = setTimeout(() => {
-      onMapBoundsChange({
-        bounds: formattedBounds,
-        center: bounds.getCenter(),
+      Object.assign(appState, {
         zoom: map.getZoom(),
+        center: bounds.getCenter(),
       });
+      Object.assign(mapBounds, formattedBounds);
     }, 200);
   }
 
@@ -201,7 +201,7 @@
     const newMarkers = new Map();
 
     // Create or update markers
-    for (const entry of mapEntries) {
+    for (const entry of mapEntries.markerInfos) {
       const markerId = entry.id;
       let displayClass = entry.displayClass;
 
@@ -247,7 +247,7 @@
     const newDotMarkerLayer = L.layerGroup();
     const newDotMarkers = new Map();
 
-    for (const dotEntry of mapDots) {
+    for (const dotEntry of mapEntries.dots) {
       const markerId = dotEntry.id || `${dotEntry.lat}-${dotEntry.lon}`;
       let marker;
 

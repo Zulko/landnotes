@@ -126,7 +126,7 @@ export async function getGeodataFromBounds({
   });
 
   // Create a list of dot markers from entries_under_geokey
-  const dotMarkers = [];
+  const dots = [];
   const seenCoordinates = new Set(); // Track coordinates we've already processed
   let totalEntries = 0;
   for (const result of geokeyResults) {
@@ -145,12 +145,12 @@ export async function getGeodataFromBounds({
         entry.lon >= bounds.minLon &&
         entry.lon <= bounds.maxLon
       ) {
-        dotMarkers.push(entry);
+        dots.push(entry);
       }
     }
   }
 
-  const entriesInBounds = geokeyResults.filter((entry) => {
+  const entryInfos = geokeyResults.filter((entry) => {
     return (
       entry.lat >= bounds.minLat &&
       entry.lat <= bounds.maxLat &&
@@ -158,7 +158,7 @@ export async function getGeodataFromBounds({
       entry.lon <= bounds.maxLon
     );
   });
-  return { dotMarkers, entriesInBounds };
+  return { entryInfos, dots };
 }
 
 export async function getEntriesfromText(searchText) {
