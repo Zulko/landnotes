@@ -1,5 +1,8 @@
 <script>
-  import WikiTooltip from "../WikiTooltip.svelte";
+  import MapPopup from "./MapPopup.svelte";
+  import EventCard from "./EventCard.svelte";
+  import WikiPreview from "./WikiPreview.svelte";
+  import { appState } from "../appState.svelte";
   import { isTouchDevice } from "../device";
   const { entry } = $props();
 
@@ -58,6 +61,10 @@
     }
     return entry.name;
   });
+
+  function openWikiPage(pageTitle) {
+    appState.wikiPage = pageTitle;
+  }
 </script>
 
 {#snippet marker()}
@@ -74,11 +81,24 @@
 {/snippet}
 
 {#if entry.isEvent}
-  {@render marker()}
+  {#snippet popupContent()}
+    <EventCard {entry} />
+  {/snippet}
+  <MapPopup
+    {popupContent}
+    popupTarget={marker}
+    enterable={true}
+    alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
+  />
 {:else}
-  <WikiTooltip
-    pageTitle={entry.pageTitle}
-    snippet={marker}
+  <!-- A Place marker -->
+  {#snippet popupContent()}
+    <WikiPreview pageTitle={entry.pageTitle} {openWikiPage} />
+  {/snippet}
+  <MapPopup
+    {popupContent}
+    popupTarget={marker}
+    enterable={false}
     alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
   />
 {/if}

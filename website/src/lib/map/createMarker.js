@@ -1,6 +1,6 @@
 import L from "leaflet";
 // @ts-ignore
-import EventPopup from "./EventPopup.svelte";
+import EventCard from "./EventCard.svelte";
 // @ts-ignore
 import MarkerIcon from "./MarkerIcon.svelte";
 import { mount, unmount } from "svelte";
@@ -104,28 +104,6 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
   if (entry.isEvent) {
     // Event popup handling on mobile and device:
     // first set up the popup and functions to open/close.
-    const popupDiv = document.createElement("div");
-
-    let popupCloseTimeout = null;
-    let popupComponent;
-    let touchListener = null;
-
-    function startPopupCloseTimeout() {
-      popupCloseTimeout = setTimeout(() => {
-        marker.closePopup();
-      }, 100);
-    }
-    function stopPopupCloseTimeout() {
-      clearTimeout(popupCloseTimeout);
-      clearTimeout(unhoverTimeout);
-    }
-
-    marker.bindPopup(popupDiv, {
-      className: "event-marker-popup",
-      closeButton: false,
-      maxWidth: 300,
-      minWidth: 300,
-    });
 
     if (isTouchDevice) {
       // Event markers with popup on touch devices
@@ -145,67 +123,11 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
         }
       });
     } else {
-      // Event markers with popup on mouse/desktop devices
       marker.on("click", function () {
-        selectMarkerAndCenterOnIt({ entry, mapTravel });
-      });
-
-      marker.on("mouseover", function () {
-        stopPopupCloseTimeout();
-        marker.options.icon.options.iconSize[0] = 200;
-        marker.openPopup();
-      });
-
-      marker.on("mouseout", function () {
-        startPopupCloseTimeout();
+        selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
+        appState.wikiPage = entry.pageTitle;
       });
     }
-
-    // Generic behavior for events
-
-    marker.on("popupclose", () => {
-      unmount(popupComponent);
-      // Remove the touch listener when popup closes
-      if (isTouchDevice && touchListener) {
-        document.removeEventListener("touchstart", touchListener);
-        touchListener = null;
-      }
-    });
-
-    marker.on("popupopen", () => {
-      popupComponent = mount(EventPopup, {
-        target: popupDiv,
-        props: {
-          entry,
-          startPopupCloseTimeout,
-          stopPopupCloseTimeout,
-        },
-      });
-
-      // Setup touch listener when popup opens
-      if (isTouchDevice) {
-        function handleTouchOutside(e) {
-          // Check if popup is open and the touch is not on the popup
-          console.log("touch outside!");
-          lastTappedMarkerEntry = null;
-          if (marker.isPopupOpen()) {
-            const popup = marker.getPopup();
-            const popupEl = popup.getElement();
-
-            // If touch target is not inside the popup and not the marker element
-            if (
-              !popupEl.contains(e.target) &&
-              !e.target.closest(".custom-div-icon")
-            ) {
-              console.log("closing popup!");
-              marker.closePopup();
-            }
-          }
-        }
-        touchListener = handleTouchOutside;
-        document.addEventListener("touchstart", touchListener);
-      }
-    });
   } else {
     // marker is a place marker
     if (isTouchDevice) {
@@ -226,7 +148,6 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
 
 function selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay = 0 }) {
   setTimeout(() => {
-    console.log("dddd");
     appState.selectedMarkerId = entry.id;
   }, selectDelay);
   mapTravel({
