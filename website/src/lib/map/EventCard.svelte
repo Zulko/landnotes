@@ -129,8 +129,8 @@
     <div class="event-text">
       {#each places as place, index}
         {#if place.hasPage}
-          {#snippet popupContent()}
-            <WikiPreview pageTitle={place.name} />
+          {#snippet popupContent(isOpen)}
+            <WikiPreview pageTitle={place.name} {isOpen} />
           {/snippet}
           <MapPopup {popupContent} enterable={false}>
             {@render linkedPage(place.name)}
@@ -155,8 +155,8 @@
       <div class="event-text">
         {#each people as person, index}
           {#if person.hasPage}
-            {#snippet popupContent()}
-              <WikiPreview pageTitle={person.name} />
+            {#snippet popupContent(isOpen)}
+              <WikiPreview pageTitle={person.name} {isOpen} />
             {/snippet}
             <MapPopup {popupContent} enterable={false}>
               {@render linkedPage(person.name)}
