@@ -1,6 +1,8 @@
 <script>
   // Reactive state
   import { isTouchDevice } from "../device";
+  import { onMount } from "svelte";
+
   let {
     popupContent,
     children,
@@ -18,6 +20,25 @@
   let popupStyle = $derived(
     `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility};`
   );
+  let resizeObserver = $state(null);
+
+  onMount(() => {
+    if (popupElement) {
+      resizeObserver = new ResizeObserver(() => {
+        if (isOpen) {
+          updateTooltipPosition();
+        }
+      });
+
+      resizeObserver.observe(popupElement);
+    }
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  });
 
   $effect(() => {
     if (isOpen) {
@@ -35,12 +56,13 @@
   });
 
   async function onOpen() {
-    updateTooltipPosition();
-    setTimeout(updateTooltipPosition, 0);
+    // updateTooltipPosition();
+    // setTimeout(updateTooltipPosition, 0);
   }
 
   // Position the popup based on available screen space
   function updateTooltipPosition() {
+    console.log("updating tooltip position");
     if (!popupElement || !triggerElement) return;
 
     const triggerRect = triggerElement.getBoundingClientRect();
@@ -50,8 +72,6 @@
       document.getElementsByClassName("map-container")[0].clientWidth;
     const leftStart = isTouchDevice ? 0 : viewportWidth - mapWidth;
     console.log(viewportWidth, mapWidth, leftStart);
-
-    const viewportHeight = window.innerHeight;
 
     // Default position (above and centered)
     let top = -popupRect.height - 2;
@@ -70,6 +90,7 @@
     // Check if popup would appear above viewport
     if (triggerRect.top + top < 30) {
       // Position below the trigger instead of above
+      console.log("beeeeeelow");
       top = triggerRect.height + 5;
     }
     [popupTop, popupLeft] = [top, left];
