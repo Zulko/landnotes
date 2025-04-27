@@ -162,6 +162,8 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
       });
     }
 
+    // Generic behavior for events
+
     marker.on("popupclose", () => {
       unmount(popupComponent);
       // Remove the touch listener when popup closes
@@ -209,19 +211,22 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
     // marker is a place marker
     if (isTouchDevice) {
       marker.on("click", function () {
-        selectMarkerAndCenterOnIt(entry, mapTravel);
+        selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
       });
     } else {
       marker.on("click", function () {
-        selectMarkerAndCenterOnIt(entry, mapTravel);
+        selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
+        appState.wikiPage = entry.pageTitle;
       });
     }
   }
 }
 
-function selectMarkerAndCenterOnIt(entry, mapTravel) {
-  appState.selectedMarkerId = entry.id;
-  appState.wikiPage = entry.pageTitle;
+function selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay = 0 }) {
+  setTimeout(() => {
+    console.log("dddd");
+    appState.selectedMarkerId = entry.id;
+  }, selectDelay);
   mapTravel({
     location: { lat: entry.lat, lon: entry.lon },
     flyDuration: 0.3,

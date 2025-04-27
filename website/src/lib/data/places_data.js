@@ -25,21 +25,21 @@ export function addLatLonToEntry(entry) {
 }
 
 function processEntriesUnderGeokey(entry) {
-  if (entry.entries_under_geokey) {
-    // Decompress entries_under_geokey if it's compressed with zlib
-    const decodedData = atob(entry.entries_under_geokey);
+  if (entry.dots) {
+    // Decompress dots if it's compressed with zlib
+    const decodedData = atob(entry.dots);
     const compressedData = new Uint8Array(
       Array.from(decodedData, (c) => c.charCodeAt(0))
     );
     const decompressed = inflate(compressedData, { to: "string" });
     const entriesUnderGeokey = JSON.parse(decompressed);
-    entry.entries_under_geokey = entriesUnderGeokey;
+    entry.dots = entriesUnderGeokey;
 
-    // Convert geohashes to lat/lon coordinates for each key in entries_under_geokey
-    for (const key in entry.entries_under_geokey) {
-      if (entry.entries_under_geokey.hasOwnProperty(key)) {
-        const geohashes = entry.entries_under_geokey[key];
-        entry.entries_under_geokey[key] = geohashes.map((geohash) => {
+    // Convert geohashes to lat/lon coordinates for each key in dots
+    for (const key in entry.dots) {
+      if (entry.dots.hasOwnProperty(key)) {
+        const geohashes = entry.dots[key];
+        entry.dots[key] = geohashes.map((geohash) => {
           const coords = decodeHybridGeohash(geohash);
           return { geokey: `dot-${geohash}`, ...coords };
         });
@@ -135,15 +135,15 @@ export async function getGeodataFromBounds({
     cachedQueries,
   });
 
-  // Create a list of dot markers from entries_under_geokey
+  // Create a list of dot markers from dots
   const dots = [];
   const seenCoordinates = new Set(); // Track coordinates we've already processed
   let totalEntries = 0;
   for (const result of geokeyResults) {
-    if (!result.entries_under_geokey) continue;
-    if (!result.entries_under_geokey[maxZoomLevel]) continue;
+    if (!result.dots) continue;
+    if (!result.dots[maxZoomLevel]) continue;
     // Process each entry at this zoom level
-    for (const entry of result.entries_under_geokey[maxZoomLevel]) {
+    for (const entry of result.dots[maxZoomLevel]) {
       totalEntries++;
       if (seenCoordinates.has(entry.geokey)) continue;
       seenCoordinates.add(entry.geokey);

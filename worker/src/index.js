@@ -70,9 +70,9 @@ async function queryPlacesFromGeokeys(geokeys, db) {
 	// Cloudflare returns zipped blobs as int arrays which isn't great forJSON, so let's
 	// convert them to base64 strings
 	result.results.forEach((entry) => {
-		const subentries = entry.entries_under_geokey;
-		if (subentries) {
-			entry.entries_under_geokey = btoa(String.fromCharCode(...subentries));
+		const dots = entry.dots;
+		if (dots) {
+			entry.dots = btoa(String.fromCharCode(...dots));
 		}
 	});
 	console.log(result.meta.rows_read);

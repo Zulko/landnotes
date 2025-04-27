@@ -1,6 +1,8 @@
 <script>
   import WikiTooltip from "../WikiTooltip.svelte";
+  import { isTouchDevice } from "../device";
   const { entry } = $props();
+
   const basePath = import.meta.env.BASE_URL;
 
   const iconByPlaceType = {
@@ -74,7 +76,11 @@
 {#if entry.isEvent}
   {@render marker()}
 {:else}
-  <WikiTooltip pageTitle={entry.pageTitle} snippet={marker} />
+  <WikiTooltip
+    pageTitle={entry.pageTitle}
+    snippet={marker}
+    alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
+  />
 {/if}
 
 <style>

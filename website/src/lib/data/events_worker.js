@@ -23,15 +23,16 @@ self.addEventListener("message", async (event) => {
         try {
           const { bounds, zoom, date, strictDate } = data;
           const geokeys = getOverlappingGeoEncodings(bounds, zoom);
-          const geokeysEvents = await getEventsForGeokeys(
+          const geokeyEvents = await getEventsForGeokeys(
             geokeys,
             date,
             strictDate
           );
-          const { events, dotEvents } = filterGeokeyEvents(
-            geokeysEvents,
-            bounds
-          );
+          const { events, dotEvents } = filterGeokeyEvents({
+            geokeyEvents,
+            bounds,
+            zoom,
+          });
           self.postMessage({ type: "response", requestId, events, dotEvents });
         } catch (error) {
           console.error("Error in getEventsForBoundsAndDate", error);
@@ -52,7 +53,7 @@ self.addEventListener("message", async (event) => {
   }
 });
 
-function filterGeokeyEvents(geokeyEvents, bounds) {
+function filterGeokeyEvents({ geokeyEvents, bounds, zoom }) {
   const events = geokeyEvents
     .filter(
       (event) =>
@@ -66,8 +67,9 @@ function filterGeokeyEvents(geokeyEvents, bounds) {
       const { subevents, ...eventWithoutSubevents } = event;
       return eventWithoutSubevents;
     });
+  console.log({ geokeyEvents });
   const dotEvents = geokeyEvents
-    .map((event) => event.subevents)
+    .map((event) => event.subeventsByZoomLevel[zoom] || [])
     .flat()
     .filter(
       (event) =>
@@ -228,7 +230,7 @@ function assignGeokeysToEvents(events) {
       if (!eventsByGeoKeyForDate.has(prefix)) {
         // First event for this geokey
         eventsByGeoKeyForDate.set(prefix, {
-          subevents: [],
+          subeventsByZoomLevel: {},
           same_location_events: [],
           geokey: prefix,
           ...event,
@@ -240,8 +242,20 @@ function assignGeokeysToEvents(events) {
         // Add as a subevent if we haven't reached the limit
         if (event.geohash4 === eventForGeokey.geohash4) {
           eventForGeokey.same_location_events.push(event);
-        } else if (eventForGeokey.subevents.length < 10) {
-          eventForGeokey.subevents.push(event);
+        } else {
+          let zoomLevel = prefix.length;
+          while (
+            event.geohash4.slice(0, zoomLevel) ===
+            eventForGeokey.geohash4.slice(0, zoomLevel)
+          ) {
+            if (!eventForGeokey.subeventsByZoomLevel[zoomLevel]) {
+              eventForGeokey.subeventsByZoomLevel[zoomLevel] = [];
+            }
+            if (eventForGeokey.subeventsByZoomLevel[zoomLevel].length < 10) {
+              eventForGeokey.subeventsByZoomLevel[zoomLevel].push(event);
+            }
+            zoomLevel++;
+          }
         }
       }
     }

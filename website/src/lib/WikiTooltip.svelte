@@ -1,18 +1,52 @@
 <script>
   // Reactive state
-  let { pageTitle, snippet, openWikiPage } = $props(); // Title to look up
+  import { isTouchDevice } from "./device";
+  let { pageTitle, snippet, openWikiPage, alwaysOpen } = $props(); // Title to look up
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
-  let isOpen = $state(false); // Popup visibility
   let tooltipElement = $state(null); // Reference to tooltip element
   let triggerElement = $state(null); // Reference to trigger span
   let toolTipTop = $state(0);
   let toolTipLeft = $state(0);
-  let tooltipStyle = $state(""); // Dynamic style for positioning
   let imageHeight = $state(140);
   let imageWidth = $state(120);
   let imageHasWhiteBackground = $state(false);
+  let isHovered = $state(false);
+  let isOpen = $derived(alwaysOpen || (!isTouchDevice && isHovered));
+  let visibility = $derived(isOpen ? "visible" : "hidden");
+  let tooltipStyle = $derived(
+    `transform: translate(${toolTipLeft}px, ${toolTipTop}px); visibility: ${visibility};`
+  );
 
+  $effect(() => {
+    if (isOpen) {
+      onOpen();
+    }
+  });
+
+  // Lifecycle
+  $effect(() => {
+    if (isOpen) {
+      updateTooltipPosition();
+    } else {
+      window.removeEventListener("resize", handleResize);
+    }
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  });
+
+  async function onOpen() {
+    console.log("onOpen", pageTitle);
+    if (!summary.length) {
+      await fetchWikiInfos();
+    }
+    updateTooltipPosition();
+    setTimeout(updateTooltipPosition, 0);
+  }
+
+  // Fetch summary from Wikipedia REST API
   // Fetch summary from Wikipedia REST API
   async function fetchWikiInfos() {
     const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle.replaceAll(" ", "_"))}`; // Summary endpoint :contentReference[oaicite:4]{index=4}
@@ -76,11 +110,16 @@
     const triggerRect = triggerElement.getBoundingClientRect();
     const tooltipRect = tooltipElement.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
+    const mapWidth =
+      document.getElementsByClassName("map-container")[0].clientWidth;
+    const leftStart = isTouchDevice ? 0 : viewportWidth - mapWidth;
+    console.log(viewportWidth, mapWidth, leftStart);
+
     const viewportHeight = window.innerHeight;
 
     // Default position (above and centered)
     let top = -tooltipRect.height - 2;
-    let left = -(tooltipRect.width / 2) + triggerRect.width / 2;
+    let left = -tooltipRect.width / 2 + triggerRect.width / 2;
 
     // Check right edge
     if (triggerRect.left + left + tooltipRect.width > viewportWidth) {
@@ -88,37 +127,16 @@
     }
 
     // Check left edge
-    if (triggerRect.left + left < 10) {
-      left = 10 - triggerRect.left;
+    if (triggerRect.left + left - leftStart < 10) {
+      left = leftStart + 10 - triggerRect.left;
     }
 
     // Check if tooltip would appear above viewport
-    if (triggerRect.top + top < 10) {
+    if (triggerRect.top + top < 30) {
       // Position below the trigger instead of above
       top = triggerRect.height + 5;
     }
     [toolTipTop, toolTipLeft] = [top, left];
-  }
-
-  $effect(() => {
-    tooltipStyle = `transform: translate(${toolTipLeft}px, ${toolTipTop}px); ${
-      isOpen ? "visibility: visible;" : "visibility: hidden;"
-    }`;
-  });
-
-  // Handlers
-  async function handleMouseEnter(event) {
-    if (!summary.length) {
-      await fetchWikiInfos();
-    }
-    isOpen = true;
-
-    // Update position after render
-    setTimeout(updateTooltipPosition, 0);
-  }
-
-  function handleMouseLeave() {
-    isOpen = false;
   }
 
   // Update position when window is resized
@@ -127,20 +145,6 @@
       updateTooltipPosition();
     }
   }
-
-  // Lifecycle
-  $effect(() => {
-    if (isOpen) {
-      window.addEventListener("resize", handleResize);
-      updateTooltipPosition();
-    } else {
-      window.removeEventListener("resize", handleResize);
-    }
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  });
 
   function isWhitePixel(r, g, b, a, tolerance = 20) {
     return (
@@ -208,10 +212,10 @@
 
 <span
   bind:this={triggerElement}
-  onmouseenter={handleMouseEnter}
-  onmouseleave={handleMouseLeave}
-  onfocus={handleMouseEnter}
-  onblur={handleMouseLeave}
+  onmouseenter={() => (isHovered = true)}
+  onmouseleave={() => (isHovered = false)}
+  onfocus={() => (isHovered = true)}
+  onblur={() => (isHovered = false)}
   tabindex="-1"
   role="button"
   onclick={openWikiPage ? () => openWikiPage(pageTitle) : null}
