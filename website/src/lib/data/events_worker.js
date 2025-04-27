@@ -2,6 +2,7 @@ import { inflate } from "pako";
 
 import { addLatLonToEntry } from "./places_data";
 import { queryWithCache } from "./utils";
+import { parseEventDate, isAfter, daysBetweenTwoDates } from "./date_utils";
 import { getOverlappingGeoEncodings } from "./geohash";
 
 // Event worker for processing and caching geographic event data
@@ -23,6 +24,7 @@ self.addEventListener("message", async (event) => {
       case "getEventsForBoundsAndDate":
         try {
           const { bounds, zoom, date, strictDate } = data;
+          console.log("getEventsForBoundsAndDate", data);
           const geokeys = getOverlappingGeoEncodings(bounds, zoom);
           const geokeyEvents = await getEventsForGeokeys(
             geokeys,
@@ -172,11 +174,6 @@ async function precomputeEventsForRegionAndDate(region, date, strictDate) {
   processedRegions.add(region);
 }
 
-function parseDate(date) {
-  const [year, month, day] = date.split("/").map(Number);
-  return { year, month, day };
-}
-
 /**
  * Determine which months are relevant for the given date parameters
  * A month is in this context is a string of the form "YYYY-MM"
@@ -262,23 +259,6 @@ function assignGeokeysToEvents(events) {
   }
 }
 
-function daysBetweenTwoDates(date1, date2) {
-  const yearGap = 365 * (date1.year - date2.year);
-  const monthGap = (date1.month - date2.month) * 30;
-  const dayGap = date1.day - date2.day;
-  return yearGap + monthGap + dayGap;
-}
-
-function isAfter(date1, date2) {
-  return (
-    date1.year > date2.year ||
-    (date1.year === date2.year &&
-      (date1.month > date2.month ||
-        (date1.month === date2.month &&
-          (date1.day > date2.day || date1.day === date2.day))))
-  );
-}
-
 /**
  * Score an event based on how close it is to the target date
  * @param {Object} event - Event to score
@@ -330,8 +310,8 @@ async function queryEventsByMonthRegion(monthRegions) {
   eventsByMonthRegion.forEach(({ events }) => {
     events.forEach(addLatLonToEntry);
     events.forEach((event) => {
-      event.start_date = parseDate(event.start_date);
-      event.end_date = parseDate(event.end_date);
+      event.start_date = parseEventDate(event.start_date);
+      event.end_date = parseEventDate(event.end_date);
     });
   });
   return eventsByMonthRegion;

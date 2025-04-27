@@ -104,7 +104,11 @@
         {#if expandedYears[year]}
           <div class="year-events">
             {#each dataLoadedByYear[year] as event}
-              <EventCard entry={event} />
+              <EventCard
+                entry={event}
+                displayPage={event.pageTitle !== wikiPage}
+                displayGoToEventLink={true}
+              />
             {/each}
           </div>
         {/if}

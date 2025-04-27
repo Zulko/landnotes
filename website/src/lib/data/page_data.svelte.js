@@ -43,5 +43,9 @@ export async function getPageEvents(pageTitle) {
     resultId: "page_title",
   });
   console.log("eventsByPage", eventsByPage);
-  return eventsByPage[0].events;
+  if (eventsByPage.length > 0) {
+    return eventsByPage[0].events;
+  } else {
+    return [];
+  }
 }

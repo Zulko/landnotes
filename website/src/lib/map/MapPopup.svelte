@@ -9,6 +9,7 @@
     alwaysOpen = false,
     enterable = false,
     visibilityDelay = 0,
+    keepWithinMap = false,
   } = $props(); // Title to look up
   let popupElement = $state(null); // Reference to popup element
   let triggerElement = $state(null); // Reference to trigger span
@@ -62,7 +63,8 @@
     const viewportWidth = window.innerWidth;
     const mapWidth =
       document.getElementsByClassName("map-container")[0].clientWidth;
-    const leftStart = isTouchDevice ? 0 : viewportWidth - mapWidth;
+    const leftStart =
+      isTouchDevice || !keepWithinMap ? 0 : viewportWidth - mapWidth;
 
     // Default position (above and centered)
     let top = -popupRect.height - 2;

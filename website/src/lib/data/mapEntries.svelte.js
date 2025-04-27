@@ -33,12 +33,11 @@ $effect.root(() => {
     if (appState.mode === "events") {
       const { zoom, date, strictDate } = appState;
       const _date = $state.snapshot(date);
-      const _strictDate = $state.snapshot(strictDate);
       updateMapEventEntries({
         zoom,
         date: _date,
-        strictDate: _strictDate,
         mapBounds: _mapBounds,
+        strictDate,
       });
     }
   });

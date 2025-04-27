@@ -80,6 +80,7 @@
   enterable={entry.isEvent}
   alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
   visibilityDelay={entry.isEvent ? 0 : 100}
+  keepWithinMap={true}
 >
   <div
     class={`map-marker marker-display-${entry.displayClass}`}

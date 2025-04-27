@@ -3,11 +3,33 @@
   import MapPopup from "./MapPopup.svelte";
   import { appState } from "../appState.svelte";
   import WikiPreview from "./WikiPreview.svelte";
+  import { constrainedDate, parseEventDate } from "../data/date_utils";
   const basePath = import.meta.env.BASE_URL;
 
-  let { entry } = $props();
+  let { entry, displayPage = true, displayGoToEventLink = false } = $props();
   let people = $state([]);
   let places = $state([]);
+
+  onMount(() => {
+    places = parsePlaces();
+    people = parsePeople();
+  });
+
+  function setStateToEvent() {
+    console.log("entry", entry);
+    const location = entry.location.lat
+      ? entry.location
+      : entry.locations_latlon[0];
+    const update = {
+      mode: "events",
+      date: constrainedDate(parseEventDate(entry.when)),
+      selectedMarkerId: entry.id,
+      zoom: 14,
+      location: location,
+    };
+    console.log("update", update);
+    Object.assign(appState, update);
+  }
 
   function openWikiPage(pageTitle) {
     appState.wikiPage = pageTitle;
@@ -93,10 +115,6 @@
       .filter((location) => location.name.length > 0);
     return deduplicate(filteredList, "name");
   }
-  onMount(() => {
-    places = parsePlaces();
-    people = parsePeople();
-  });
 </script>
 
 {#snippet linkedPage(pageTitle)}
@@ -116,19 +134,21 @@
 {/snippet}
 
 <div class="event-card">
-  <div class="event-card-section page">
-    <div class="event-icon">
-      <img src="{basePath}icons/text-search.svg" alt="search" />
+  {#if displayPage}
+    <div class="event-card-section page">
+      <div class="event-icon">
+        <img src="{basePath}icons/text-search.svg" alt="search" />
+      </div>
+      <div class="event-text">
+        {#snippet popupContent(isOpen)}
+          <WikiPreview pageTitle={entry.pageTitle} {isOpen} />
+        {/snippet}
+        <MapPopup {popupContent} enterable={false}>
+          from <i>"{@render linkedPage(entry.pageTitle)}"</i>
+        </MapPopup>
+      </div>
     </div>
-    <div class="event-text">
-      {#snippet popupContent(isOpen)}
-        <WikiPreview pageTitle={entry.pageTitle} {isOpen} />
-      {/snippet}
-      <MapPopup {popupContent} enterable={false}>
-        from <i>"{@render linkedPage(entry.pageTitle)}"</i>
-      </MapPopup>
-    </div>
-  </div>
+  {/if}
   <div class="event-card-section when">
     <div class="event-icon">
       <img src="{basePath}icons/calendar-fold.svg" alt="calendar" />
@@ -195,6 +215,16 @@
       {entry.summary}
     </div>
   </div>
+  {#if displayGoToEventLink}
+    <div class="event-card-section focus-map">
+      <button onclick={setStateToEvent}>
+        <div class="event-icon">
+          <img src="{basePath}icons/map.svg" alt="map" />
+        </div>
+        See in context
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -214,6 +244,7 @@
     padding: 12px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
       Ubuntu, sans-serif;
+    cursor: default;
   }
 
   .event-card .event-card-section {

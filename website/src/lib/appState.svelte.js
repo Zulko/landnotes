@@ -19,7 +19,11 @@
  */
 
 import { geohashToLatLon, latLonToGeohash } from "./data/geohash";
-
+import {
+  constrainedDate,
+  dateToUrlString,
+  parseUrlDate,
+} from "./data/date_utils";
 const stateDefaults = {
   mode: "places",
   strictDate: true,
@@ -82,7 +86,7 @@ export function updateURLParams(state, addToHistory = true) {
   }
   if (mode === "events") {
     if (date) {
-      params.set("date", dateToString(date));
+      params.set("date", dateToUrlString(date));
     }
     if (strictDate) {
       params.set("strictDate", strictDate ? "true" : "false");
@@ -121,19 +125,6 @@ function updateURLParamsOnStateChange(appState) {
 
 const debouncedUpdateURLParams = debounce(updateURLParamsOnStateChange, 500);
 
-export function dateToString(date) {
-  if (!date) {
-    return null;
-  }
-  if (date.month === "all") {
-    return `${date.year}`;
-  } else if (date.day === "all") {
-    return `${date.year}--${date.month}`;
-  } else {
-    return `${date.year}--${date.month}--${date.day}`;
-  }
-}
-
 // ------------------------------------------
 // Reading the URL params into the app state
 // ------------------------------------------
@@ -141,6 +132,9 @@ export function dateToString(date) {
 export function setStateFromURLParams() {
   dontPushToHistory = true;
   const urlState = readURLParams();
+  if (urlState.date) {
+    urlState.date = constrainedDate(urlState.date);
+  }
   Object.assign(appState, { ...stateDefaults, ...urlState });
   setTimeout(() => {
     dontPushToHistory = false;
@@ -168,40 +162,11 @@ export function readURLParams() {
   const date = params.get("date");
   if (date) {
     result.mode = "events";
-    result.date = parseDate(date);
+    result.date = parseUrlDate(date);
     result.strictDate = params.get("strictDate") === "true";
   } else {
     result.mode = "places";
     result;
   }
   return result;
-}
-
-export function parseDate(dateString) {
-  if (!dateString) {
-    return null;
-  }
-  const components = dateString.split("--");
-  if (components.length === 1) {
-    const year = parseInt(components[0]);
-    return {
-      year: year,
-      month: year < 1500 ? "all" : 1,
-      day: year < 1920 ? "all" : 1,
-    };
-  } else if (components.length === 2) {
-    const [year, month] = components;
-    return {
-      year: parseInt(year),
-      month: parseInt(month),
-      day: parseInt(year) < 1920 ? "all" : 1,
-    };
-  } else if (components.length === 3) {
-    const [year, month, day] = components;
-    return {
-      year: parseInt(year),
-      month: parseInt(month),
-      day: parseInt(day),
-    };
-  }
 }

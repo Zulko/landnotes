@@ -1,4 +1,5 @@
 <script>
+  import { constrainedDate } from "../data/date_utils";
   // Define a date object to hold the values
   let { date = $bindable({ year: 1810, month: 3, day: "all" }) } = $props();
 
@@ -31,19 +32,7 @@
   }
 
   function updateDate(field, value) {
-    const newDate = { ...date };
-    newDate[field] = value;
-    if (newDate.month === "all" && newDate.year >= firstYearRequiringMonth) {
-      newDate.month = 1;
-    }
-    if (newDate.day === "all" && newDate.year >= firstYearRequiringDay) {
-      newDate.day = 1;
-    }
-    if (newDate.day !== "all") {
-      const daysInMonth = getDaysInMonth(newDate.year, newDate.month);
-      newDate.day = Math.min(Math.max(newDate.day, 1), daysInMonth);
-    }
-    date = newDate;
+    return constrainedDate({ ...date, [field]: value });
   }
 </script>
 
