@@ -138,7 +138,7 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
           flyDuration: 0.3,
         });
         if (lastTappedMarkerEntry?.id === entry.id) {
-          selectMarkerAndCenterOnIt(entry, mapTravel);
+          selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
         } else {
           // First tap → show popup
           lastTappedMarkerEntry = entry;
@@ -212,6 +212,9 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
     if (isTouchDevice) {
       marker.on("click", function () {
         selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
+        if (entry.displayClass == "selected") {
+          appState.wikiPage = entry.pageTitle;
+        }
       });
     } else {
       marker.on("click", function () {

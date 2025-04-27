@@ -7,6 +7,7 @@
     updateMarkerIcon,
     updateMarkerPane,
   } from "./createMarker";
+  import { isTouchDevice } from "../device";
   import { mapEntries, mapBounds } from "../data/mapEntries.svelte";
   import { appState } from "../appState.svelte";
 
@@ -40,6 +41,9 @@
       map.off("moveend", handleBoundsChange);
       map.off("zoomend", handleBoundsChange);
       map.off("resize", handleBoundsChange);
+      if (isTouchDevice) {
+        map.off("dragstart", () => (appState.selectedMarker = null));
+      }
       map.remove();
       map = null;
     }
@@ -118,6 +122,9 @@
     map.on("moveend", handleBoundsChange);
     map.on("zoomend", handleBoundsChange);
     map.on("resize", handleBoundsChange);
+    if (isTouchDevice) {
+      map.on("dragstart", () => (appState.selectedMarkerId = null));
+    }
   }
 
   // ===== MAP CONTROL FUNCTIONS =====

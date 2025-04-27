@@ -3,10 +3,10 @@
   import { onMount } from "svelte";
   import { appState } from "../appState.svelte";
 
-  let expanded = $state(false);
   let isNarrowScreen = $state(
     typeof window !== "undefined" && window.innerWidth <= 768
   );
+  let expanded = $state(window.innerWidth <= 768); // fullscreen by default on narrow screens
   const normalWidth = "400px"; // Default width for desktop
   const normalHeight = "35vh"; // Default height for mobile
 

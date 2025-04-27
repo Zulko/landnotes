@@ -1,7 +1,8 @@
 <script>
   // Reactive state
   import { isTouchDevice } from "./device";
-  let { pageTitle, snippet, openWikiPage, alwaysOpen } = $props(); // Title to look up
+  let { pageTitle, snippet, openWikiPage, alwaysOpen, openWikiOnClick } =
+    $props(); // Title to look up
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
   let tooltipElement = $state(null); // Reference to tooltip element
@@ -193,7 +194,10 @@
   tabindex="-1"
   role="tooltip"
 >
-  <div class="wiki-content">
+  <div
+    class="wiki-content"
+    style="max-height: {isTouchDevice ? '190px' : '260px'};"
+  >
     {#if thumbnail}
       <img
         src={thumbnail}
@@ -206,8 +210,24 @@
     <div class="wiki-header">
       <h3>From Wikipedia</h3>
     </div>
-    <div class="wiki-summary">{@html summary}</div>
+    <div class="wiki-summary">
+      {@html summary}
+    </div>
   </div>
+  {#if isTouchDevice}
+    <button
+      tabindex="0"
+      class="open-wiki-page"
+      onclick={() => openWikiPage(pageTitle)}
+      onkeydown={(e) => {
+        if (e.key === "Enter") {
+          openWikiPage(pageTitle);
+        }
+      }}
+    >
+      Tap for more
+    </button>
+  {/if}
 </div>
 
 <span
@@ -218,8 +238,8 @@
   onblur={() => (isHovered = false)}
   tabindex="-1"
   role="button"
-  onclick={openWikiPage ? () => openWikiPage(pageTitle) : null}
-  onkeydown={openWikiPage
+  onclick={openWikiOnClick ? () => openWikiPage(pageTitle) : null}
+  onkeydown={openWikiOnClick
     ? (e) => {
         if (e.key === "Enter") {
           openWikiPage(pageTitle);
@@ -234,7 +254,7 @@
   .wiki-popup {
     position: absolute;
     width: 350px;
-    max-height: 250px;
+    max-height: 260px;
     overflow-y: hidden;
     padding: 0;
 
@@ -254,10 +274,23 @@
 
   .wiki-content {
     padding: 12px 12px;
+    position: relative;
+    overflow-y: hidden;
   }
 
-  .wiki-content p {
-    margin: 0;
+  .wiki-content::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 1)
+    );
+    pointer-events: none;
   }
 
   .wiki-header h3 {
@@ -282,7 +315,24 @@
     }
   }
 
-  .wiki-summary {
-    font-weight: normal;
+  :global(.wiki-summary p) {
+    margin-bottom: 0em;
+  }
+
+  .open-wiki-page {
+    cursor: pointer;
+    display: block;
+    padding: 0.5em 1em;
+    background-color: white;
+    color: #0645ad;
+    text-decoration: none;
+    font-weight: 600;
+    border: 1px solid #0645ad;
+    border-radius: 4px;
+    margin: 0 auto 1em;
+    transition:
+      background-color 0.2s,
+      transform 0.1s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 </style>
