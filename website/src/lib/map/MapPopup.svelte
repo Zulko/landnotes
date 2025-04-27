@@ -52,7 +52,6 @@
       visibility = "hidden";
     }
   });
-  $inspect(isOpen, isHovered);
 
   // Position the popup based on available screen space
   function updateTooltipPosition() {

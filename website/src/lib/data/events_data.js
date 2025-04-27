@@ -1,10 +1,9 @@
-import { inflate } from "pako";
-
-import { cachedDecodeHybridGeohash, queryWithCache } from "./places_data";
-
+import { cachedDecodeHybridGeohash } from "./places_data";
+import { queryWithCache } from "./utils";
 let worker = null;
 // Store for pending request promises
 let workerPromises = {};
+const cachedEventsById = new Map();
 
 function initEventsWorker() {
   // Create a single worker instance that will be reused
@@ -120,11 +119,11 @@ async function queryEventsById(eventIds) {
   return entries;
 }
 
-export async function getEventsById({ eventIds, cachedQueries }) {
+export async function getEventsById(eventIds) {
   return await queryWithCache({
     queries: eventIds,
     queryFn: queryEventsById,
-    cachedQueries,
+    cachedQueries: cachedEventsById,
     resultId: "event_id",
   });
 }

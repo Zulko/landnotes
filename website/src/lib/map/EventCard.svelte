@@ -116,6 +116,19 @@
 {/snippet}
 
 <div class="event-card">
+  <div class="event-card-section page">
+    <div class="event-icon">
+      <img src="{basePath}icons/text-search.svg" alt="search" />
+    </div>
+    <div class="event-text">
+      {#snippet popupContent(isOpen)}
+        <WikiPreview pageTitle={entry.pageTitle} {isOpen} />
+      {/snippet}
+      <MapPopup {popupContent} enterable={false}>
+        from <i>"{@render linkedPage(entry.pageTitle)}"</i>
+      </MapPopup>
+    </div>
+  </div>
   <div class="event-card-section when">
     <div class="event-icon">
       <img src="{basePath}icons/calendar-fold.svg" alt="calendar" />
@@ -175,21 +188,11 @@
     <div class="event-icon">
       <img src="{basePath}icons/newspaper.svg" alt="newspaper" />
     </div>
+    {#snippet popupContent(isOpen)}
+      <WikiPreview pageTitle={entry.pageTitle} {isOpen} />
+    {/snippet}
     <div class="event-text">
       {entry.summary}
-      <span
-        class="wiki-link"
-        onclick={() => openWikiPage(entry.pageTitle)}
-        onkeydown={(e) => {
-          if (e.key === "Enter") {
-            openWikiPage(entry.pageTitle);
-          }
-        }}
-        role="button"
-        tabindex="0"
-      >
-        (learn more)
-      </span>
     </div>
   </div>
 </div>

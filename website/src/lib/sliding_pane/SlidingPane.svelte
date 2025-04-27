@@ -1,5 +1,6 @@
 <script>
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
+  import PageEvents from "./PageEvents.svelte";
   import { onMount } from "svelte";
   import { appState } from "../appState.svelte";
 
@@ -12,6 +13,7 @@
 
   // ===== STATE VARIABLES =====
   let isInitialRender = $state(true);
+  let activeTab = $state("wikipedia");
 
   // ===== COMPUTED VALUES =====
 
@@ -84,10 +86,15 @@
 
 <div class="pane-container">
   <div class="pane" style="width: {actualWidth}; height: {actualHeight};">
-    <SlidingPaneHeader bind:expanded {openWikiPageInNewTab} {closePane} />
+    <SlidingPaneHeader
+      bind:expanded
+      bind:activeTab
+      {openWikiPageInNewTab}
+      {closePane}
+    />
 
     <div class="pane-content">
-      {#if appState.wikiPage}
+      {#if activeTab === "wikipedia" && appState.wikiPage}
         <iframe
           id="wiki-iframe"
           tabindex="-2"
@@ -97,6 +104,8 @@
           frameborder="0"
           class="wiki-iframe"
         ></iframe>
+      {:else if activeTab === "events" && appState.wikiPage}
+        <PageEvents wikiPage={appState.wikiPage} />
       {:else}
         <p>No page specified</p>
       {/if}

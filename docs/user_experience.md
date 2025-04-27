@@ -57,3 +57,15 @@ For event markers:
 - Places with a larger wikipedia page are shown at higher levels of zoom.
 
 # Historical events
+
+## Side pane
+
+The side pane is used to show the wikipedia page.
+
+On narrow screens, the default is to take the full screen first.
+
+The most complex part of the side pane is the Events tab, which displays all events associated with the page.
+For standard pages, this means all the events extracted from that page.
+However, for pages that are locations (with geo-coordinates), it also means all the events that occurred at the location(s).
+In that page the app first fetches a list of event IDs by year. Then it displays the events in collapsible sections by year.
+if the total number of events is less than 100, it fetches all events, else the event data is only fetched when the user clicks on a year section.

@@ -22,7 +22,6 @@ export const mapEntries = $state({ markerInfos: [], dots: [] });
 export const mapBounds = $state({});
 
 let cachedPlaceData = new Map();
-let cachedEventsById = new Map();
 
 $effect.root(() => {
   $effect(() => {
@@ -97,10 +96,8 @@ async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
     zoom: zoom - 1,
     strictDate,
   });
-  const eventInfos = await getEventsById({
-    eventIds: events.map((event) => event.event_id),
-    cachedQueries: cachedEventsById,
-  });
+  const eventIds = events.map((event) => event.event_id);
+  const eventInfos = await getEventsById(eventIds);
 
   // Add type annotation to make it clear this is a Map of objects
   const eventInfosById = new Map(
@@ -150,7 +147,6 @@ function updateDisplayClasses(entries) {
 }
 
 async function handleNewSelectedMarker(selectedMarkerId) {
-  console.log("handleNewSelectedMarker", selectedMarkerId);
   if (selectedMarkerId === appState.selectedMarkerId) return;
   if (!selectedMarkerId) {
     // a marker got deselected. Let's just update the display classes
@@ -165,10 +161,7 @@ async function handleNewSelectedMarker(selectedMarkerId) {
       cachedQueries: cachedPlaceData,
     });
   } else {
-    query = await getEventsById({
-      eventIds: [selectedMarkerId],
-      cachedQueries: cachedEventsById,
-    });
+    query = await getEventsById([selectedMarkerId]);
   }
 
   const selectedMarker = normalizeMapEntryInfo(query[0]);

@@ -26,7 +26,6 @@ const iconSizesByDisplayClass = {
  */
 export function createMarker({ entry, mapTravel, map }) {
   // No longer need to normalize here as the entry should already be normalized
-  console.log({ entry });
   const { divIcon } = createDivIcon({
     entry,
     displayClass: entry.displayClass,

@@ -29,6 +29,10 @@ export default {
 				const eventIds = await request.json();
 				result = await queryEventsByIdByBatch(eventIds, env.eventsDB);
 				return resultsToResponse(result);
+			case '/query/events-by-page':
+				const pageTitles = await request.json();
+				result = await queryEventsByPage(pageTitles, env.eventsByPageDB);
+				return resultsToResponse(result);
 			case '/message':
 				return new Response('Hello, World!');
 			case '/random':
@@ -100,7 +104,8 @@ async function queryPlacesFromText(searchText, geoDB) {
 async function queryEventsByMonthRegion(monthRegions, eventsByMonthDB) {
 	const placeholders = monthRegions.map(() => '?').join(',');
 	const stmt = eventsByMonthDB.prepare(`SELECT * from events_by_month_region WHERE month_region IN (${placeholders})`);
-	return await stmt.bind(...monthRegions).all();
+	const result = await stmt.bind(...monthRegions).all();
+	return { results: result.results, rowsRead: result.meta.rows_read };
 }
 
 async function queryEventsByMonthRegionByBatch(monthRegions, eventsByMonthDB) {
@@ -110,9 +115,21 @@ async function queryEventsByMonthRegionByBatch(monthRegions, eventsByMonthDB) {
 async function queryEventsById(eventIds, eventsDB) {
 	const placeholders = eventIds.map(() => '?').join(',');
 	const stmt = eventsDB.prepare(`SELECT * from events WHERE event_id IN (${placeholders})`);
-	return await stmt.bind(...eventIds).all();
+	const result = await stmt.bind(...eventIds).all();
+	return { results: result.results, rowsRead: result.meta.rows_read };
 }
 
 async function queryEventsByIdByBatch(eventIds, eventsDB) {
 	return await queryByBatch({ queryFn: queryEventsById, params: eventIds, db: eventsDB });
+}
+
+async function queryEventsByPage(pageTitles, eventsByPageDB) {
+	const placeholders = pageTitles.map(() => '?').join(',');
+	const stmt = eventsByPageDB.prepare(`SELECT * from pages WHERE page_title IN (${placeholders})`);
+	const result = await stmt.bind(...pageTitles).all();
+	result.results.forEach((entry) => {
+		entry.zlib_json_blob = btoa(String.fromCharCode(...entry.zlib_json_blob));
+	});
+	console.log(result);
+	return { results: result.results, rowsRead: result.meta.rows_read };
 }
