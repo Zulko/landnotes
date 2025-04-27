@@ -29,7 +29,7 @@ export function createMarker({ entry, mapTravel, map }) {
   const { divIcon } = createDivIcon(entry, entry.displayClass);
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
-    pane: entry.displayClass === "selected" ? "selectedMarker" : "markers",
+    pane: entry.displayClass + "MarkersPane",
   });
 
   // bindHoverPopping(marker, entry, map);
@@ -94,8 +94,7 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
         const { divIcon } = createDivIcon(entry, entry.displayClass);
         map.removeLayer(marker);
         marker.setIcon(divIcon);
-        marker.options.pane =
-          entry.displayClass === "selected" ? "selectedMarker" : "markers";
+        marker.options.pane = entry.displayClass + "MarkersPane";
         marker.addTo(map);
         isHovered = false;
       }, 100);

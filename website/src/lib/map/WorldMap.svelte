@@ -106,8 +106,9 @@
     // Create layer groups for different marker types
     const panes = {
       dots: 200,
-      markers: 500,
-      selectedMarker: 550,
+      reducedMarkersPane: 450,
+      fullMarkersPane: 500,
+      selectedMarkersPane: 550,
       topPane: 620,
     };
     for (const [key, value] of Object.entries(panes)) {
@@ -130,7 +131,6 @@
   // ===== MAP CONTROL FUNCTIONS =====
   export function mapTravel({ location, zoom, flyDuration }) {
     const { lat, lon } = location;
-    console.log({ location, zoom, flyDuration });
     clearTimeout(handleBoundChangesAfterFlyToTimeOut);
     clearTimeout(fixZoomAfterFlyToTimeOut);
 
@@ -229,8 +229,7 @@
         if (existingClass !== displayClass) {
           updateMarkerIcon(marker, entry);
           if (displayClass === "selected" || existingClass === "selected") {
-            const pane =
-              displayClass === "selected" ? "selectedMarker" : "markers";
+            const pane = displayClass + "MarkersPane";
             updateMarkerPane(marker, map, pane);
           }
         }
