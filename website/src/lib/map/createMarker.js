@@ -147,7 +147,7 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
     } else {
       // Event markers with popup on mouse/desktop devices
       marker.on("click", function () {
-        selectMarkerAndCenterOnIt(entry, mapTravel);
+        selectMarkerAndCenterOnIt({ entry, mapTravel });
       });
 
       marker.on("mouseover", function () {
