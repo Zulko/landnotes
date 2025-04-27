@@ -67,7 +67,19 @@
   }
 </script>
 
-{#snippet marker()}
+{#snippet popupContent()}
+  {#if entry.isEvent}
+    <EventCard {entry} />
+  {:else}
+    <WikiPreview pageTitle={entry.pageTitle} {openWikiPage} />
+  {/if}
+{/snippet}
+
+<MapPopup
+  {popupContent}
+  enterable={entry.isEvent}
+  alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
+>
   <div class={`map-marker marker-display-${entry.displayClass}`}>
     <div class="marker-icon-circle">
       <img src={basePath + "icons/" + iconName + ".svg"} alt="icon" />
@@ -78,30 +90,7 @@
       <div class="marker-text">{label()}</div>
     </div>
   </div>
-{/snippet}
-
-{#if entry.isEvent}
-  {#snippet popupContent()}
-    <EventCard {entry} />
-  {/snippet}
-  <MapPopup
-    {popupContent}
-    popupTarget={marker}
-    enterable={true}
-    alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
-  />
-{:else}
-  <!-- A Place marker -->
-  {#snippet popupContent()}
-    <WikiPreview pageTitle={entry.pageTitle} {openWikiPage} />
-  {/snippet}
-  <MapPopup
-    {popupContent}
-    popupTarget={marker}
-    enterable={false}
-    alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
-  />
-{/if}
+</MapPopup>
 
 <style>
   .map-marker {
