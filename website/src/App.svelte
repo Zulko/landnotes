@@ -24,7 +24,6 @@
     selectedMarkerId: null,
   };
   let isNarrowScreen = $state(false);
-  let currentMode = $state("places");
 
   let mapComponent;
 
@@ -36,14 +35,6 @@
     handleResize(); // Initialize mobile detection
     setStateFromURLParamsAndMoveMap();
     window.addEventListener("popstate", setStateFromURLParamsAndMoveMap);
-  });
-
-  $effect(() => {
-    if (appState.mode !== currentMode) {
-      console.log("deselecting marker");
-      appState.selectedMarkerId = null;
-      currentMode = appState.mode;
-    }
   });
   // -------------------------
   // STATE MANAGEMENT FUNCTIONS

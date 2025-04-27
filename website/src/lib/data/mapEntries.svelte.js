@@ -31,7 +31,6 @@ $effect.root(() => {
   $effect(() => {
     const _mapBounds = $state.snapshot(mapBounds);
     if (Object.keys(_mapBounds).length === 0) return;
-    console.log("here!", _mapBounds);
     if (appState.mode === "events") {
       const { zoom, date, strictDate } = appState;
       const _date = $state.snapshot(date);
@@ -66,7 +65,6 @@ async function updateMapPlaceEntries({ mapBounds, zoom }) {
     maxZoomLevel: zoom - 1,
     cachedQueries: cachedPlaceData,
   });
-  console.log({ entryInfos, dots });
 
   // Make sure the selected marker is included
   if (

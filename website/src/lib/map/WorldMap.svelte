@@ -151,7 +151,6 @@
         animate: true,
         duration: flyDuration, // Duration in seconds
       });
-      console.log("flew!", flyDuration);
       // this fixes a bug in leaflet where it looses track of the zoom level after a flyto
       fixZoomAfterFlyToTimeOut = setTimeout(
         function () {

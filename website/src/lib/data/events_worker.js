@@ -67,7 +67,6 @@ function filterGeokeyEvents({ geokeyEvents, bounds, zoom }) {
       const { subevents, ...eventWithoutSubevents } = event;
       return eventWithoutSubevents;
     });
-  console.log({ geokeyEvents });
   const dotEvents = geokeyEvents
     .map((event) => event.subeventsByZoomLevel[zoom] || [])
     .flat()

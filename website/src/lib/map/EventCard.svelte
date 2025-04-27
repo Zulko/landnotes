@@ -10,7 +10,6 @@
   let places = $state([]);
 
   function openWikiPage(pageTitle) {
-    console.log("opening wiki page", pageTitle);
     appState.wikiPage = pageTitle;
   }
 
@@ -62,7 +61,6 @@
     const placeList = entry.location
       .split(/[\|,]/)
       .map((location) => {
-        console.log("location", location);
         const hasPage = !location.trim().endsWith("(?)");
         const isGuess = location.trim().endsWith("?");
         return {

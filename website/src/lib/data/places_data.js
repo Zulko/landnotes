@@ -120,13 +120,6 @@ export async function getGeodataFromBounds({
   const geokeys = Array.from({ length: maxZoomLevel }, (_, i) => i + 1).flatMap(
     (zoomLevel) => getOverlappingGeoEncodings(bounds, zoomLevel)
   );
-  console.log({
-    bounds,
-    maxZoomLevel,
-    nGeokeys: geokeys.length,
-    geokeys,
-    area: (bounds.maxLat - bounds.minLat) * (bounds.maxLon - bounds.minLon),
-  });
   if (geokeys.length > 1000) {
     throw new Error("geokeys issue");
   }

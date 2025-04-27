@@ -106,7 +106,6 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
       const [width, height] = iconSizesByDisplayClass["full"];
       marker.options.icon.options.iconSize = [width, height];
       marker.options.pane = "topPane";
-      console.log(map.getPanes(), marker);
       marker.addTo(map);
       isHovered = true;
     });

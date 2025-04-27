@@ -60,7 +60,6 @@
 
   // Position the popup based on available screen space
   function updateTooltipPosition() {
-    console.log("updating tooltip position");
     if (!popupElement || !triggerElement) return;
 
     const triggerRect = triggerElement.getBoundingClientRect();
@@ -69,7 +68,6 @@
     const mapWidth =
       document.getElementsByClassName("map-container")[0].clientWidth;
     const leftStart = isTouchDevice ? 0 : viewportWidth - mapWidth;
-    console.log(viewportWidth, mapWidth, leftStart);
 
     // Default position (above and centered)
     let top = -popupRect.height - 2;
@@ -88,7 +86,6 @@
     // Check if popup would appear above viewport
     if (triggerRect.top + top < 30) {
       // Position below the trigger instead of above
-      console.log("beeeeeelow");
       top = triggerRect.height + 5;
     }
     [popupTop, popupLeft] = [top, left];
@@ -96,13 +93,10 @@
 
   function onMouseLeave() {
     if (enterable) {
-      console.log("will close!");
       closeTimeout = setTimeout(() => {
-        console.log("closing!");
         isHovered = false;
       }, 200);
     } else {
-      console.log("Closing!");
       isHovered = false;
     }
   }

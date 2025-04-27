@@ -32,12 +32,20 @@ const stateDefaults = {
 
 export const appState = $state(stateDefaults);
 let dontPushToHistory = $state(false);
+let currentMode = $state("places");
 
 $effect.root(() => {
   // When the app state changes in any way, update the URL params
   $effect(() => {
     const state = $state.snapshot(appState);
     debouncedUpdateURLParams(state);
+  });
+  $effect(() => {
+    if (appState.mode !== currentMode) {
+      console.log("deselecting marker");
+      appState.selectedMarkerId = null;
+      currentMode = appState.mode;
+    }
   });
 });
 
