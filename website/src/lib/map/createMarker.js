@@ -118,6 +118,7 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
         map.removeLayer(marker);
         marker.setIcon(divIcon);
         marker.options.pane = entry.displayClass + "MarkersPane";
+        console.log({ entry });
         marker.addTo(map);
         isHovered = false;
       }, 100);

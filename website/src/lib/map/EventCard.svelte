@@ -22,7 +22,7 @@
       : entry.locations_latlon[0];
     const update = {
       mode: "events",
-      date: constrainedDate(parseEventDate(entry.when)),
+      date: constrainedDate(parseEventDate(entry.start_date)),
       selectedMarkerId: entry.id,
       zoom: 14,
       location: location,
