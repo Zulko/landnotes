@@ -67,11 +67,11 @@
   }
 </script>
 
-{#snippet popupContent()}
+{#snippet popupContent(isOpen)}
   {#if entry.isEvent}
     <EventCard {entry} />
   {:else}
-    <WikiPreview pageTitle={entry.pageTitle} {openWikiPage} />
+    <WikiPreview pageTitle={entry.pageTitle} {openWikiPage} {isOpen} />
   {/if}
 {/snippet}
 
@@ -79,6 +79,7 @@
   {popupContent}
   enterable={entry.isEvent}
   alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
+  visibilityDelay={entry.isEvent ? 0 : 100}
 >
   <div
     class={`map-marker marker-display-${entry.displayClass}`}

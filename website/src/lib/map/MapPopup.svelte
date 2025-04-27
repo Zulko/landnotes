@@ -8,6 +8,7 @@
     children,
     alwaysOpen = false,
     enterable = false,
+    visibilityDelay = 0,
   } = $props(); // Title to look up
   let popupElement = $state(null); // Reference to popup element
   let triggerElement = $state(null); // Reference to trigger span
@@ -16,7 +17,7 @@
   let isHovered = $state(false);
   let isOpen = $derived(alwaysOpen || (!isTouchDevice && isHovered));
   let closeTimeout = $state(null);
-  let visibility = $derived(isOpen ? "visible" : "hidden");
+  let visibility = $state("hidden");
   let popupStyle = $derived(
     `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility};`
   );
@@ -40,23 +41,18 @@
     };
   });
 
-  $effect(() => {
-    if (isOpen) {
-      onOpen();
-    }
-  });
-
   // Lifecycle
   $effect(() => {
     if (isOpen) {
       updateTooltipPosition();
+      setTimeout(() => {
+        visibility = "visible";
+      }, visibilityDelay);
+    } else {
+      visibility = "hidden";
     }
   });
-
-  async function onOpen() {
-    // updateTooltipPosition();
-    // setTimeout(updateTooltipPosition, 0);
-  }
+  $inspect(isOpen, isHovered);
 
   // Position the popup based on available screen space
   function updateTooltipPosition() {
@@ -115,12 +111,19 @@
   class="map-popup"
   bind:this={popupElement}
   style={popupStyle}
-  onmouseenter={clearCloseTimeoutIfEnterable}
+  onmouseenter={() => {
+    if (enterable) {
+      clearTimeout(closeTimeout);
+    } else {
+      isHovered = false;
+      visibility = "hidden";
+    }
+  }}
   onmouseleave={onMouseLeave}
   tabindex="-1"
   role="tooltip"
 >
-  {@render popupContent()}
+  {@render popupContent(isOpen)}
 </div>
 
 <span

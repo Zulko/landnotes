@@ -1,16 +1,19 @@
 <script>
   // Reactive state
   import { isTouchDevice } from "../device";
-  import { onMount } from "svelte";
-  let { pageTitle, openWikiPage = null } = $props(); // Title to look up
+  let { pageTitle, openWikiPage = null, isOpen = false } = $props(); // Title to look up
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
   let imageHeight = $state(140);
   let imageWidth = $state(120);
   let imageHasWhiteBackground = $state(false);
+  let infosFetched = $state(false);
 
-  onMount(async () => {
-    await fetchWikiInfos();
+  $effect(() => {
+    if (isOpen && !infosFetched) {
+      fetchWikiInfos();
+      infosFetched = true;
+    }
   });
 
   /**
