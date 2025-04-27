@@ -7,7 +7,7 @@
 
   // Components
   import WorldMap from "./lib/map/WorldMap.svelte";
-  import SlidingPane from "./lib/SlidingPane/SlidingPane.svelte";
+  import SlidingPane from "./lib/sliding_pane/SlidingPane.svelte";
   import SearchBarMenu from "./lib/menu/SearchBarMenu.svelte";
 
   // Utilities

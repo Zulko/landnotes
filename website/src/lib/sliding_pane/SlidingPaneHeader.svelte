@@ -4,10 +4,30 @@
     expanded = $bindable(false),
     closePane,
     openWikiPageInNewTab,
+    activeTab = $bindable("wikipedia"),
   } = $props();
 </script>
 
 <div class="pane-header">
+  <div class="tab-buttons">
+    <button
+      class="tab-button"
+      class:active={activeTab === "wikipedia"}
+      onclick={() => (activeTab = "wikipedia")}
+      aria-label="Wikipedia tab"
+    >
+      Wikipedia
+    </button>
+    <button
+      class="tab-button"
+      class:active={activeTab === "events"}
+      onclick={() => (activeTab = "events")}
+      aria-label="Events tab"
+    >
+      Events
+    </button>
+  </div>
+
   <div class="header-buttons">
     <button
       class="icon-button external-link-button"
@@ -70,6 +90,31 @@
     top: 0;
     background: white;
     z-index: 1;
+  }
+
+  .tab-buttons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .tab-button {
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .tab-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .tab-button.active {
+    border-bottom: 2px solid #1a73e8;
+    color: #1a73e8;
   }
 
   .header-buttons {
