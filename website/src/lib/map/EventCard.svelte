@@ -10,6 +10,7 @@
   let places = $state([]);
 
   function openWikiPage(pageTitle) {
+    console.log("opening wiki page", pageTitle);
     appState.wikiPage = pageTitle;
   }
 
@@ -61,6 +62,7 @@
     const placeList = entry.location
       .split(/[\|,]/)
       .map((location) => {
+        console.log("location", location);
         const hasPage = !location.trim().endsWith("(?)");
         const isGuess = location.trim().endsWith("?");
         return {
@@ -254,10 +256,6 @@
     color: #333;
   }
 
-  .event-card-section.people .event-text {
-    font-weight: 500;
-  }
-
   .event-card-section.summary .event-text {
     color: #333;
     font-style: italic;
@@ -265,6 +263,7 @@
 
   .wiki-link {
     color: #1a73e8 !important;
+    font-weight: 500;
     text-decoration: none;
     cursor: pointer;
   }

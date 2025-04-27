@@ -227,7 +227,7 @@
 
         // Only update icon if display class changed
         if (existingClass !== displayClass) {
-          updateMarkerIcon(marker, entry);
+          updateMarkerIcon({ marker, entry, mapTravel });
           if (displayClass === "selected" || existingClass === "selected") {
             const pane = displayClass + "MarkersPane";
             updateMarkerPane(marker, map, pane);

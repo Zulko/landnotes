@@ -50,8 +50,6 @@
   $effect(() => {
     if (isOpen) {
       updateTooltipPosition();
-    } else {
-      console.log("boom", { isOpen, popupStyle });
     }
   });
 

@@ -26,7 +26,12 @@ const iconSizesByDisplayClass = {
  */
 export function createMarker({ entry, mapTravel, map }) {
   // No longer need to normalize here as the entry should already be normalized
-  const { divIcon } = createDivIcon(entry, entry.displayClass);
+  console.log({ entry });
+  const { divIcon } = createDivIcon({
+    entry,
+    displayClass: entry.displayClass,
+    mapTravel,
+  });
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
     pane: entry.displayClass + "MarkersPane",
@@ -38,8 +43,12 @@ export function createMarker({ entry, mapTravel, map }) {
   return marker;
 }
 
-export function updateMarkerIcon(marker, entry) {
-  const { divIcon } = createDivIcon(entry, entry.displayClass);
+export function updateMarkerIcon({ marker, entry, mapTravel }) {
+  const { divIcon } = createDivIcon({
+    entry,
+    displayClass: entry.displayClass,
+    mapTravel,
+  });
   marker.setIcon(divIcon);
 }
 export function updateMarkerPane(marker, map, pane) {
@@ -48,11 +57,11 @@ export function updateMarkerPane(marker, map, pane) {
   marker.addTo(map);
 }
 
-function createDivIcon(entry, displayClass) {
+function createDivIcon({ entry, displayClass, mapTravel }) {
   const markerDiv = document.createElement("div");
   const markerComponent = mount(MarkerIcon, {
     target: markerDiv,
-    props: { entry },
+    props: { entry, onClick: () => onClick(entry, mapTravel) },
   });
 
   return {
@@ -63,6 +72,18 @@ function createDivIcon(entry, displayClass) {
     }),
     markerComponent,
   };
+}
+
+function onClick(entry, mapTravel) {
+  if (isTouchDevice) {
+    selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
+    if (entry.displayClass == "selected") {
+      appState.wikiPage = entry.pageTitle;
+    }
+  } else {
+    selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
+    appState.wikiPage = entry.pageTitle;
+  }
 }
 
 /**
@@ -91,7 +112,11 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
     });
     marker.on("mouseout", () => {
       unhoverTimeout = setTimeout(() => {
-        const { divIcon } = createDivIcon(entry, entry.displayClass);
+        const { divIcon } = createDivIcon({
+          entry,
+          displayClass: entry.displayClass,
+          mapTravel,
+        });
         map.removeLayer(marker);
         marker.setIcon(divIcon);
         marker.options.pane = entry.displayClass + "MarkersPane";
@@ -101,49 +126,41 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
     });
   }
 
-  if (entry.isEvent) {
-    // Event popup handling on mobile and device:
-    // first set up the popup and functions to open/close.
+  // if (entry.isEvent) {
+  //   // Event popup handling on mobile and device:
+  //   // first set up the popup and functions to open/close.
 
-    if (isTouchDevice) {
-      // Event markers with popup on touch devices
-      // Use only one event handler for opening popup on touch devices
-      marker.on("click", function () {
-        console.log("clicked!", entry.id, lastTappedMarkerEntry?.id);
-        mapTravel({
-          location: { lat: entry.lat, lon: entry.lon },
-          flyDuration: 0.3,
-        });
-        if (lastTappedMarkerEntry?.id === entry.id) {
-          selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
-        } else {
-          // First tap → show popup
-          lastTappedMarkerEntry = entry;
-          console.log("setting last tapped marker entry", entry.id);
-        }
-      });
-    } else {
-      marker.on("click", function () {
-        selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
-        appState.wikiPage = entry.pageTitle;
-      });
-    }
-  } else {
-    // marker is a place marker
-    if (isTouchDevice) {
-      marker.on("click", function () {
-        selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
-        if (entry.displayClass == "selected") {
-          appState.wikiPage = entry.pageTitle;
-        }
-      });
-    } else {
-      marker.on("click", function () {
-        selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
-        appState.wikiPage = entry.pageTitle;
-      });
-    }
-  }
+  //   if (isTouchDevice) {
+  //     // Event markers with popup on touch devices
+  //     // Use only one event handler for opening popup on touch devices
+  //     marker.on("click", function () {
+  //       selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
+  //       if (entry.displayClass == "selected") {
+  //         appState.wikiPage = entry.pageTitle;
+  //       }
+  //     });
+  //   } else {
+  //     marker.on("click", function () {
+  //       selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
+  //       appState.wikiPage = entry.pageTitle;
+  //     });
+  //   }
+  // } else {
+  //   // marker is a place marker
+  //   if (isTouchDevice) {
+  //     marker.on("click", function () {
+  //       selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
+  //       if (entry.displayClass == "selected") {
+  //         appState.wikiPage = entry.pageTitle;
+  //       }
+  //     });
+  //   } else {
+  //     marker.on("click", function () {
+  //       selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
+  //       appState.wikiPage = entry.pageTitle;
+  //     });
+  //   }
+  // }
 }
 
 function selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay = 0 }) {

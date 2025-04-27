@@ -29,16 +29,15 @@
       summary = extractSummary(data.extract_html);
 
       thumbnail = data.thumbnail?.source || "";
-
       // Calculate dimensions that maintain aspect ratio within our constraints
       if (data.thumbnail) {
         ({ imageWidth, imageHeight } = calculateDimensions(data.thumbnail));
-      } else {
-        summary = "No information available.";
-        thumbnail = "";
+        imageHasWhiteBackground =
+          await checkImageCornersForWhiteBackground(thumbnail);
       }
-      imageHasWhiteBackground =
-        await checkImageCornersForWhiteBackground(thumbnail);
+    } else {
+      summary = "No information available.";
+      thumbnail = "";
     }
   }
 

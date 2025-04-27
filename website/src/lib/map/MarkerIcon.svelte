@@ -4,7 +4,7 @@
   import WikiPreview from "./WikiPreview.svelte";
   import { appState } from "../appState.svelte";
   import { isTouchDevice } from "../device";
-  const { entry } = $props();
+  const { entry, onClick = null } = $props();
 
   const basePath = import.meta.env.BASE_URL;
 
@@ -80,7 +80,13 @@
   enterable={entry.isEvent}
   alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
 >
-  <div class={`map-marker marker-display-${entry.displayClass}`}>
+  <div
+    class={`map-marker marker-display-${entry.displayClass}`}
+    onclick={onClick}
+    onkeydown={onClick}
+    role="button"
+    tabindex="0"
+  >
     <div class="marker-icon-circle">
       <img src={basePath + "icons/" + iconName + ".svg"} alt="icon" />
     </div>
