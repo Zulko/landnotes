@@ -79,6 +79,7 @@ $effect.root(() => {
 export function updateURLParams(state, addToHistory = true) {
   const { location, zoom, selectedMarkerId, mode, date, strictDate, wikiPage } =
     state;
+  console.log("updateURLParams", { state });
   const params = new URLSearchParams();
 
   // Add map position parameters if they exist
@@ -158,6 +159,7 @@ export function readURLParams() {
   // Get map position parameters
   const result = {};
   const location = params.get("location");
+  console.log({ location });
   if (location) {
     const [geohash, zoom] = location.split("-");
     result.location = geohashToLatLon(geohash);
@@ -173,5 +175,6 @@ export function readURLParams() {
     result.mode = "places";
     result;
   }
+  result.wikiPage = params.get("wikiPage");
   return result;
 }

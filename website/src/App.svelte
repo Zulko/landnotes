@@ -36,6 +36,7 @@
    */
   function setStateFromURLParamsAndMoveMap() {
     const urlState = setStateFromURLParams();
+    console.log("setStateFromURLParamsAndMoveMap", { urlState });
     if (urlState.location) {
       uiGlobals.mapTravel({
         location: urlState.location,
@@ -46,7 +47,7 @@
       uiGlobals.mapTravel({
         location: { lat: 0, lon: 0 },
         zoom: 3,
-        flyDuration: 0.3,
+        flyDuration: 0,
       });
     }
   }

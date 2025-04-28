@@ -188,9 +188,10 @@
     // Debounce the effect to avoid too frequent updates
     clearTimeout(boundsChangeTimeout);
     boundsChangeTimeout = setTimeout(() => {
+      const { lat, lng: lon } = bounds.getCenter();
       Object.assign(appState, {
         zoom: map.getZoom(),
-        center: bounds.getCenter(),
+        location: { lat, lon },
       });
       Object.assign(mapBounds, formattedBounds);
     }, 200);
