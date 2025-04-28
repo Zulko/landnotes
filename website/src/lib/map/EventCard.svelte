@@ -3,7 +3,11 @@
   import MapPopup from "./MapPopup.svelte";
   import { appState, uiGlobals } from "../appState.svelte";
   import WikiPreview from "./WikiPreview.svelte";
-  import { constrainedDate, parseEventDate } from "../data/date_utils";
+  import {
+    constrainedDate,
+    parseEventDate,
+    startAndEndDateToDateSetting,
+  } from "../data/date_utils";
   const basePath = import.meta.env.BASE_URL;
 
   let { entry, displayPage = true, displayGoToEventLink = false } = $props();
@@ -26,9 +30,12 @@
       flyDuration: 0.3,
     });
     setTimeout(() => {
+      const parsedStartDate = parseEventDate(entry.start_date);
+      const parsedEndDate = parseEventDate(entry.end_date);
+      const date = startAndEndDateToDateSetting(parsedStartDate, parsedEndDate);
       const update = {
         mode: "events",
-        date: constrainedDate(parseEventDate(entry.start_date)),
+        date,
         selectedMarkerId: entry.id,
       };
       console.log("update", update);

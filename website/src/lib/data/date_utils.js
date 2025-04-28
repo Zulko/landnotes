@@ -109,3 +109,39 @@ export function parseUrlDate(dateString) {
   }
   return constrainedDate(date);
 }
+
+export function startAndEndDateToDateSetting(startDate, endDate) {
+  if (
+    startDate.month === 1 &&
+    startDate.day === 1 &&
+    (startDate.year < endDate.year ||
+      (startDate.year === endDate.year &&
+        endDate.month === 12 &&
+        endDate.day === 31))
+  ) {
+    return {
+      year: startDate.year,
+      month: "all",
+      day: "all",
+    };
+  } else if (
+    startDate.year === endDate.year &&
+    startDate.month === endDate.month &&
+    startDate.day === 1 &&
+    (endDate.month > startDate.month ||
+      (endDate.month === startDate.month &&
+        endDate.day === getDaysInMonth(endDate.year, endDate.month)))
+  ) {
+    return {
+      year: startDate.year,
+      month: startDate.month,
+      day: "all",
+    };
+  } else {
+    return {
+      year: startDate.year,
+      month: startDate.month,
+      day: startDate.day,
+    };
+  }
+}
