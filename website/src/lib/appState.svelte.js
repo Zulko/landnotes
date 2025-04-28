@@ -35,6 +35,11 @@ const stateDefaults = {
 };
 
 export const appState = $state(stateDefaults);
+export const uiGlobals = {
+  isNarrowScreen: false,
+  leafletMap: null,
+  mapTravel: null,
+};
 let dontPushToHistory = $state(false);
 let currentMode = $state("places");
 

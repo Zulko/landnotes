@@ -130,6 +130,5 @@ async function queryEventsByPage(pageTitles, eventsByPageDB) {
 	result.results.forEach((entry) => {
 		entry.zlib_json_blob = btoa(String.fromCharCode(...entry.zlib_json_blob));
 	});
-	console.log(result);
 	return { results: result.results, rowsRead: result.meta.rows_read };
 }

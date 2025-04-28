@@ -1,13 +1,10 @@
 import L from "leaflet";
 // @ts-ignore
-import EventCard from "./EventCard.svelte";
-// @ts-ignore
 import MarkerIcon from "./MarkerIcon.svelte";
-import { mount, unmount } from "svelte";
+import { uiGlobals } from "../appState.svelte";
+import { mount } from "svelte";
 import { isTouchDevice } from "../device";
 import { appState } from "../appState.svelte";
-
-let lastTappedMarkerEntry = null;
 
 const iconSizesByDisplayClass = {
   dot: [18, 18],
@@ -20,47 +17,42 @@ const iconSizesByDisplayClass = {
  * Creates a marker with appropriate behavior based on type
  * @param {Object} options - Options object
  * @param {Object} options.entry - Normalized marker data
- * @param {function} options.mapTravel - Function to navigate to a location on the map
- * @param {Object} options.map - Leaflet map instance
  * @returns {L.Marker} - Leaflet marker
  */
-export function createMarker({ entry, mapTravel, map }) {
+export function createMarker({ entry }) {
   // No longer need to normalize here as the entry should already be normalized
   const { divIcon } = createDivIcon({
     entry,
     displayClass: entry.displayClass,
-    mapTravel,
   });
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
     pane: entry.displayClass + "MarkersPane",
   });
 
-  // bindHoverPopping(marker, entry, map);
-  bindClickEvents({ marker, entry, mapTravel, map });
+  bindHoverEvents({ marker, entry });
 
   return marker;
 }
 
-export function updateMarkerIcon({ marker, entry, mapTravel }) {
+export function updateMarkerIcon({ marker, entry }) {
   const { divIcon } = createDivIcon({
     entry,
     displayClass: entry.displayClass,
-    mapTravel,
   });
   marker.setIcon(divIcon);
 }
-export function updateMarkerPane(marker, map, pane) {
-  map.removeLayer(marker);
+export function updateMarkerPane(marker, pane) {
+  uiGlobals.leafletMap.removeLayer(marker);
   marker.options.pane = pane;
-  marker.addTo(map);
+  marker.addTo(uiGlobals.leafletMap);
 }
 
-function createDivIcon({ entry, displayClass, mapTravel }) {
+function createDivIcon({ entry, displayClass }) {
   const markerDiv = document.createElement("div");
   const markerComponent = mount(MarkerIcon, {
     target: markerDiv,
-    props: { entry, onClick: () => onClick(entry, mapTravel) },
+    props: { entry, onClick: () => onClick(entry) },
   });
 
   return {
@@ -73,14 +65,14 @@ function createDivIcon({ entry, displayClass, mapTravel }) {
   };
 }
 
-function onClick(entry, mapTravel) {
+function onClick(entry) {
   if (isTouchDevice) {
-    selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
+    selectMarkerAndCenterOnIt({ entry, selectDelay: 350 });
     if (entry.displayClass == "selected") {
       appState.wikiPage = entry.pageTitle;
     }
   } else {
-    selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
+    selectMarkerAndCenterOnIt({ entry, selectDelay: 0 });
     appState.wikiPage = entry.pageTitle;
   }
 }
@@ -90,10 +82,8 @@ function onClick(entry, mapTravel) {
  * @param {Object} options - Configuration options
  * @param {L.Marker} options.marker - Leaflet marker object
  * @param {Object} options.entry - Normalized marker data
- * @param {Function} options.mapTravel - Function to navigate to a location on the map
- * @param {L.Map} options.map - Leaflet map instance
  */
-function bindClickEvents({ marker, entry, mapTravel, map }) {
+function bindHoverEvents({ marker, entry }) {
   let isHovered = false;
   let unhoverTimeout = null;
 
@@ -101,11 +91,11 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
     marker.on("mouseover", () => {
       clearTimeout(unhoverTimeout);
       if (isHovered) return;
-      map.removeLayer(marker);
+      uiGlobals.leafletMap.removeLayer(marker);
       const [width, height] = iconSizesByDisplayClass["full"];
       marker.options.icon.options.iconSize = [width, height];
       marker.options.pane = "topPane";
-      marker.addTo(map);
+      marker.addTo(uiGlobals.leafletMap);
       isHovered = true;
     });
     marker.on("mouseout", () => {
@@ -113,60 +103,24 @@ function bindClickEvents({ marker, entry, mapTravel, map }) {
         const { divIcon } = createDivIcon({
           entry,
           displayClass: entry.displayClass,
-          mapTravel,
         });
-        map.removeLayer(marker);
+        uiGlobals.leafletMap.removeLayer(marker);
         marker.setIcon(divIcon);
         marker.options.pane = entry.displayClass + "MarkersPane";
         console.log({ entry });
-        marker.addTo(map);
+        console.log({ uiGlobals });
+        marker.addTo(uiGlobals.leafletMap);
         isHovered = false;
       }, 100);
     });
   }
-
-  // if (entry.isEvent) {
-  //   // Event popup handling on mobile and device:
-  //   // first set up the popup and functions to open/close.
-
-  //   if (isTouchDevice) {
-  //     // Event markers with popup on touch devices
-  //     // Use only one event handler for opening popup on touch devices
-  //     marker.on("click", function () {
-  //       selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
-  //       if (entry.displayClass == "selected") {
-  //         appState.wikiPage = entry.pageTitle;
-  //       }
-  //     });
-  //   } else {
-  //     marker.on("click", function () {
-  //       selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
-  //       appState.wikiPage = entry.pageTitle;
-  //     });
-  //   }
-  // } else {
-  //   // marker is a place marker
-  //   if (isTouchDevice) {
-  //     marker.on("click", function () {
-  //       selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 350 });
-  //       if (entry.displayClass == "selected") {
-  //         appState.wikiPage = entry.pageTitle;
-  //       }
-  //     });
-  //   } else {
-  //     marker.on("click", function () {
-  //       selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay: 0 });
-  //       appState.wikiPage = entry.pageTitle;
-  //     });
-  //   }
-  // }
 }
 
-function selectMarkerAndCenterOnIt({ entry, mapTravel, selectDelay = 0 }) {
+function selectMarkerAndCenterOnIt({ entry, selectDelay = 0 }) {
   setTimeout(() => {
     appState.selectedMarkerId = entry.id;
   }, selectDelay);
-  mapTravel({
+  uiGlobals.mapTravel({
     location: { lat: entry.lat, lon: entry.lon },
     flyDuration: 0.3,
   });

@@ -11,28 +11,20 @@
   import SearchBarMenu from "./lib/menu/SearchBarMenu.svelte";
 
   // Utilities
-  import { appState, setStateFromURLParams } from "./lib/appState.svelte";
-  // -------------------------
-  // STATE VARIABLES & DEFAULTS
-  // -------------------------
-  const stateDefaults = {
-    mode: "places",
-    strictDate: true,
-    date: { year: 1810, month: 3, day: "all" },
-    zoom: 1,
-    location: null,
-    selectedMarkerId: null,
-  };
-  let isNarrowScreen = $state(false);
+  import {
+    appState,
+    uiGlobals,
+    setStateFromURLParams,
+  } from "./lib/appState.svelte";
 
-  let mapComponent;
+  let isNarrowScreen = $state(false);
 
   // -------------------------
   // LIFECYCLE HOOKS
   // -------------------------
   onMount(async () => {
     console.log("App starting!");
-    handleResize(); // Initialize mobile detection
+    checkForNarrowScreen(); // Initialize mobile detection
     setStateFromURLParamsAndMoveMap();
     window.addEventListener("popstate", setStateFromURLParamsAndMoveMap);
   });
@@ -45,13 +37,13 @@
   function setStateFromURLParamsAndMoveMap() {
     const urlState = setStateFromURLParams();
     if (urlState.location) {
-      mapComponent.mapTravel({
+      uiGlobals.mapTravel({
         location: urlState.location,
         zoom: urlState.zoom,
         flyDuration: 0.3,
       });
     } else {
-      mapComponent.mapTravel({
+      uiGlobals.mapTravel({
         location: { lat: 0, lon: 0 },
         zoom: 3,
         flyDuration: 0.3,
@@ -70,7 +62,7 @@
   /**
    * Update mobile status based on window size
    */
-  function handleResize() {
+  function checkForNarrowScreen() {
     isNarrowScreen = window.innerWidth <= 768;
   }
 
@@ -82,7 +74,7 @@
     if (appState.selectedMarkerId !== selectedMarkerId) {
       appState.selectedMarkerId = selectedMarkerId;
     }
-    mapComponent.mapTravel({
+    uiGlobals.mapTravel({
       location: { lat, lon },
       zoom: Math.max(12, appState.zoom),
       flyDuration: 1,
@@ -97,7 +89,7 @@
    */
 </script>
 
-<svelte:window on:resize={handleResize} />
+<svelte:window on:resize={checkForNarrowScreen} />
 
 <main
   class:narrow-screen={isNarrowScreen}
@@ -113,7 +105,7 @@
     {/if}
 
     <div class="map-container">
-      <WorldMap bind:this={mapComponent} />
+      <WorldMap />
       <div class="search-wrapper">
         <SearchBarMenu {onSearchSelect} />
       </div>

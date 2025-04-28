@@ -182,7 +182,10 @@
   <button
     tabindex="0"
     class="open-wiki-page"
-    onclick={() => openWikiPage && openWikiPage(pageTitle)}
+    onclick={() => {
+      console.log("openWikiPage", { openWikiPage, pageTitle });
+      openWikiPage && openWikiPage(pageTitle);
+    }}
     onkeydown={(e) => {
       if (e.key === "Enter") {
         openWikiPage && openWikiPage(pageTitle);

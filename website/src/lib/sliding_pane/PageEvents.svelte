@@ -104,11 +104,13 @@
         {#if expandedYears[year]}
           <div class="year-events">
             {#each dataLoadedByYear[year] as event}
-              <EventCard
-                entry={event}
-                displayPage={event.pageTitle !== wikiPage}
-                displayGoToEventLink={true}
-              />
+              <div class="event-card-container">
+                <EventCard
+                  entry={event}
+                  displayPage={event.pageTitle !== wikiPage}
+                  displayGoToEventLink={true}
+                />
+              </div>
             {/each}
           </div>
         {/if}
@@ -121,68 +123,81 @@
   .page-events {
     padding: 16px;
     overflow-y: auto;
+    color: #222;
+    font-family: sans-serif;
   }
 
   h1 {
-    margin-bottom: 24px;
-    font-size: 24px;
+    margin-bottom: 16px;
+    font-size: 1.8em;
+    font-weight: normal;
+    border-bottom: 1px solid #a2a9b1;
+    padding-bottom: 0.2em;
   }
 
   .loading,
   .no-events {
-    padding: 20px;
-    text-align: center;
-    color: #666;
+    padding: 12px 0;
+    color: #72777d;
   }
 
   .year-section {
-    margin-bottom: 16px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    overflow: hidden;
+    margin-bottom: 8px;
   }
 
   .year-header {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
-    background-color: #f5f5f5;
+    padding: 4px 0;
     cursor: pointer;
     user-select: none;
+    border-bottom: 1px solid #eaecf0;
   }
 
   .year-header:hover {
-    background-color: #eeeeee;
+    background-color: #f8f9fa;
   }
 
   .year-header h2 {
     margin: 0;
-    font-size: 18px;
+    font-size: 1.3em;
+    font-weight: normal;
     flex-grow: 1;
   }
 
   .event-count {
-    margin-right: 12px;
-    color: #666;
+    margin-right: 8px;
+    color: #72777d;
+    font-size: 0.85em;
   }
 
   .expand-icon {
-    font-size: 12px;
-    color: #666;
+    color: #72777d;
+    font-size: 0.8em;
+    width: 16px;
+    text-align: center;
   }
 
   .year-events {
-    padding: 12px;
-    background-color: white;
+    padding: 8px 0 12px 20px;
   }
 
   .year-events :global(.event-card) {
-    margin-bottom: 12px;
-    border: 1px solid #eaeaea;
-    border-radius: 6px;
+    margin-bottom: 8px;
+    border: none;
+    background-color: transparent;
   }
 
   .year-events :global(.event-card:last-child) {
     margin-bottom: 0;
+  }
+
+  .event-card-container {
+    margin-bottom: 8px;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+    padding: 12px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 </style>

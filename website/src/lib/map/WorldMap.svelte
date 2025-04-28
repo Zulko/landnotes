@@ -9,7 +9,7 @@
   } from "./createMarker";
   import { isTouchDevice } from "../device";
   import { mapEntries, mapBounds } from "../data/mapEntries.svelte";
-  import { appState } from "../appState.svelte";
+  import { appState, uiGlobals } from "../appState.svelte";
 
   // ===== STATE VARIABLES =====
   let mapElement;
@@ -74,6 +74,7 @@
       zoomControl: false,
       worldCopyJump: true,
     }).setView([0, 0], 2);
+    uiGlobals["leafletMap"] = map;
 
     // Add tile layer (OpenStreetMap)
     // L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -170,6 +171,7 @@
       ); // Slightly longer than animation duration
     }
   }
+  uiGlobals.mapTravel = mapTravel;
 
   // ===== EVENT HANDLERS =====
   function handleBoundsChange() {
@@ -226,18 +228,14 @@
 
         // Only update icon if display class changed
         if (existingClass !== displayClass) {
-          updateMarkerIcon({ marker, entry, mapTravel });
+          updateMarkerIcon({ marker, entry });
           if (displayClass === "selected" || existingClass === "selected") {
             const pane = displayClass + "MarkersPane";
-            updateMarkerPane(marker, map, pane);
+            updateMarkerPane(marker, pane);
           }
         }
       } else {
-        marker = createMarker({
-          entry,
-          mapTravel,
-          map,
-        });
+        marker = createMarker({ entry });
       }
       marker.addTo(newMarkerLayer);
       newMarkers.set(markerId, {
@@ -295,11 +293,6 @@
     newDotMarkerLayer.addTo(map);
     dotMarkerLayer = newDotMarkerLayer;
     currentDotMarkers = newDotMarkers;
-  }
-
-  // ===== EXPORTED FUNCTIONS =====
-  export function invalidateMapSize() {
-    handleResize();
   }
 </script>
 

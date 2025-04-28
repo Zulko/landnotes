@@ -77,7 +77,7 @@
 
 <MapPopup
   {popupContent}
-  enterable={entry.isEvent}
+  enterable={entry.isEvent || isTouchDevice}
   alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
   visibilityDelay={entry.isEvent ? 0 : 100}
   keepWithinMap={true}

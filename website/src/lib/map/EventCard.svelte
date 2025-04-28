@@ -1,7 +1,7 @@
 <script>
   import { onMount } from "svelte";
   import MapPopup from "./MapPopup.svelte";
-  import { appState } from "../appState.svelte";
+  import { appState, uiGlobals } from "../appState.svelte";
   import WikiPreview from "./WikiPreview.svelte";
   import { constrainedDate, parseEventDate } from "../data/date_utils";
   const basePath = import.meta.env.BASE_URL;
@@ -16,19 +16,24 @@
   });
 
   function setStateToEvent() {
-    console.log("entry", entry);
+    console.log({ entry });
     const location = entry.location.lat
-      ? entry.location
-      : entry.locations_latlon[0];
-    const update = {
-      mode: "events",
-      date: constrainedDate(parseEventDate(entry.start_date)),
-      selectedMarkerId: entry.id,
-      zoom: 14,
+      ? $state.snapshot(entry.location)
+      : $state.snapshot(entry.locations_latlon[0]);
+    uiGlobals.mapTravel({
       location: location,
-    };
-    console.log("update", update);
-    Object.assign(appState, update);
+      zoom: 12,
+      flyDuration: 0.3,
+    });
+    setTimeout(() => {
+      const update = {
+        mode: "events",
+        date: constrainedDate(parseEventDate(entry.start_date)),
+        selectedMarkerId: entry.id,
+      };
+      console.log("update", update);
+      Object.assign(appState, update);
+    }, 310);
   }
 
   function openWikiPage(pageTitle) {
@@ -216,13 +221,8 @@
     </div>
   </div>
   {#if displayGoToEventLink}
-    <div class="event-card-section focus-map">
-      <button onclick={setStateToEvent}>
-        <div class="event-icon">
-          <img src="{basePath}icons/map.svg" alt="map" />
-        </div>
-        See in context
-      </button>
+    <div class="event-card-section go-to-event-button">
+      <button onclick={setStateToEvent}> See in context </button>
     </div>
   {/if}
 </div>
@@ -298,5 +298,45 @@
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
+  }
+
+  .event-card-section.go-to-event-button {
+    justify-content: flex-start;
+    border-bottom: none;
+    margin-top: 8px;
+  }
+
+  .event-card-section.go-to-event-button button {
+    display: inline-flex;
+    align-items: center;
+    background-color: white;
+    border: 1px solid #3366cc;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 14px;
+    color: #3366cc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .event-card-section.go-to-event-button button:hover {
+    background-color: #f0f5ff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  .event-card-section.go-to-event-button button:focus {
+    outline: none;
+    box-shadow:
+      0 0 0 2px rgba(51, 102, 204, 0.4),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .event-card-section.go-to-event-button button img {
+    width: 16px;
+    height: 16px;
+    opacity: 0.9;
+    margin-right: 8px;
+    filter: none;
   }
 </style>
