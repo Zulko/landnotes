@@ -32,9 +32,6 @@
   }
 
   function updateDate(field, value) {
-    console.log({ date });
-    console.log("updated", { ...date, [field]: value });
-    console.log("constrained", constrainedDate({ ...date, [field]: value }));
     date = constrainedDate({ ...date, [field]: value });
   }
 </script>

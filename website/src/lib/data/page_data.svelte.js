@@ -42,7 +42,6 @@ export async function getPageEvents(pageTitle) {
     cachedQueries: pageEventsCache,
     resultId: "page_title",
   });
-  console.log("eventsByPage", eventsByPage);
   if (eventsByPage.length > 0) {
     return eventsByPage[0].events;
   } else {

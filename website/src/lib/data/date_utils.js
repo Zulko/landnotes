@@ -96,7 +96,6 @@ export function parseUrlDate(dateString) {
   }
   let date = null;
   const components = dateString.split("--").map((e) => parseInt(e));
-  console.log("components", components, dateString, dateString.split("--"));
   if (components.length === 1) {
     let [year] = components;
     date = { year, month: "all", day: "all" };

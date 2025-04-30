@@ -11,3 +11,8 @@ Google Gemini Flash 2.0 was chosen because:
 - It has an acceptable output size (up to 8000 tokens, which is over 100 events for a page).
 - It is cheap (15c/M tokens, and half that in batch mode)
 - It extracts ~30% more events (and better) than the cheaper version Fash-2.0-lite.
+
+The disambiguation is important,
+
+- [Marie Louise](https://en.wikipedia.org/wiki/Marie_Louise) is not someone but a given name.
+- Even [Marcus Aemilius Lepidus](<https://en.wikipedia.org/wiki/Marcus_Aemilius_Lepidus_(disambiguation)>) is 8 different people (did you mean Marcus Aemilius Lepidus the Roman consul? Six of them were!)

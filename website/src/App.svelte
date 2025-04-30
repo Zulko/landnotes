@@ -36,7 +36,6 @@
    */
   function setStateFromURLParamsAndMoveMap() {
     const urlState = setStateFromURLParams();
-    console.log("setStateFromURLParamsAndMoveMap", { urlState });
     if (urlState.location) {
       uiGlobals.mapTravel({
         location: urlState.location,

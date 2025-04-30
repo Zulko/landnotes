@@ -24,9 +24,7 @@ self.addEventListener("message", async (event) => {
       case "getEventsForBoundsAndDate":
         try {
           const { bounds, zoom, date, strictDate } = data;
-          console.log("getEventsForBoundsAndDate", data);
           const geokeys = getOverlappingGeoEncodings(bounds, zoom);
-          console.log("geokeys", geokeys.length);
           const geokeyEvents = await getEventsForGeokeys(
             geokeys,
             date,
@@ -37,7 +35,6 @@ self.addEventListener("message", async (event) => {
             bounds,
             zoom,
           });
-          console.log("ddddddddddddddddddddd");
           self.postMessage({ type: "response", requestId, events, dotEvents });
         } catch (error) {
           console.error("Error in getEventsForBoundsAndDate", error);

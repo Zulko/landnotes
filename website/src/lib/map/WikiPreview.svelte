@@ -183,7 +183,6 @@
     tabindex="0"
     class="open-wiki-page"
     onclick={() => {
-      console.log("openWikiPage", { openWikiPage, pageTitle });
       openWikiPage && openWikiPage(pageTitle);
     }}
     onkeydown={(e) => {
@@ -223,7 +222,7 @@
     font-family: "Linux Libertine", "Georgia", "Times", serif;
     font-size: 1.2rem;
     font-weight: normal;
-    margin: 0 0 8px 0;
+    margin: 0 0 -0.5em;
     color: #222;
     border-bottom: none;
   }

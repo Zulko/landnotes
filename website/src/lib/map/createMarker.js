@@ -107,8 +107,6 @@ function bindHoverEvents({ marker, entry }) {
         uiGlobals.leafletMap.removeLayer(marker);
         marker.setIcon(divIcon);
         marker.options.pane = entry.displayClass + "MarkersPane";
-        console.log({ entry });
-        console.log({ uiGlobals });
         marker.addTo(uiGlobals.leafletMap);
         isHovered = false;
       }, 100);

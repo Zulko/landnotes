@@ -24,10 +24,8 @@
     for (const year in eventIdsByYear) {
       expandedYears[year] = false;
     }
-    console.log("eventIdsByYear", eventIdsByYear);
 
     const allEventIds = Object.values(eventIdsByYear).flat();
-    console.log("allEventIds", allEventIds);
 
     if (allEventIds.length > 0 && allEventIds.length < 100) {
       await loadAllEvents(allEventIds);
@@ -38,17 +36,14 @@
   async function loadAllEvents(allEventIds) {
     const rawEventInfos = await getEventsById(allEventIds);
     const eventInfos = rawEventInfos.map(normalizeMapEntryInfo);
-    console.log("eventInfos", rawEventInfos, eventInfos);
     const eventInfosById = eventInfos.reduce((acc, event) => {
       acc[event.id] = event;
       return acc;
     }, {});
     Object.entries(eventIdsByYear).forEach(([year, yearEventIds]) => {
-      console.log({ year, yearEventIds, eventInfosById });
       dataLoadedByYear[year] = yearEventIds
         .map((id) => eventInfosById[id])
         .sort((a, b) => a.start_date.localeCompare(b.start_date));
-      console.log("dataLoadedByYear[year]", dataLoadedByYear[year]);
       expandedYears[year] = true;
     });
   }

@@ -1,5 +1,6 @@
 <script>
   import { onMount } from "svelte";
+  import { isTouchDevice } from "../device";
   import MapPopup from "./MapPopup.svelte";
   import { appState, uiGlobals } from "../appState.svelte";
   import WikiPreview from "./WikiPreview.svelte";
@@ -10,7 +11,12 @@
   } from "../data/date_utils";
   const basePath = import.meta.env.BASE_URL;
 
-  let { entry, displayPage = true, displayGoToEventLink = false } = $props();
+  let {
+    entry,
+    displayPage = true,
+    displayGoToEventLink = false,
+    constrainHeight = false,
+  } = $props();
   let people = $state([]);
   let places = $state([]);
 
@@ -20,7 +26,7 @@
   });
 
   function setStateToEvent() {
-    console.log({ entry });
+    HTMLFormControlsCollection;
     const location = entry.location.lat
       ? $state.snapshot(entry.location)
       : $state.snapshot(entry.locations_latlon[0]);
@@ -38,7 +44,6 @@
         date,
         selectedMarkerId: entry.id,
       };
-      console.log("update", update);
       Object.assign(appState, update);
     }, 310);
   }
@@ -145,7 +150,12 @@
   </span>
 {/snippet}
 
-<div class="event-card">
+<div
+  class="event-card"
+  style={constrainHeight
+    ? `max-height: ${isTouchDevice ? "190px" : "230px"};`
+    : ""}
+>
   {#if displayPage}
     <div class="event-card-section page">
       <div class="event-icon">
@@ -252,6 +262,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
       Ubuntu, sans-serif;
     cursor: default;
+    overflow-y: auto;
   }
 
   .event-card .event-card-section {
