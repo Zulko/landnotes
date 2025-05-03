@@ -1,5 +1,5 @@
 This document attempts to capture all the specs of the user experience in the app.
-It aims to be useful for developers and coding bots.
+It aims to be a useful reference for human developers and AI coding assistants.
 
 # The App
 

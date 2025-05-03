@@ -1,3 +1,18 @@
+# Extracting events
+
+The goal of landnotes is to extract as many events as possible to render a rich world where millions of people, places and actions are interconnected.
+
+## Script based extraction
+
+Right off the bat a simple script that looks at infoboxes for places and dates of births and deaths can scrap 1.4 million births and 900,000 deaths (which might mean that one third of the people on wikipedia are alive today!).
+
+Some pages descrive events, for instance the [Boston tea party](https://en.wikipedia.org/wiki/Boston_Tea_Party) or [assassination of Julius Caesar](https://en.wikipedia.org/wiki/Assassination_of_Julius_Caesar).
+
+Then there is a flurry of infoboxes for buildings (~300k), artwork release, etc.
+
+However, only it gives very little info about other
+You can press the
+
 ## LLM tricks
 
 Works much better when the page is formatted to plain english.
