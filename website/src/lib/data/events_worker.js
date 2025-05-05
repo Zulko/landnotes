@@ -133,7 +133,13 @@ async function getEventsForGeokeys(geokeys, date, strictDate) {
     .map((g) => eventsByGeoKeyForDate.get(g) || null)
     .filter(Boolean);
 
-  return events;
+  // Deduplicate events by event_id (this is because for the events treatment in
+  // particular (not for places) the low-zoom events are also stored at higer-zoom
+  // levels during the precomputation step. There is probably a need for code
+  // cleaning somewhere to avoid this).
+  const deduplicatedEvents = deduplicate(events, "event_id");
+
+  return deduplicatedEvents;
 }
 
 /**
@@ -218,40 +224,44 @@ function assignGeokeysToEvents(events) {
   });
 
   // Assign events to geokeys
+  const geohashToGeokey = new Map();
+
   for (const event of events) {
     let prefix = "";
     for (const char of event.geohash4) {
       prefix += char;
 
       if (!eventsByGeoKeyForDate.has(prefix)) {
-        // First event for this geokey
-        eventsByGeoKeyForDate.set(prefix, {
-          subeventsByZoomLevel: {},
-          same_location_events: [],
-          geokey: prefix,
-          ...event,
-        });
-      } else {
-        // Add to existing geokey entry
-        const eventForGeokey = eventsByGeoKeyForDate.get(prefix);
+        if (!geohashToGeokey.has(event.geohash4)) {
+          // First time seeing this geohash4, assign it to this prefix
+          geohashToGeokey.set(event.geohash4, prefix);
 
-        // Add as a subevent if we haven't reached the limit
-        if (event.geohash4 === eventForGeokey.geohash4) {
-          eventForGeokey.same_location_events.push(event);
+          // Create a new entry for this prefix
+          eventsByGeoKeyForDate.set(prefix, {
+            subeventsByZoomLevel: {},
+            same_location_events: [],
+            geokey: prefix,
+            ...event,
+          });
         } else {
-          let zoomLevel = prefix.length;
-          while (
-            event.geohash4.slice(0, zoomLevel) ===
-            eventForGeokey.geohash4.slice(0, zoomLevel)
-          ) {
-            if (!eventForGeokey.subeventsByZoomLevel[zoomLevel]) {
-              eventForGeokey.subeventsByZoomLevel[zoomLevel] = [];
-            }
-            if (eventForGeokey.subeventsByZoomLevel[zoomLevel].length < 10) {
-              eventForGeokey.subeventsByZoomLevel[zoomLevel].push(event);
-            }
-            zoomLevel++;
-          }
+          // This geohash4 is already mapped to another geokey
+          // Make this prefix point to the same events as the existing geokey
+          const existingGeokey = geohashToGeokey.get(event.geohash4);
+          const existingEntry = eventsByGeoKeyForDate.get(existingGeokey);
+          eventsByGeoKeyForDate.set(prefix, existingEntry);
+        }
+      } else {
+        // Prefix already exists in the map
+        const zoomLevel = prefix.length;
+        const existingEntry = eventsByGeoKeyForDate.get(prefix);
+
+        // Add to subeventsByZoomLevel for this zoom level
+        if (!existingEntry.subeventsByZoomLevel[zoomLevel]) {
+          existingEntry.subeventsByZoomLevel[zoomLevel] = [];
+        }
+
+        if (existingEntry.subeventsByZoomLevel[zoomLevel].length < 10) {
+          existingEntry.subeventsByZoomLevel[zoomLevel].push(event);
         }
       }
     }

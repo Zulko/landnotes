@@ -112,8 +112,9 @@ async function queryEventsById(eventIds) {
   const queryJSON = await response.json();
   const entries = queryJSON.results;
   entries.forEach((entry) => {
-    entry.geokeys = entry.geokeys.split("|");
-    entry.locations_latlon = entry.geokeys.map(cachedDecodeHybridGeohash);
+    console.log(entry);
+    entry.geohash4 = entry.geohash4.split("|");
+    entry.locations_latlon = entry.geohash4.map(cachedDecodeHybridGeohash);
     entry.subevents = [];
   });
   return entries;

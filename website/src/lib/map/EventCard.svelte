@@ -14,6 +14,7 @@
   let {
     entry,
     displayPage = true,
+    displayLocation = true,
     displayGoToEventLink = false,
     constrainHeight = false,
   } = $props();
@@ -97,40 +98,44 @@
   }
 
   function parsePlaces() {
+    // console.log({ entry });
+    // console.log([
+    //   ...entry.where_page_title
+    //     .split("|")
+    //     .filter((place) => place.trim().length > 0),
+    //   ...entry.city_page_title
+    //     .split("|")
+    //     .filter((city) => city.trim().length > 0),
+    // ]);
+    const placesWithLinks = [
+      ...entry.where_page_title
+        .split("|")
+        .filter((place) => place.trim().length > 0),
+      ...entry.city_page_title
+        .split("|")
+        .filter((city) => city.trim().length > 0),
+    ].map((place) => ({ name: place, hasPage: true }));
+
     const placeList = entry.location
       .split(/[\|,]/)
       .map((location) => {
-        const hasPage = !location.trim().endsWith("(?)");
-        const isGuess = location.trim().endsWith("?");
-        return {
-          name: location
-            .trim()
-            .replace(/\(\?\)$/, "")
-            .replace("?", "")
-            .trim(),
-          hasPage,
-          isGuess,
-        };
+        return location
+          .trim()
+          .replace(/\(\?\)$/, "")
+          .replace("?", "")
+          .trim();
       })
-      .filter((location) => location.name.length > 0)
-      .map((location) => {
-        // Check if entry.pageTitle starts with location.name or vice versa
-        if (
-          entry.pageTitle &&
-          (entry.pageTitle.startsWith(location.name) ||
-            location.name.startsWith(entry.pageTitle))
-        ) {
-          return {
-            name: entry.pageTitle,
-            hasPage: true,
-          };
-        }
-        return location;
-      });
-    const filteredList = placeList
-      .filter((location) => location.name.toLowerCase() !== "unknown")
-      .filter((location) => location.name.length > 0);
-    return deduplicate(filteredList, "name");
+      .filter((location) => location.length > 0)
+      .filter(
+        (location) =>
+          !placesWithLinks.some(
+            (place) =>
+              location.includes(place.name) || place.name.includes(location)
+          )
+      )
+      .map((location) => ({ name: location, hasPage: false }));
+
+    return deduplicate([...placesWithLinks, ...placeList], "name");
   }
 </script>
 
@@ -177,31 +182,30 @@
     </div>
     <div class="event-text">{entry.when}</div>
   </div>
-  <div class="event-card-section location">
-    <div class="event-icon">
-      <img src="{basePath}icons/map.svg" alt="map" />
+  {#if displayLocation}
+    <div class="event-card-section location">
+      <div class="event-icon">
+        <img src="{basePath}icons/map.svg" alt="map" />
+      </div>
+      <div class="event-text">
+        {#each places as place, index}
+          {#if place.hasPage}
+            {#snippet popupContent(isOpen)}
+              <WikiPreview pageTitle={place.name} {isOpen} />
+            {/snippet}
+            <MapPopup {popupContent} enterable={false}>
+              {@render linkedPage(place.name)}
+            </MapPopup>
+          {:else}
+            {place.name}
+          {/if}
+          {#if index < places.length - 1}
+            <br />
+          {/if}
+        {/each}
+      </div>
     </div>
-    <div class="event-text">
-      {#each places as place, index}
-        {#if place.hasPage}
-          {#snippet popupContent(isOpen)}
-            <WikiPreview pageTitle={place.name} {isOpen} />
-          {/snippet}
-          <MapPopup {popupContent} enterable={false}>
-            {@render linkedPage(place.name)}
-          </MapPopup>
-        {:else}
-          {place.name}
-        {/if}
-        {#if place.isGuess}
-          <span class="guess">(likely)</span>
-        {/if}
-        {#if index < places.length - 1}
-          <br />
-        {/if}
-      {/each}
-    </div>
-  </div>
+  {/if}
   {#if people.length > 0}
     <div class="event-card-section people">
       <div class="event-icon">

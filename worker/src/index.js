@@ -69,7 +69,7 @@ async function queryByBatch({ queryFn, params, db, batchSize = 80 }) {
 
 async function queryPlacesFromGeokeys(geokeys, db) {
 	const placeholders = geokeys.map(() => '?').join(',');
-	const stmt = db.prepare(`SELECT * from geodata WHERE geokey IN (${placeholders})`);
+	const stmt = db.prepare(`SELECT * from places WHERE geokey IN (${placeholders})`);
 	const result = await stmt.bind(...geokeys).all();
 	// Cloudflare returns zipped blobs as int arrays which isn't great forJSON, so let's
 	// convert them to base64 strings
@@ -90,13 +90,13 @@ async function queryPlacesFromGeokeysByBatch(geokeys, geoDB) {
 async function queryPlacesFromText(searchText, geoDB) {
 	const escapedSearchText = searchText.replace(/[-"]/g, (match) => `"${match}"`);
 	const stmt = geoDB.prepare(
-		'SELECT geodata.* ' +
-			'FROM geodata ' +
+		'SELECT places.* ' +
+			'FROM places ' +
 			'JOIN (SELECT rowid ' +
 			'      FROM text_search ' +
 			'      WHERE text_search MATCH ? ' +
 			'      LIMIT 10) AS top_matches ' +
-			'ON geodata.rowid = top_matches.rowid '
+			'ON places.rowid = top_matches.rowid '
 	);
 	return await stmt.bind(escapedSearchText + (escapedSearchText.length > 2 ? '*' : '')).all();
 }
