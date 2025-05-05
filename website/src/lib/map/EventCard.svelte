@@ -17,6 +17,7 @@
     displayLocation = true,
     displayGoToEventLink = false,
     constrainHeight = false,
+    keepPopupsWithinMap = false,
   } = $props();
   let people = $state([]);
   let places = $state([]);
@@ -170,7 +171,11 @@
         {#snippet popupContent(isOpen)}
           <WikiPreview pageTitle={entry.pageTitle} {isOpen} />
         {/snippet}
-        <MapPopup {popupContent} enterable={false}>
+        <MapPopup
+          {popupContent}
+          enterable={false}
+          keepWithinMap={keepPopupsWithinMap}
+        >
           from <i>"{@render linkedPage(entry.pageTitle)}"</i>
         </MapPopup>
       </div>
@@ -193,7 +198,11 @@
             {#snippet popupContent(isOpen)}
               <WikiPreview pageTitle={place.name} {isOpen} />
             {/snippet}
-            <MapPopup {popupContent} enterable={false}>
+            <MapPopup
+              {popupContent}
+              enterable={false}
+              keepWithinMap={keepPopupsWithinMap}
+            >
               {@render linkedPage(place.name)}
             </MapPopup>
           {:else}
@@ -217,7 +226,11 @@
             {#snippet popupContent(isOpen)}
               <WikiPreview pageTitle={person.name} {isOpen} />
             {/snippet}
-            <MapPopup {popupContent} enterable={false}>
+            <MapPopup
+              {popupContent}
+              enterable={false}
+              keepWithinMap={keepPopupsWithinMap}
+            >
               {@render linkedPage(person.name)}
             </MapPopup>
           {:else}

@@ -69,7 +69,7 @@
 
 {#snippet popupContent(isOpen)}
   {#if entry.isEvent}
-    <EventCard {entry} constrainHeight={true} />
+    <EventCard {entry} constrainHeight={true} keepPopupsWithinMap={true} />
   {:else}
     <WikiPreview pageTitle={entry.pageTitle} {openWikiPage} {isOpen} />
   {/if}
