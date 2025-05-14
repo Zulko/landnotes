@@ -70,10 +70,12 @@ function onClick(entry) {
     selectMarkerAndCenterOnIt({ entry, selectDelay: 350 });
     if (entry.displayClass == "selected") {
       appState.wikiPage = entry.pageTitle;
+      appState.paneTab = "wikipedia";
     }
   } else {
     selectMarkerAndCenterOnIt({ entry, selectDelay: 0 });
     appState.wikiPage = entry.pageTitle;
+    appState.paneTab = "wikipedia";
   }
 }
 

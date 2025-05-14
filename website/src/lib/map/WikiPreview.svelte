@@ -22,6 +22,7 @@
    * @returns {Promise<void>}
    */
   async function fetchWikiInfos() {
+    console.log({ pageTitle });
     const wikiEndpoint = "https://en.wikipedia.org/api/rest_v1/page/summary/";
     const url = `${wikiEndpoint}${encodeURIComponent(pageTitle.replaceAll(" ", "_"))}`;
     const res = await fetch(url, {

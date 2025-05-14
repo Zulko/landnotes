@@ -32,6 +32,7 @@ const stateDefaults = {
   location: null,
   selectedMarkerId: null,
   wikiPage: "",
+  paneTab: "wikipedia",
 };
 
 export const appState = $state(stateDefaults);

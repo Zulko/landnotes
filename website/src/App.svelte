@@ -69,11 +69,13 @@
   /**
    * Handle search selection
    */
-  function onSearchSelect({ geokey, lat, lon }) {
+  function onSearchSelect({ geokey, lat, lon, page_title }) {
     const selectedMarkerId = geokey;
     if (appState.selectedMarkerId !== selectedMarkerId) {
       appState.selectedMarkerId = selectedMarkerId;
     }
+    appState.wikiPage = page_title;
+    appState.paneTab = "wikipedia";
     uiGlobals.mapTravel({
       location: { lat, lon },
       zoom: Math.max(12, appState.zoom),

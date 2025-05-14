@@ -5,7 +5,6 @@
   import { appState, uiGlobals } from "../appState.svelte";
   import WikiPreview from "./WikiPreview.svelte";
   import {
-    constrainedDate,
     parseEventDate,
     startAndEndDateToDateSetting,
   } from "../data/date_utils";
@@ -52,6 +51,7 @@
 
   function openWikiPage(pageTitle) {
     appState.wikiPage = pageTitle;
+    appState.paneTab = "wikipedia";
   }
 
   function deduplicate(array, idKey) {
@@ -66,6 +66,9 @@
     });
   }
   function parsePeople() {
+    if (!entry.people) {
+      return [];
+    }
     const peopleList = entry.people
       .split("|")
       .map((person) => {
@@ -99,15 +102,11 @@
   }
 
   function parsePlaces() {
-    // console.log({ entry });
-    // console.log([
-    //   ...entry.where_page_title
-    //     .split("|")
-    //     .filter((place) => place.trim().length > 0),
-    //   ...entry.city_page_title
-    //     .split("|")
-    //     .filter((city) => city.trim().length > 0),
-    // ]);
+    console.log({ entry });
+    entry.city_page_title = entry.city_page_title || "";
+    if (!entry.where_page_title && !entry.city_page_title) {
+      return [];
+    }
     const placesWithLinks = [
       ...entry.where_page_title
         .split("|")
@@ -117,7 +116,7 @@
         .filter((city) => city.trim().length > 0),
     ].map((place) => ({ name: place, hasPage: true }));
 
-    const placeList = entry.location
+    const placeList = (entry.location || "")
       .split(/[\|,]/)
       .map((location) => {
         return location

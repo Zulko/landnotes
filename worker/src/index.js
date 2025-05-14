@@ -23,20 +23,20 @@ export default {
 				return resultsToResponse(result);
 			case '/query/events-by-month-region':
 				const monthRegions = await request.json();
+				console.log(monthRegions);
 				result = await queryEventsByMonthRegionByBatch(monthRegions, env.eventsByMonthDB);
 				return resultsToResponse(result);
 			case '/query/events-by-id':
 				const eventIds = await request.json();
-				result = await queryEventsByIdByBatch(eventIds, env.eventsDB);
+				result = await queryEventsByIdByBatch(
+					eventIds.map((id) => id.replace(' ', '_')),
+					env.eventsDB
+				);
 				return resultsToResponse(result);
 			case '/query/events-by-page':
 				const pageTitles = await request.json();
 				result = await queryEventsByPage(pageTitles, env.eventsByPageDB);
 				return resultsToResponse(result);
-			case '/message':
-				return new Response('Hello, World!');
-			case '/random':
-				return new Response(crypto.randomUUID());
 			default:
 				return new Response('Not Found', { status: 404 });
 		}

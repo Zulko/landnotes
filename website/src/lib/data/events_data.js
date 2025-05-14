@@ -117,6 +117,7 @@ async function queryEventsById(eventIds) {
     entry.locations_latlon = entry.geohash4.map(cachedDecodeHybridGeohash);
     entry.subevents = [];
   });
+  console.log({ eventIds, entries });
   return entries;
 }
 

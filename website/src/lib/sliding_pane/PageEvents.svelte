@@ -1,10 +1,8 @@
 <script>
-  import { onMount } from "svelte";
   import EventCard from "../map/EventCard.svelte";
   import { getPageEvents } from "../data/page_data.svelte";
   import { getEventsById } from "../data/events_data";
   import { normalizeMapEntryInfo } from "../data/mapEntries.svelte";
-  import { appState } from "../appState.svelte";
 
   let { wikiPage } = $props();
   let eventIdsByYear = $state({});
@@ -27,7 +25,7 @@
 
     const allEventIds = Object.values(eventIdsByYear).flat();
 
-    if (allEventIds.length > 0 && allEventIds.length < 100) {
+    if (allEventIds.length > 0 && allEventIds.length < 500) {
       await loadAllEvents(allEventIds);
     }
     loadingEvents = false;

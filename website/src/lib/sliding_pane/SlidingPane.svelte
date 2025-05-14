@@ -53,6 +53,7 @@
   function closePane() {
     appState.wikiPage = null;
     appState.selectedMarkerId = null;
+    appState.paneTab = "wikipedia";
   }
 
   // Open in new tab
@@ -86,15 +87,10 @@
 
 <div class="pane-container">
   <div class="pane" style="width: {actualWidth}; height: {actualHeight};">
-    <SlidingPaneHeader
-      bind:expanded
-      bind:activeTab
-      {openWikiPageInNewTab}
-      {closePane}
-    />
+    <SlidingPaneHeader bind:expanded {openWikiPageInNewTab} {closePane} />
 
     <div class="pane-content">
-      {#if activeTab === "wikipedia" && appState.wikiPage}
+      {#if appState.paneTab === "wikipedia" && appState.wikiPage}
         <iframe
           id="wiki-iframe"
           tabindex="-2"
@@ -104,7 +100,7 @@
           frameborder="0"
           class="wiki-iframe"
         ></iframe>
-      {:else if activeTab === "events" && appState.wikiPage}
+      {:else if appState.paneTab === "events" && appState.wikiPage}
         <PageEvents wikiPage={appState.wikiPage} />
       {:else}
         <p>No page specified</p>

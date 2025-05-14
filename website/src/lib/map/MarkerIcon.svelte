@@ -64,6 +64,7 @@
 
   function openWikiPage(pageTitle) {
     appState.wikiPage = pageTitle;
+    appState.paneTab = "wikipedia";
   }
 </script>
 

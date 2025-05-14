@@ -1,10 +1,11 @@
 <script>
+  import { appState } from "../appState.svelte";
   const basePath = import.meta.env.BASE_URL;
+
   let {
     expanded = $bindable(false),
     closePane,
     openWikiPageInNewTab,
-    activeTab = $bindable("wikipedia"),
   } = $props();
 </script>
 
@@ -12,16 +13,16 @@
   <div class="tab-buttons">
     <button
       class="tab-button"
-      class:active={activeTab === "wikipedia"}
-      onclick={() => (activeTab = "wikipedia")}
+      class:active={appState.paneTab === "wikipedia"}
+      onclick={() => (appState.paneTab = "wikipedia")}
       aria-label="Wikipedia tab"
     >
       Wikipedia
     </button>
     <button
       class="tab-button"
-      class:active={activeTab === "events"}
-      onclick={() => (activeTab = "events")}
+      class:active={appState.paneTab === "events"}
+      onclick={() => (appState.paneTab = "events")}
       aria-label="Events tab"
     >
       Events
