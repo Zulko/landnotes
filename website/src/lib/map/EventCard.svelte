@@ -102,7 +102,6 @@
   }
 
   function parsePlaces() {
-    console.log({ entry });
     entry.city_page_title = entry.city_page_title || "";
     if (!entry.where_page_title && !entry.city_page_title) {
       return [];

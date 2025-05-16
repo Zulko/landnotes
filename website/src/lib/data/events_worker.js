@@ -160,6 +160,7 @@ async function precomputeEventsForRegionAndDate(region, date, strictDate) {
     cachedQueries: cachedEventsByMonthRegion,
     resultId: "monthRegion",
   });
+
   const allEvents = eventsByMonthRegion.flatMap(({ events }) => events);
   const dedupEvents = deduplicate(allEvents, "event_id");
   let filteredEvents = dedupEvents;
@@ -171,6 +172,13 @@ async function precomputeEventsForRegionAndDate(region, date, strictDate) {
       );
     });
   }
+  console.log({
+    monthsRegions,
+    eventsByMonthRegion,
+    allEvents,
+    dedupEvents,
+    filteredEvents,
+  });
 
   // Assign geokeys to the events
   assignGeokeysToEvents(filteredEvents);
@@ -254,14 +262,18 @@ function assignGeokeysToEvents(events) {
         // Prefix already exists in the map
         const zoomLevel = prefix.length;
         const existingEntry = eventsByGeoKeyForDate.get(prefix);
+        if (existingEntry.geohash4 === event.geohash4) {
+          existingEntry.same_location_events.push(event);
+          break;
+        } else {
+          // Add to subeventsByZoomLevel for this zoom level
+          if (!existingEntry.subeventsByZoomLevel[zoomLevel]) {
+            existingEntry.subeventsByZoomLevel[zoomLevel] = [];
+          }
 
-        // Add to subeventsByZoomLevel for this zoom level
-        if (!existingEntry.subeventsByZoomLevel[zoomLevel]) {
-          existingEntry.subeventsByZoomLevel[zoomLevel] = [];
-        }
-
-        if (existingEntry.subeventsByZoomLevel[zoomLevel].length < 10) {
-          existingEntry.subeventsByZoomLevel[zoomLevel].push(event);
+          if (existingEntry.subeventsByZoomLevel[zoomLevel].length < 10) {
+            existingEntry.subeventsByZoomLevel[zoomLevel].push(event);
+          }
         }
       }
     }

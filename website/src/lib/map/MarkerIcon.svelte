@@ -92,6 +92,11 @@
   >
     <div class="marker-icon-circle">
       <img src={basePath + "icons/" + iconName + ".svg"} alt="icon" />
+      {#if entry.isEvent && entry.same_location_events && entry.same_location_events.length > 0}
+        <div class="event-count-indicator">
+          +{entry.same_location_events.length}
+        </div>
+      {/if}
     </div>
 
     <div class="marker-text-container">
@@ -172,6 +177,7 @@
       transition:
         width 0.1s ease,
         height 0.1s ease;
+      position: relative; /* Add position relative to contain the absolute indicator */
     }
     & > .marker-icon-circle img {
       width: calc(var(--circle-size) * 0.7);
@@ -202,8 +208,8 @@
       right: 0;
       font-weight: bold;
       color: white;
-      -webkit-text-stroke: 6px white;
-      text-stroke: 6px white;
+      -webkit-text-stroke: 4px white;
+      text-stroke: 4px white;
       z-index: 1;
     }
   }
@@ -226,5 +232,25 @@
     -webkit-text-stroke-linejoin: round;
     text-stroke-linejoin: round;
     z-index: 1;
+  }
+
+  .event-count-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #e63946;
+    color: white;
+    border-radius: 30%;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    padding: 0 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    z-index: 5;
   }
 </style>

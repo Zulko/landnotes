@@ -25,6 +25,7 @@ export default {
 				const monthRegions = await request.json();
 				console.log(monthRegions);
 				result = await queryEventsByMonthRegionByBatch(monthRegions, env.eventsByMonthDB);
+				console.log(result);
 				return resultsToResponse(result);
 			case '/query/events-by-id':
 				const eventIds = await request.json();

@@ -39,11 +39,15 @@
   );
 
   // Generate Wikipedia URL based on device and width
+
+  let wikiDesktopUrl = $derived(
+    `https://en.wikipedia.org/wiki/${encodeURIComponent(appState.wikiPage)}`
+  );
   let wikiUrl = $derived(
     appState.wikiPage
       ? isNarrowScreen || parseInt(actualWidth) < 768
         ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(appState.wikiPage)}`
-        : `https://en.wikipedia.org/wiki/${encodeURIComponent(appState.wikiPage)}`
+        : wikiDesktopUrl
       : "about:blank"
   );
 
@@ -59,7 +63,7 @@
   // Open in new tab
   function openWikiPageInNewTab() {
     if (appState.wikiPage) {
-      window.open(wikiUrl, "_blank");
+      window.open(wikiDesktopUrl, "_blank");
     }
   }
 

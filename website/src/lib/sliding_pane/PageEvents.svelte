@@ -76,7 +76,7 @@
   {:else if Object.keys(eventIdsByYear).length === 0}
     <div class="no-events">No events found for this page.</div>
   {:else}
-    {#each Object.entries(eventIdsByYear) as [year, yearEventIds]}
+    {#each Object.entries(eventIdsByYear).sort(([yearA], [yearB]) => Number(yearA) - Number(yearB)) as [year, yearEventIds]}
       <div class="year-section">
         <div
           class="year-header"

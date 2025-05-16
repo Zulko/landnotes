@@ -56,7 +56,15 @@ export function constrainedDate(date) {
 
 export function parseEventDate(date) {
   const isApproximate = date.includes("(~)");
-  const [year, month, day] = date.replace(" (~)", "").split("/").map(Number);
+  const [yearStr, monthStr, dayStr] = date.replace(" (~)", "").split("/");
+  let year;
+  if (yearStr.endsWith(" BC")) {
+    year = -parseInt(yearStr.slice(0, -3));
+  } else {
+    year = parseInt(yearStr);
+  }
+  const month = parseInt(monthStr);
+  const day = parseInt(dayStr);
   return { year, month, day, isApproximate };
 }
 
