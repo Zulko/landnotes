@@ -20,10 +20,19 @@
   } = $props();
   let people = $state([]);
   let places = $state([]);
-
+  let fontSize = $state(14);
   onMount(() => {
     places = parsePlaces();
     people = parsePeople();
+    const summaryLength = entry.summary?.length || 0;
+    const totalItems = people.length + places.length + summaryLength / 40;
+    fontSize = constrainHeight
+      ? totalItems > 7
+        ? 12
+        : totalItems > 5
+          ? 13
+          : 14
+      : 14;
   });
 
   function setStateToEvent() {
@@ -178,7 +187,7 @@
 <div
   class="event-card"
   style={constrainHeight
-    ? `max-height: ${isTouchDevice ? "190px" : "230px"};`
+    ? `max-height: ${isTouchDevice ? "190px" : "230px"}; font-size: ${fontSize}px;`
     : ""}
 >
   {#if displayPage}
@@ -338,7 +347,7 @@
 
   .event-card .event-text {
     flex: 1;
-    font-size: 14px;
+    /* font-size: 14px; */
     line-height: 1.4;
   }
 
