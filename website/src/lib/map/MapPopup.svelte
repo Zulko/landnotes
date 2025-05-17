@@ -57,12 +57,24 @@
   // Position the popup based on available screen space
   function updateTooltipPosition() {
     if (!popupElement || !triggerElement) return;
+    console.log("updateTooltipPosition");
 
     const triggerRect = triggerElement.getBoundingClientRect();
     const popupRect = popupElement.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Find scrollable parent and get its dimensions and scroll position
+    const scrollableParent = findScrollableParent(triggerElement);
+    const parentRect = scrollableParent.getBoundingClientRect();
+    const scrollTop = scrollableParent.scrollTop;
+    const scrollLeft = scrollableParent.scrollLeft;
+
+    console.log("scrollTop", scrollTop);
+
     const mapWidth =
-      document.getElementsByClassName("map-container")[0].clientWidth;
+      document.getElementsByClassName("map-container")[0]?.clientWidth ||
+      viewportWidth;
     const leftStart =
       isTouchDevice || !keepWithinMap ? 0 : viewportWidth - mapWidth;
 
@@ -70,22 +82,67 @@
     let top = -popupRect.height - 2;
     let left = -popupRect.width / 2 + triggerRect.width / 2;
 
-    // Check right edge
-    if (triggerRect.left + left + popupRect.width > viewportWidth) {
-      left = viewportWidth - popupRect.width - triggerRect.left - 10;
+    // Check right edge against parent bounds
+    const rightEdge = parentRect.left + parentRect.width;
+    if (triggerRect.left + left + popupRect.width > rightEdge) {
+      left = rightEdge - popupRect.width - triggerRect.left - 10;
     }
 
-    // Check left edge
-    if (triggerRect.left + left - leftStart < 10) {
-      left = leftStart + 10 - triggerRect.left;
+    // Check left edge against parent bounds
+    const leftEdge = parentRect.left;
+    if (triggerRect.left + left < leftEdge + 10) {
+      left = leftEdge + 10 - triggerRect.left;
     }
 
-    // Check if popup would appear above viewport
-    if (triggerRect.top + top < 30) {
-      // Position below the trigger instead of above
-      top = triggerRect.height + 5;
+    // Available space calculations within the scrollable parent
+    const spaceAbove = triggerRect.top - parentRect.top;
+    const spaceBelow =
+      parentRect.bottom - (triggerRect.top + triggerRect.height);
+
+    // Check if enough space above
+    if (spaceAbove < popupRect.height + 10) {
+      // Not enough space above, try below
+      if (spaceBelow >= popupRect.height + 10) {
+        // Enough space below
+        top = triggerRect.height + 5;
+      } else {
+        // Not enough space above or below, use the side with more space
+        top =
+          spaceAbove > spaceBelow
+            ? Math.max(-popupRect.height - 2, -spaceAbove + 10)
+            : Math.min(
+                triggerRect.height + 5,
+                triggerRect.height + spaceBelow - popupRect.height - 10
+              );
+      }
     }
-    [popupTop, popupLeft] = [top, left];
+
+    // Use the calculated position, adjusted for scrolling
+    // This ensures the popup always stays with its target regardless of scroll position
+    popupTop = top - scrollTop;
+    popupLeft = left;
+  }
+
+  // Helper function to find the nearest scrollable parent
+  function findScrollableParent(element) {
+    if (!element) return document.documentElement;
+
+    // Start with the closest parent
+    let parent = element.parentElement;
+
+    // Go up the DOM tree until we find a scrollable element
+    while (parent && parent !== document.body) {
+      const overflowY = window.getComputedStyle(parent).overflowY;
+      const isScrollable = overflowY === "auto" || overflowY === "scroll";
+
+      if (isScrollable && parent.scrollHeight > parent.clientHeight) {
+        return parent;
+      }
+      parent = parent.parentElement;
+    }
+
+    // Default to document if no scrollable parent found
+    return document.documentElement;
   }
 
   function onMouseLeave() {
