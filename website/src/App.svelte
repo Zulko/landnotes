@@ -100,7 +100,7 @@
   id="main"
 >
   <div class="content-container">
-    {#if appState.wikiPage}
+    {#if appState.wikiPage || appState.paneTab === "same-location-events"}
       <div class="wiki-pane-container">
         <SlidingPane />
       </div>

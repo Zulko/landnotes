@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { isTouchDevice } from "../device";
   import MapPopup from "./MapPopup.svelte";
-  import { appState, uiGlobals } from "../appState.svelte";
+  import { appState, uiGlobals, uiState } from "../appState.svelte";
   import WikiPreview from "./WikiPreview.svelte";
   import {
     parseEventDate,
@@ -27,7 +27,6 @@
   });
 
   function setStateToEvent() {
-    HTMLFormControlsCollection;
     const location = entry.location.lat
       ? $state.snapshot(entry.location)
       : $state.snapshot(entry.locations_latlon[0]);
@@ -46,6 +45,28 @@
         selectedMarkerId: entry.id,
       };
       Object.assign(appState, update);
+    }, 310);
+  }
+
+  function openSameLocationEvents() {
+    console.log("openSameLocationEvents", entry);
+    const location = entry.location?.lat
+      ? $state.snapshot(entry.location)
+      : $state.snapshot(entry.locations_latlon[0]);
+    uiGlobals.mapTravel({
+      location: location,
+      zoom: appState.zoom,
+      flyDuration: 0.3,
+    });
+    setTimeout(() => {
+      const update = {
+        paneTab: "same-location-events",
+        wikiPage: "",
+        selectedMarkerId: entry.id,
+      };
+      Object.assign(appState, update);
+      console.log([entry, ...entry.same_location_events]);
+      uiState.sameLocationEvents = [entry, ...entry.same_location_events];
     }, 310);
   }
 
@@ -257,6 +278,13 @@
       <button onclick={setStateToEvent}> See in context </button>
     </div>
   {/if}
+  {#if entry.same_location_events && entry.same_location_events.length > 0}
+    <div class="event-card-section other-events-button">
+      <button onclick={openSameLocationEvents}>
+        See {entry.same_location_events.length} other events
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -371,5 +399,17 @@
     opacity: 0.9;
     margin-right: 8px;
     filter: none;
+  }
+
+  .event-card-section.other-events-button button {
+    background-color: white;
+    border: 1px solid #3366cc;
+    border-radius: 6px;
+  }
+
+  .event-card-section.other-events-button button:hover {
+    background-color: #f0f5ff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
   }
 </style>

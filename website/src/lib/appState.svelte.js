@@ -41,6 +41,9 @@ export const uiGlobals = {
   leafletMap: null,
   mapTravel: null,
 };
+export const uiState = $state({
+  sameLocationEvents: null,
+});
 let dontPushToHistory = $state(false);
 let currentMode = $state("places");
 

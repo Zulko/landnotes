@@ -10,24 +10,26 @@
 </script>
 
 <div class="pane-header">
-  <div class="tab-buttons">
-    <button
-      class="tab-button"
-      class:active={appState.paneTab === "wikipedia"}
-      onclick={() => (appState.paneTab = "wikipedia")}
-      aria-label="Wikipedia tab"
-    >
-      Wikipedia
-    </button>
-    <button
-      class="tab-button"
-      class:active={appState.paneTab === "events"}
-      onclick={() => (appState.paneTab = "events")}
-      aria-label="Events tab"
-    >
-      Events
-    </button>
-  </div>
+  {#if appState.paneTab === "wikipedia" || appState.paneTab === "events"}
+    <div class="tab-buttons">
+      <button
+        class="tab-button"
+        class:active={appState.paneTab === "wikipedia"}
+        onclick={() => (appState.paneTab = "wikipedia")}
+        aria-label="Wikipedia tab"
+      >
+        Wikipedia
+      </button>
+      <button
+        class="tab-button"
+        class:active={appState.paneTab === "events"}
+        onclick={() => (appState.paneTab = "events")}
+        aria-label="Events tab"
+      >
+        Events
+      </button>
+    </div>
+  {/if}
 
   <div class="header-buttons">
     <button

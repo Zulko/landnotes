@@ -1,8 +1,9 @@
 <script>
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
   import PageEvents from "./PageEvents.svelte";
+  import SameLocationEvents from "./SameLocationEvents.svelte";
   import { onMount } from "svelte";
-  import { appState } from "../appState.svelte";
+  import { appState, uiState } from "../appState.svelte";
 
   let isNarrowScreen = $state(
     typeof window !== "undefined" && window.innerWidth <= 768
@@ -13,7 +14,6 @@
 
   // ===== STATE VARIABLES =====
   let isInitialRender = $state(true);
-  let activeTab = $state("wikipedia");
 
   // ===== COMPUTED VALUES =====
 
@@ -106,6 +106,8 @@
         ></iframe>
       {:else if appState.paneTab === "events" && appState.wikiPage}
         <PageEvents wikiPage={appState.wikiPage} />
+      {:else if appState.paneTab === "same-location-events"}
+        <SameLocationEvents sameLocationEvents={uiState.sameLocationEvents} />
       {:else}
         <p>No page specified</p>
       {/if}
