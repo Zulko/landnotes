@@ -164,6 +164,7 @@ async function handleNewSelectedMarker(selectedMarkerId) {
   }
 
   const selectedMarker = normalizeMapEntryInfo(query[0]);
+  appState.wikiSection = selectedMarker.page_section;
   appState.wikiPage = selectedMarker.pageTitle;
   appState.paneTab = "wikipedia";
   const newMarkers = [...mapEntries.markerInfos];

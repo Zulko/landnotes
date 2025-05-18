@@ -32,6 +32,7 @@ const stateDefaults = {
   location: null,
   selectedMarkerId: null,
   wikiPage: "",
+  wikiSection: "",
   paneTab: "wikipedia",
 };
 
@@ -76,12 +77,21 @@ $effect.root(() => {
  * @param {Object} [state.date] - Current date selection for events mode
  * @param {boolean} [state.strictDate] - Whether to use strict date matching for events
  * @param {string} [state.wikiPage] - The current wiki page
+ * @param {string} [state.wikiSection] - The current wiki section
  * @param {boolean} [addToHistory=true] - Whether to add the state to browser history
  *                                        (true = pushState, false = replaceState)
  */
 export function updateURLParams(state, addToHistory = true) {
-  const { location, zoom, selectedMarkerId, mode, date, strictDate, wikiPage } =
-    state;
+  const {
+    location,
+    zoom,
+    selectedMarkerId,
+    mode,
+    date,
+    strictDate,
+    wikiPage,
+    wikiSection,
+  } = state;
   const params = new URLSearchParams();
 
   // Add map position parameters if they exist
@@ -102,6 +112,9 @@ export function updateURLParams(state, addToHistory = true) {
   }
   if (wikiPage) {
     params.set("wikiPage", wikiPage);
+  }
+  if (wikiSection) {
+    params.set("wikiSection", wikiSection);
   }
 
   // Update URL without reloading the page

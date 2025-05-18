@@ -74,6 +74,7 @@
     if (appState.selectedMarkerId !== selectedMarkerId) {
       appState.selectedMarkerId = selectedMarkerId;
     }
+    appState.wikiSection = "";
     appState.wikiPage = page_title;
     appState.paneTab = "wikipedia";
     uiGlobals.mapTravel({

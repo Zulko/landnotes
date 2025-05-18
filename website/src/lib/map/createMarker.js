@@ -69,11 +69,13 @@ function onClick(entry) {
   if (isTouchDevice) {
     selectMarkerAndCenterOnIt({ entry, selectDelay: 350 });
     if (entry.displayClass == "selected") {
+      appState.wikiSection = entry.page_section;
       appState.wikiPage = entry.pageTitle;
       appState.paneTab = "wikipedia";
     }
   } else {
     selectMarkerAndCenterOnIt({ entry, selectDelay: 0 });
+    appState.wikiSection = entry.page_section;
     appState.wikiPage = entry.pageTitle;
     appState.paneTab = "wikipedia";
   }

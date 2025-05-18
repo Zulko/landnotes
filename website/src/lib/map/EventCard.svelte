@@ -22,6 +22,7 @@
   let places = $state([]);
   let fontSize = $state(14);
   onMount(() => {
+    console.log("onMount", entry);
     places = parsePlaces();
     people = parsePeople();
     const summaryLength = entry.summary?.length || 0;
@@ -79,7 +80,9 @@
     }, 310);
   }
 
-  function openWikiPage(pageTitle) {
+  function openWikiPage(pageTitle, pageSection) {
+    console.log("openWikiPage", { pageTitle, pageSection });
+    appState.wikiSection = pageSection;
     appState.wikiPage = pageTitle;
     appState.paneTab = "wikipedia";
   }
@@ -168,15 +171,15 @@
   }
 </script>
 
-{#snippet linkedPage(pageTitle)}
+{#snippet linkedPage(pageTitle, pageSection)}
   <span
     class="wiki-link"
-    onclick={() => openWikiPage(pageTitle)}
+    onclick={() => openWikiPage(pageTitle, pageSection)}
     role="button"
     tabindex="0"
     onkeydown={(e) => {
       if (e.key === "Enter") {
-        openWikiPage(pageTitle);
+        openWikiPage(pageTitle, pageSection);
       }
     }}
   >
@@ -204,7 +207,13 @@
           enterable={false}
           keepWithinMap={keepPopupsWithinMap}
         >
-          from <i>"{@render linkedPage(entry.pageTitle)}"</i>
+          from <i>"{@render linkedPage(entry.pageTitle, entry.page_section)}"</i
+          >
+          {#if entry.page_section && entry.page_section !== "Root"}
+            <span class="wiki-section">
+              ({entry.page_section})
+            </span>
+          {/if}
         </MapPopup>
       </div>
     </div>
@@ -368,6 +377,11 @@
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
+  }
+
+  .wiki-section {
+    color: #333;
+    font-style: italic;
   }
 
   .event-card-section.go-to-event-button {

@@ -44,12 +44,35 @@
     `https://en.wikipedia.org/wiki/${encodeURIComponent(appState.wikiPage)}`
   );
   let wikiUrl = $derived(
-    appState.wikiPage
+    (appState.wikiPage
       ? isNarrowScreen || parseInt(actualWidth) < 768
         ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent(appState.wikiPage)}`
         : wikiDesktopUrl
-      : "about:blank"
+      : "about:blank") +
+      (appState.wikiSection
+        ? `#${encodeURIComponent(appState.wikiSection.replace(" ", "_"))}`
+        : "")
   );
+
+  // Reference to the iframe element
+  let wikiIframe = $state(null);
+
+  $inspect(wikiUrl);
+
+  // Focus the iframe whenever wikiUrl changes
+  $effect(() => {
+    console.log(wikiIframe, wikiUrl, appState.paneTab);
+    if (
+      wikiIframe &&
+      wikiUrl !== "about:blank" &&
+      appState.paneTab === "wikipedia"
+    ) {
+      console.log("focusing iframe");
+      setTimeout(() => {
+        wikiIframe.focus();
+      }, 300); // Small delay to ensure iframe has loaded
+    }
+  });
 
   // ===== EVENT HANDLERS =====
 
@@ -96,6 +119,7 @@
     <div class="pane-content">
       {#if appState.paneTab === "wikipedia" && appState.wikiPage}
         <iframe
+          bind:this={wikiIframe}
           id="wiki-iframe"
           tabindex="-2"
           aria-hidden="true"
