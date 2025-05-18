@@ -4,9 +4,8 @@
   import MenuDropdown from "./MenuDropdown.svelte";
   import DatePicker from "./DatePicker.svelte";
 
-  import { appState } from "../appState.svelte";
+  import { appState, uiGlobals } from "../appState.svelte";
 
-  let { onSearchSelect } = $props();
   let searchQuery = $state("");
   let searchResults = $state([]);
   let isActive = $state(false);
@@ -27,7 +26,9 @@
     // Set a new timer
     debounceTimer = setTimeout(async () => {
       if (searchQuery && searchQuery.length > 1) {
-        searchResults = await getEntriesfromText(searchQuery);
+        // Different API endpoints based on mode
+        const searchMode = appState.mode === "events" ? "pages" : "places";
+        searchResults = await getEntriesfromText(searchQuery, searchMode);
         isActive = true;
       } else {
         searchResults = [];
@@ -93,7 +94,26 @@
   }
 
   function handleSelect(entry) {
-    onSearchSelect(entry);
+    if (appState.mode === "places") {
+      const { geokey, lat, lon, page_title } = entry;
+      const selectedMarkerId = geokey;
+      if (appState.selectedMarkerId !== selectedMarkerId) {
+        appState.selectedMarkerId = selectedMarkerId;
+      }
+      appState.wikiSection = "";
+      appState.wikiPage = page_title;
+      appState.paneTab = "wikipedia";
+      uiGlobals.mapTravel({
+        location: { lat, lon },
+        zoom: Math.max(12, appState.zoom),
+        flyDuration: 1,
+      });
+    } else {
+      const { page_title } = entry;
+      appState.wikiSection = "";
+      appState.wikiPage = page_title;
+      appState.paneTab = "wikipedia";
+    }
     searchQuery = "";
     isActive = false;
     selectedIndex = -1;
@@ -119,7 +139,7 @@
   <div class="search-input-wrapper">
     <input
       type="text"
-      placeholder="Search a place"
+      placeholder={`Search a ${appState.mode === "places" ? "place" : "page"}`}
       bind:value={searchQuery}
       onfocus={handleFocus}
       onblur={handleBlur}
@@ -162,9 +182,13 @@
           <span class="suggestion-title"
             >{entry.page_title.replaceAll("_", " ")}</span
           >
-          <span class="suggestion-location"
-            >({entry.lat.toFixed(4)}, {entry.lon.toFixed(4)})</span
-          >
+          <span class="suggestion-location">
+            {#if appState.mode === "events"}
+              ({entry.n_events || 0} events)
+            {:else}
+              ({entry.lat.toFixed(2)}, {entry.lon.toFixed(2)})
+            {/if}
+          </span>
         </div>
       {/each}
     </div>

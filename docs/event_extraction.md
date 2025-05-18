@@ -18,9 +18,30 @@ Take this paragraph from the [Assassination of Julius Caesar](https://en.wikiped
 
 When did matters escalate ? On the 26th of January 44 BC. The year, month, and day are all in separate sentences, which is way to complex for a rule-based script to handle, but should be understood by a decent AI model.
 
-## Using whole pages vs. page extracts
+## Using whole pages vs. page extracts with dates
 
-In Landnotes, we use regular expressions to detect dates in pages, and we only feed these pages which have a date to the AI. It would be tempting to be even more specific and only give the AI the sentences or paragraphs to that have a date. The example above shows that feeding single sentences is dangerous, as the informaiton is often distributed accross multiple sentences. It is also true that the information can be scattered accross paragraphs and sections in an article. In a very common Wikipedia pattern (seen [here](https://en.wikipedia.org/wiki/Alessandro_Marcello)), the intro section will typically say _"A. Marcello (1 February 1673 – 19 June 1747)"_ and the "Biography" section will say _"Born in Venice"_. If we want the AI to extract a "birth" event with both date and place, we need to feed it both sections at once.
+In Landnotes, we use regular expressions to detect dates in pages, and we only feed these pages which have a date to the AI. It would be tempting to be even more specific and only give the AI the sentences or paragraphs to that have a date.
+
+The example above shows that feeding single sentences is dangerous, as the informaiton is often distributed accross multiple sentences. It is also true that the information can be scattered accross paragraphs and sections in an article. In a very common Wikipedia pattern (seen [here](https://en.wikipedia.org/wiki/Alessandro_Marcello)), the intro section will typically say _"A. Marcello (1 February 1673 – 19 June 1747)"_ and the "Biography" section will say _"Born in Venice"_. If we want the AI to extract a "birth" event with both date and place, we need to feed it both sections at once. Similarly, the location of an action might be given at the top of a page and then omitted in the sections. Finally, in practice removing paragraphs that don't have a date results in modest gains (less than 30% reduction in input tokens) that is not worth the decrease in quality.
+
+## Dealing with AI forgetfulness
+
+Modern AI models have a context window of 1 million tokens which means that in theory we could send hundreds of wikipedia pages to them at once, but there are not many advantage in doing so - the total number of tokens would be roughly the same. At worst, giving a long text to the AI increases the chances of it forgetting to list some of the events in it.
+
+This is a weakness of current AI models: they are unreliable. If you give the Aggripina the Younger page to Gemini 2.0 flash, it might extract anywhere from 20 to 30 events. Prompt engineering helps (you basically say "please pretty please do not omit any events omg pay attention") but it is what it is: there is a significant, ~30% variance in the output of the AI.
+
+This could be solved in some ways that each have their drawbacks:
+
+- Feed the AI smaller chunks of text so it cannot miss the events in each chunk (this comes with the text chunking issues discussed in the previous section)
+- Run the AI multiple times and somehow understand what the whole set of events in the page is, even though these events are worded a bit differently at every run. This multiplies the costs of the project.
+- Use a much longer prompt that shows the level of detail expected in the answer.
+- Use a more expensive model in the hope that it will know better.
+
+## Converting pages to plain english
+
+The text for the wikipedia pages is read from wikipedia dumps and is in [Wikitext format](https://en.wikipedia.org/wiki/Help:Wikitext), which can be complex and cryptic. Converting it to plain english (I am using the [mwparserfromhell](https://github.com/earwig/mwparserfromhell) library) not only reduces the number of tokens significantly, but also results in more than double the number of events extracted.
+
+During this conversion, the infobox is heavily parsed to feel like bullet points in normal text, sections are indicated more clearly ("Section: name of the section"), image captions (which often contain events) are annotated to indicate that they are in fact image captions, etc. Basically, we write the plain english version of the page that we would like to read as a human if HTML didn't exist.
 
 ## Choice of AI model
 
@@ -50,7 +71,36 @@ But having LLMs guess a context is double-edged. Take this event from the page o
 
 Anyone reading this can be forgiven for assuming that this took place in Sweden, or even in Stockholm. But it was in Rome, where [Queen Christina of Sweden](https://en.wikipedia.org/wiki/Christina,_Queen_of_Sweden) lived half of her life (she was not reigning anymore but still carried the title).
 
-The disambiguation is important,
+## Finding wikipedia pages for people and places
 
-- [Marie Louise](https://en.wikipedia.org/wiki/Marie_Louise) is not someone but a given name.
-- Even [Marcus Aemilius Lepidus](<https://en.wikipedia.org/wiki/Marcus_Aemilius_Lepidus_(disambiguation)>) is 8 different people (did you mean Marcus Aemilius Lepidus the Roman consul? Six of them were!)
+For each events, the AI returns one or several places where the event happened, and one or several people who were involved. An event is only useful for the purposes of Landnotes if at least one of the places returned by the AI can be attributed coordinates on the map which means finding a wikipedia page for the place that is geotagged with latitude/longitude coordinates. Moreover, because Landnotes is built for exploration, we want to make it possible for users to get to the wikipedia page of these places and people, if there are such pages. So how do we find pages and geolocations for our AI-extracted events? The most obvious approach is to find a page with the same name.
+
+### Using page titles
+
+If the event lists "Winston Churchill" as participant to an event and there is a "Winston Churchill", this is it, case closed. If the place is "Berlin" and there is a "Berlin" page and it has geo coordinates, we're good. English Wikipedia has around 2 million geotagged pages and 1.5 million pages for people, so a lot of cases get resolved this way. But it is not always this simple.
+
+### Using redirects
+
+Sometimes the place doesn't directly have a page. This is the case for "Mutina" (in the Marc Antony paragraph above). In this case we can try leveraging redirects. Wikipedia has a database of12 million redirects (about as many as pages) which encode a lot of encyclopedic knowledge. There is indeed a redirect entry for "Mutina" which points to modern-day "Modena", which does have geo coordinates. Redirects are also useful for people whose are referred using a number of variations. For instance Julius Caesar is sometimes just called "Caesar", and pedants will write "Gaius Julius Caesar". Fortunately, all these are redirected to the same page. One might argue that "Caesar" is ambiguous (dozens of emperors were called Caesar), but Wikipedia has a nice etiquette whereby if a page has a particularly high claim to a shared name, it redirects there. So although there are many Churchills on wikipedia (there are even multiple Winston Churchills!) requesting just "Churchill" redirects to Winston Churchill (_the_ Churchill).
+
+This is mostly helpful and sometimes double-edged: sadly for Samuel Jackson the 18th century naval officer, his name gets redirected to Samual Lee Jackson the actor.
+
+### The pitfalls of disambiguation pages
+
+An extracted event might say "Napoleon married Marie Louise" (because this is how it appears in the text). There is a page for Napoleon, and there is a page for "[Marie Louise](https://en.wikipedia.org/wiki/Marie_Louise)", however it is a disambiguation page (all the people named "Marie Louise") which is not very useful. By keeping a list of all disambiguation pages (these are relatively easy to find) we can at least avoid these pages. But it still doesn't help with finding our "Marie Louise". This is where page hyperlinks can help.
+
+### Using page hyperlinks
+
+Another tool we have to remove ambiguity in people and place names is the hyperlinks on the page. For instance the page on [Herbert Ingram](https://en.wikipedia.org/wiki/Herbert_Ingram) mentions "Bostonee, Lincolnshire" a lot, and many times it gets shortened as simply "Boston". This puts the AI at risk to note an event as happening in "Boston" which would then be placed on the map as the other "Boston, Massachusetts". However the page contains at least one hyperlink `[Boston | Boston, linkcolnshire]` which means that the text displayed is Boston but the page to link is "Boston, Lincolnshire". This is a clear indication of what "Boston" means in this page. By parsing all the hyperlinks on a page, which is easy to do with regular expressions, we can get a page-specific vocabulary that is a good protection against ambiguous names.
+
+## Guessing the page section for each event
+
+Landnote presents users with short summaries of events, from which the users can go to the original wikipedia page. However, for large pages, we don't want to leave to the user the burden of finding event in the page. Ideally we would bring the user directly to the section of the page that mentions the event. But how do we know which section the event was extracted from?
+
+A first solution would be to ask the AI model to add section titles when it lists events. But this would add some mental load to the model which would have to track section titles. This might distract an AI that is already prone to dropping events. It would add output tokens making extraction more expensive, and there is no guarantee that the section titles would even always be correct.
+
+A second solution is to do a second pass after the events are found, where we ask the AI to attribute a section to each event. This would work, but would double the AI costs of the project.
+
+A third solution is to feed pages to the AI section by section, so we know for sure where each event comes from. But feeding pages section by section is problematic as explained above.
+
+The current solution is simply a post-processing of the event where we match the text (summary, people and places) with the different sections. This is a bit tricky because the AI rephrases the events, and might change slightly the people names. But it tends to work well. Each word from the event text is matched against each section. Sections get higher scores if they match words that don't match in any other section. This can be highly parallelized (I am using `rapidfuzz` for this) and seems to work well.

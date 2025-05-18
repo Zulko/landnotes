@@ -136,9 +136,9 @@ export async function getGeodataFromBounds({
   return { entryInfos, dots };
 }
 
-export async function getEntriesfromText(searchText) {
+export async function getEntriesfromText(searchText, mode = "places") {
   try {
-    const response = await fetch("/query/places-textsearch", {
+    const response = await fetch(`/query/${mode}-textsearch`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -152,7 +152,9 @@ export async function getEntriesfromText(searchText) {
 
     const data = await response.json();
     const entries = data["results"];
-    entries.forEach(addLatLonToEntry);
+    if (mode === "places") {
+      entries.forEach(addLatLonToEntry);
+    }
     return entries;
   } catch (error) {
     console.error("Error searching for locations:", error);

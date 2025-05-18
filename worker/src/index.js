@@ -11,15 +11,20 @@
 export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
-		let result;
+		let result, searchText;
 		switch (url.pathname) {
 			case '/query/places-by-geokey':
 				const geokeys = await request.json();
 				result = await queryPlacesFromGeokeysByBatch(geokeys, env.geoDB);
 				return resultsToResponse(result);
 			case '/query/places-textsearch':
-				const { searchText } = await request.json();
+				({ searchText } = await request.json());
 				result = await queryPlacesFromText(searchText, env.geoDB);
+				return resultsToResponse(result);
+			case '/query/pages-textsearch':
+				({ searchText } = await request.json());
+				result = await queryPagesFromText(searchText, env.eventsByPageDB);
+				console.log('here2', result.results);
 				return resultsToResponse(result);
 			case '/query/events-by-month-region':
 				const monthRegions = await request.json();
@@ -102,6 +107,20 @@ async function queryPlacesFromText(searchText, geoDB) {
 	return await stmt.bind(escapedSearchText + (escapedSearchText.length > 2 ? '*' : '')).all();
 }
 
+async function queryPagesFromText(searchText, pagesDB) {
+	const escapedSearchText = searchText.replace(/[-"]/g, (match) => `"${match}"`);
+	const stmt = pagesDB.prepare(
+		'SELECT pages.page_title, pages.n_events ' +
+			'FROM pages ' +
+			'JOIN (SELECT rowid ' +
+			'      FROM text_search ' +
+			'      WHERE text_search MATCH ? ' +
+			'      LIMIT 10) AS top_matches ' +
+			'ON pages.rowid = top_matches.rowid '
+	);
+	return await stmt.bind(escapedSearchText + (escapedSearchText.length > 2 ? '*' : '')).all();
+}
+
 async function queryEventsByMonthRegion(monthRegions, eventsByMonthDB) {
 	const placeholders = monthRegions.map(() => '?').join(',');
 	const stmt = eventsByMonthDB.prepare(`SELECT * from events_by_month_region WHERE month_region IN (${placeholders})`);
@@ -128,8 +147,19 @@ async function queryEventsByPage(pageTitles, eventsByPageDB) {
 	const placeholders = pageTitles.map(() => '?').join(',');
 	const stmt = eventsByPageDB.prepare(`SELECT * from pages WHERE page_title IN (${placeholders})`);
 	const result = await stmt.bind(...pageTitles).all();
+	console.log('here', result.results.length);
 	result.results.forEach((entry) => {
-		entry.zlib_json_blob = btoa(String.fromCharCode(...entry.zlib_json_blob));
+		entry.zlib_json_blob = arrayBufferToBase64(entry.zlib_json_blob);
 	});
 	return { results: result.results, rowsRead: result.meta.rows_read };
+}
+
+function arrayBufferToBase64(buffer) {
+	const chunkSize = 8192; // Process in manageable chunks
+	let binary = '';
+	for (let i = 0; i < buffer.length; i += chunkSize) {
+		const chunk = buffer.slice(i, i + chunkSize);
+		binary += String.fromCharCode.apply(null, chunk);
+	}
+	return btoa(binary);
 }
