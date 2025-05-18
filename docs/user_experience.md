@@ -62,10 +62,16 @@ For event markers:
 
 The side pane is used to show the wikipedia page.
 
-On narrow screens, the default is to take the full screen first.
+On wide screens, the side pane appears from the left, on narrow screens it appears from the bottom.
 
-The most complex part of the side pane is the Events tab, which displays all events associated with the page.
-For standard pages, this means all the events extracted from that page.
-However, for pages that are locations (with geo-coordinates), it also means all the events that occurred at the location(s).
-In that page the app first fetches a list of event IDs by year. Then it displays the events in collapsible sections by year.
-if the total number of events is less than 100, it fetches all events, else the event data is only fetched when the user clicks on a year section.
+On narrow screens, the side pane takes the full screen first.
+
+The side pane has tabs,
+
+- "Wikipedia" (shows the wikipedia page)
+- "Events" (shows the events associated with the page, either because their were extracted from the page because they happen at the location that the page represents or involved the person that the page represents). In that tab, the app first fetches a list of event IDs by year. Then it displays the events in collapsible sections by year. If the total number of events is less than 500, it fetches all event infos at once. Else the event data is only fetched when the user clicks on a year section.
+
+The side pane is also used in for two other displays:
+
+- When a user clicks "see more events at this location" in the map, it shows the events that happened at the same place at the same date specified by the user.
+- The "About" tab also shows in the side pane.

@@ -1,3 +1,9 @@
+# The economics of Landnotes
+
+## AI costs
+
+Thew
+
 ## Server costs
 
 5$/month.
