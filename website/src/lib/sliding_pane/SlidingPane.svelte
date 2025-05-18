@@ -50,7 +50,7 @@
         : wikiDesktopUrl
       : "about:blank") +
       (appState.wikiSection
-        ? `#${encodeURIComponent(appState.wikiSection.replace(" ", "_"))}`
+        ? `#${encodeURIComponent(appState.wikiSection.replace(/ /g, "_"))}`
         : "")
   );
 
@@ -61,7 +61,7 @@
 
   // Focus the iframe whenever wikiUrl changes
   $effect(() => {
-    console.log(wikiIframe, wikiUrl, appState.paneTab);
+    console.log(wikiIframe, wikiUrl, appState.wikiSection, appState.paneTab);
     if (
       wikiIframe &&
       wikiUrl !== "about:blank" &&
@@ -70,7 +70,7 @@
       console.log("focusing iframe");
       setTimeout(() => {
         wikiIframe.focus();
-      }, 300); // Small delay to ensure iframe has loaded
+      }, 400); // Small delay to ensure iframe has loaded
     }
   });
 
