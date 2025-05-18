@@ -21,11 +21,11 @@ In the standard geohash, the next step is to split each of the 32 regions in 32 
 
 <center><img src="./assets/geohash_level1.jpg" alt="Geohashing grid" style="max-width: 300px" /></center>
 
-By iterating the division process just 8 times, we can get a geohash like `u09tvmqr` which points to a plate with a resolution of just a couple meters, largely sufficient for the purposes of Landnotes, which maps sites and monuments.
+By iterating the division process just 8 times, we can get a geohash like `u09tvmqr` which points to a site on the map with a resolution of just a couple meters, a degree of precision largely sufficient for the purposes of Landnotes.
 
 While the division of each region in 32 smaller regions is neat and efficient, it is not the best to go with map zooming. In the map framework used by Landnotes, LeafletJS, increasing the zoom level by one means halving the latitude and longitude resolution. It is as if we were going one level deeper, not by diving into a 32 times small subregion, but a 4 times smaller subregion.
 
-Therefore, passed the original 32-region partition, we use a quadrant-based division of the earth, where region D is divided in 4, then each quadrant is divided in 4, and so on:
+Therefore, after the initial 32-region partition, we divide each of the 32 regions using a nesting of quadrants: the region is divided in 4 quadrants, then each quadrant is divided in 4 subquadrants, and so on:
 
 <center><img src="./assets/geoquash.jpg" alt="Geohashing grid" style="max-width: 800px;" /></center>
 
@@ -43,15 +43,15 @@ Note that in practice, we never really need to encode a tree because geohashes a
 
 Now say that we have ranked the places and events in the world from the most interesting to the least interesting (more on this in the next section), and we want the most interesting ones at the highest zoom level. The way we do this is by pushing the events down the geohash tree, by order of importance, each event claiming the regions at various levels that have not been claimed yet:
 
-<center><img src="./assets/pushing_down_the_tree.png" alt="Geohashing grid" style="max-width: 600px;" /></center>
+<center><img src="./assets/pushing_down_the_tree.jpg" alt="Geohashing grid" style="max-width: 600px;" /></center>
 
-Once we are done, each subregion at each sublevel should have its "best entry":
+Once we are done, all subregions at all levels of the tree should have their "best entry":
 
-<center><img src="./assets/completed_tree.png" alt="Geohashing grid" style="max-width: 500px;" /></center>
+<center><img src="./assets/completed_tree.jpg" alt="Geohashing grid" style="max-width: 500px;" /></center>
 
 And now we know exactly what to show at each zoom level:
 
-<center><img src="./assets/geoquash_tree_zooms.png" alt="Geohashing grid" style="max-width: 800px;" /></center>
+<center><img src="./assets/geoquash_tree_zooms.jpg" alt="Geohashing grid" style="max-width: 800px;" /></center>
 
 Each site (Cap Canaveral, Statue of Liberty, etc) can now be stored in a database with an index corresponding to the highest geohash for which it is the best entry. Cap Canaveral will be indexed as "D", the Statue of liberty as "D2", The white house as "D23", and so on.
 
