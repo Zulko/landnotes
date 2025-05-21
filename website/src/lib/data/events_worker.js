@@ -217,18 +217,33 @@ function getMonthRegions({ date, strictDate, regions }) {
  * @param {Array} events - Events to assign geokeys to
  */
 function assignGeokeysToEvents(events) {
-  // Score and sort events by proximity to the target date
-  events.forEach((event) => {
-    event.score = scoreEventByProximityToDate(event);
-  });
+  // Create a counter Map for geohash4 frequencies
+  const geohashCounter = new Map();
 
-  events.sort((a, b) => {
-    // First sort by score (descending)
-    if (b.score !== a.score) {
-      return b.score - a.score;
+  // Count occurrences of each geohash4
+  for (const event of events) {
+    if (event.geohash4) {
+      geohashCounter.set(
+        event.geohash4,
+        (geohashCounter.get(event.geohash4) || 0) + 1
+      );
     }
-    // For events with equal scores, sort by event_id
-    return a.event_id.localeCompare(b.event_id);
+  }
+
+  // Modified sorting logic that prioritizes geohash4 frequency
+  events.sort((a, b) => {
+    // Compare by geohash4 frequency (higher first)
+    const freqA = geohashCounter.get(a.geohash4) || 0;
+    const freqB = geohashCounter.get(b.geohash4) || 0;
+
+    if (freqA !== freqB) {
+      return freqB - freqA; // Higher frequency first
+    }
+
+    // If frequencies are equal, sort by proximity to date
+    const distA = Math.abs(a.date - dateLowerBound);
+    const distB = Math.abs(b.date - dateLowerBound);
+    return distA - distB;
   });
 
   // Assign events to geokeys

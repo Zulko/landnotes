@@ -2,7 +2,6 @@
   import EventCard from "../map/EventCard.svelte";
   import { getEventsById } from "../data/events_data";
   import { normalizeMapEntryInfo } from "../data/mapEntries.svelte";
-  import { uiState } from "../appState.svelte";
   let { sameLocationEvents } = $props();
   let loadingEvents = $state(true);
   let expandedMonths = $state({});
@@ -82,6 +81,7 @@
 
 <div class="same-location-events">
   <h1>Events at this location</h1>
+  <p>for</p>
 
   {#if loadingEvents}
     <div class="loading">Loading events...</div>
