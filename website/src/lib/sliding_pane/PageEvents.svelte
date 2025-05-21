@@ -22,7 +22,7 @@
     for (const year in eventIdsByYear) {
       expandedYears[year] = false;
     }
-
+    console.log({ eventIdsByYear });
     const allEventIds = Object.values(eventIdsByYear).flat();
 
     if (allEventIds.length > 0 && allEventIds.length < 500) {

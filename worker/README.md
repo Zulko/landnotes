@@ -7,7 +7,6 @@
 - wrangler CLI installed (`npm install -g wrangler`)
 - Logged in via `wrangler login`
 
-
 ## 1 Create the database
 
 ```
@@ -15,9 +14,9 @@ wrangler d1 create events-db
 ```
 
 This will:
+
 - Create a D1 database named events-db
 - Show the binding string you’ll use in Workers
-
 
 # 2 upload the SQLITE file
 
@@ -27,12 +26,12 @@ wrangler d1 create landnotes-geo-db
 wrangler d1 execute landnotes-geo-db --file=geo_db.sqlite
 wrangler d1 execute landnotes-geo-db --file=geo_db.sqlite --remote
 
-
 ```
 wrangler d1 execute events-db --file=./events.sqlite
 ```
 
 Result:
+
 ```
 {
   "d1_databases": [
@@ -59,4 +58,12 @@ Result:
 ```
 wrangler init querier
 cd event-querier
+```
+
+# Deploy
+
+Upload the data files:
+
+```
+rclone copy dev_assets/landnotes-data-files r2:landnotes-data-files
 ```

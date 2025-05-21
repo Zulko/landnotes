@@ -1,7 +1,7 @@
 import { inflate } from "pako";
 
 import { addLatLonToEntry } from "./places_data";
-import { queryWithCache } from "./utils";
+import { queryWithCache, fetchFromBucket } from "./utils";
 import { parseEventDate, isAfter, daysBetweenTwoDates } from "./date_utils";
 import { getOverlappingGeoEncodings } from "./geohash";
 
@@ -310,6 +310,7 @@ function deduplicate(array, keyProperty) {
 }
 
 async function queryEventsByMonthRegion(monthRegions) {
+  console.log("querying", { monthRegions });
   const query = await fetch(
     `${self.location.origin}/query/events-by-month-region`,
     {
@@ -321,13 +322,27 @@ async function queryEventsByMonthRegion(monthRegions) {
     }
   );
   const queryJSON = await query.json();
-  const eventsByMonthRegion = queryJSON.results.map((result) => {
-    const compressedData = new Uint8Array(result.zlib_json_blob);
+  const promisedEventsByMonthRegion = queryJSON.results.map(async (result) => {
+    const decodedData = atob(result.zlib_json_blob);
+    let compressedData;
+    console.log({ decodedData });
+    if (decodedData.startsWith("file:")) {
+      const path = decodedData.slice(5);
+      compressedData = await fetchFromBucket(path);
+    } else {
+      compressedData = new Uint8Array(
+        Array.from(decodedData, (c) => c.charCodeAt(0))
+      );
+    }
     const decompressed = inflate(compressedData, { to: "string" });
     const events = JSON.parse(decompressed);
     const monthRegion = result.month_region;
+    console.log("obtained", { monthRegion, events });
     return { monthRegion, events };
   });
+
+  const eventsByMonthRegion = await Promise.all(promisedEventsByMonthRegion);
+
   eventsByMonthRegion.forEach(({ events }) => {
     events.forEach(addLatLonToEntry);
     events.forEach((event) => {
@@ -335,5 +350,6 @@ async function queryEventsByMonthRegion(monthRegions) {
       event.end_date = parseEventDate(event.end_date);
     });
   });
+
   return eventsByMonthRegion;
 }

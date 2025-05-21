@@ -61,7 +61,6 @@
 
   // Focus the iframe whenever wikiUrl changes
   $effect(() => {
-    console.log(wikiIframe, wikiUrl, appState.wikiSection, appState.paneTab);
     if (
       wikiIframe &&
       wikiUrl !== "about:blank" &&

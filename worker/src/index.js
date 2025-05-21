@@ -24,13 +24,10 @@ export default {
 			case '/query/pages-textsearch':
 				({ searchText } = await request.json());
 				result = await queryPagesFromText(searchText, env.eventsByPageDB);
-				console.log('here2', result.results);
 				return resultsToResponse(result);
 			case '/query/events-by-month-region':
 				const monthRegions = await request.json();
-				console.log(monthRegions);
 				result = await queryEventsByMonthRegionByBatch(monthRegions, env.eventsByMonthDB);
-				console.log(result);
 				return resultsToResponse(result);
 			case '/query/events-by-id':
 				const eventIds = await request.json();
@@ -122,9 +119,13 @@ async function queryPagesFromText(searchText, pagesDB) {
 }
 
 async function queryEventsByMonthRegion(monthRegions, eventsByMonthDB) {
+	console.log('queryEventsByMonthRegion', monthRegions, eventsByMonthDB);
 	const placeholders = monthRegions.map(() => '?').join(',');
 	const stmt = eventsByMonthDB.prepare(`SELECT * from events_by_month_region WHERE month_region IN (${placeholders})`);
 	const result = await stmt.bind(...monthRegions).all();
+	result.results.forEach((entry) => {
+		entry.zlib_json_blob = arrayBufferToBase64(entry.zlib_json_blob);
+	});
 	return { results: result.results, rowsRead: result.meta.rows_read };
 }
 
@@ -133,6 +134,7 @@ async function queryEventsByMonthRegionByBatch(monthRegions, eventsByMonthDB) {
 }
 
 async function queryEventsById(eventIds, eventsDB) {
+	console.log('queryEventsById', eventIds, eventsDB);
 	const placeholders = eventIds.map(() => '?').join(',');
 	const stmt = eventsDB.prepare(`SELECT * from events WHERE event_id IN (${placeholders})`);
 	const result = await stmt.bind(...eventIds).all();
@@ -147,7 +149,6 @@ async function queryEventsByPage(pageTitles, eventsByPageDB) {
 	const placeholders = pageTitles.map(() => '?').join(',');
 	const stmt = eventsByPageDB.prepare(`SELECT * from pages WHERE page_title IN (${placeholders})`);
 	const result = await stmt.bind(...pageTitles).all();
-	console.log('here', result.results.length);
 	result.results.forEach((entry) => {
 		entry.zlib_json_blob = arrayBufferToBase64(entry.zlib_json_blob);
 	});

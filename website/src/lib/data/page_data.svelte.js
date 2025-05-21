@@ -1,5 +1,5 @@
 import { inflate } from "pako";
-import { queryWithCache } from "./utils";
+import { fetchFromBucket, queryWithCache } from "./utils";
 
 const pageEventsCache = new Map();
 
@@ -18,16 +18,27 @@ async function queryPageEventsLists(pageTitles) {
     }
 
     const queryJSON = await response.json();
-    const eventsByPage = queryJSON.results.map((result) => {
+    const promisedEventsByPage = queryJSON.results.map(async (result) => {
       const decodedData = atob(result.zlib_json_blob);
-      const compressedData = new Uint8Array(
-        Array.from(decodedData, (c) => c.charCodeAt(0))
-      );
+      console.log({ decodedData });
+      let compressedData;
+      if (decodedData.startsWith("file:")) {
+        const path = decodedData.slice(5);
+        console.log({ path });
+        compressedData = await fetchFromBucket(path);
+        console.log({ compressedData });
+      } else {
+        compressedData = new Uint8Array(
+          Array.from(decodedData, (c) => c.charCodeAt(0))
+        );
+      }
       const decompressed = inflate(compressedData, { to: "string" });
       const events = JSON.parse(decompressed);
+      console.log({ decompressed, events });
       const page_title = result.page_title;
       return { page_title, events };
     });
+    const eventsByPage = await Promise.all(promisedEventsByPage);
     return eventsByPage;
   } catch (error) {
     console.error("Error fetching page events:", error);

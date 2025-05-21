@@ -46,3 +46,24 @@ export async function queryWithCache({
   // Return combined results from cache and new queries
   return [...cachedResults, ...newResults];
 }
+
+export async function fetchFromBucket(path) {
+  const bucketName = "landnotes-data-files";
+
+  const endpoint = import.meta.env.DEV
+    ? `/data/${bucketName}/${path}`
+    : `https://data.landnotes.org/${bucketName}/${path}`;
+
+  try {
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch ${bucketName}/${path}: ${response.status}`
+      );
+    }
+    return response.arrayBuffer();
+  } catch (error) {
+    console.error(`Error fetching data from bucket ${bucketName}:`, error);
+    throw error;
+  }
+}

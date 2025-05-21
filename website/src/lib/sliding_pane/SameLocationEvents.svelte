@@ -24,8 +24,6 @@
   });
 
   async function loadEventList() {
-    console.log("loadingEventList", uiState.sameLocationEvents);
-
     loadingEvents = true;
 
     // Organize events by month

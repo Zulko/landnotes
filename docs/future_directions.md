@@ -16,6 +16,10 @@ But extending the project to non-English wikipedia won't be as simple as pushing
 - We'll need to evaluate which AI models can extract data from these languages, and whether they still can extract data in a JSON format ({who, when, where, what}) without being confused.
 - We'll need to make user-experience decisions on how to use the events extracted from non-English wikipedia. Do we translate them to english? Do we display them with the other events? Does the user need to select and unselect languages?
 
+## Beyond wikipedia
+
+If the project goes this far, it would be interesting to extract events from sources other than wikipedia. For instance, history books. If we fed Mark Duncan's Lafayette biography to Gemini, it would no doubt extract hundreds of interesting events. Fiction books would work too, so you could follow your favorite historical novel displayed on the map along with the real events. The Gutenberg project has around 20Gb of public domain texts. By identifying the ones with dates and feeding them to Gemini, how many events would we get?
+
 ## Historical borders
 
 Landnote displays historical events on Open Street Map, so the old settlements, battles and travels are superimposed on today's streets, fields and highways. But this deprives us of important historical context. Some regions of the world were very different just one or two centuries ago, and borders have moved a lot. Famous German scientist Max Born and Alois Alzheimer were born in the German city of Breslau, which is now called Wroclaw in Poland. Verdi was born in a small Italian village that was technically in France at the time.

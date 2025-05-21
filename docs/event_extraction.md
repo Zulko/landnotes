@@ -16,7 +16,7 @@ Take this paragraph from the [Assassination of Julius Caesar](https://en.wikiped
 
 > The second incident occurred in 44 BC. One day in January, the tribunes Gaius Epidius Marullus and Lucius Caesetius Flavus discovered a diadem on the head of the statue of Caesar on the Rostra in the Roman Forum. According to Suetonius, the tribunes ordered the wreath be removed as it was a symbol of Jupiter and royalty. Nobody knew who had placed the diadem, but Caesar suspected that the tribunes had arranged for it to appear so that they could have the honour of removing it. Matters escalated shortly after on the 26th, when Caesar was riding on horseback to Rome on the Appian Way.
 
-When did matters escalate ? On the 26th of January 44 BC. The year, month, and day are all in separate sentences, which is way to complex for a rule-based script to handle, but should be understood by a decent AI model.
+When did matters escalate ? On the 26th of January 44 BC. The year, month, and day are given in three different sentences, which would be too complex for a rule-based script to handle, but should be understood easily by a decent AI model.
 
 ## Using whole pages vs. page extracts with dates
 

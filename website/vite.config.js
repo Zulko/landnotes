@@ -7,6 +7,10 @@ export default defineConfig({
     proxy:
       process.env.NODE_ENV === "development"
         ? {
+            "/data": {
+              target: "http://localhost:8787",
+              rewrite: (path) => path.replace(/^\/data/, ""),
+            },
             "/query": "http://localhost:8787",
           }
         : {},

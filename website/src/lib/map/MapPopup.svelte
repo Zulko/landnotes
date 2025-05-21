@@ -57,7 +57,6 @@
   // Position the popup based on available screen space
   function updateTooltipPosition() {
     if (!popupElement || !triggerElement) return;
-    console.log("updateTooltipPosition");
 
     const triggerRect = triggerElement.getBoundingClientRect();
     const popupRect = popupElement.getBoundingClientRect();
@@ -69,8 +68,6 @@
     const parentRect = scrollableParent.getBoundingClientRect();
     const scrollTop = scrollableParent.scrollTop;
     const scrollLeft = scrollableParent.scrollLeft;
-
-    console.log("scrollTop", scrollTop);
 
     const mapWidth =
       document.getElementsByClassName("map-container")[0]?.clientWidth ||

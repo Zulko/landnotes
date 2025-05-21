@@ -238,7 +238,7 @@
     position: absolute;
     top: -8px;
     right: -8px;
-    background-color: #e63946;
+    background-color: #ff5a5f;
     color: white;
     border-radius: 30%;
     font-size: 10px;

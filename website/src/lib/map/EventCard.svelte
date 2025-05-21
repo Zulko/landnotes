@@ -22,7 +22,6 @@
   let places = $state([]);
   let fontSize = $state(14);
   onMount(() => {
-    console.log("onMount", entry);
     places = parsePlaces();
     people = parsePeople();
     const summaryLength = entry.summary?.length || 0;
@@ -59,7 +58,6 @@
   }
 
   function openSameLocationEvents() {
-    console.log("openSameLocationEvents", entry);
     const location = entry.location?.lat
       ? $state.snapshot(entry.location)
       : $state.snapshot(entry.locations_latlon[0]);
@@ -75,13 +73,11 @@
         selectedMarkerId: entry.id,
       };
       Object.assign(appState, update);
-      console.log([entry, ...entry.same_location_events]);
       uiState.sameLocationEvents = [entry, ...entry.same_location_events];
     }, 310);
   }
 
   function openWikiPage(pageTitle, pageSection) {
-    console.log("openWikiPage", { pageTitle, pageSection });
     appState.wikiSection = pageSection;
     appState.wikiPage = pageTitle;
     appState.paneTab = "wikipedia";

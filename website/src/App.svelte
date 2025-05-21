@@ -66,24 +66,6 @@
     isNarrowScreen = window.innerWidth <= 768;
   }
 
-  /**
-   * Handle search selection
-   */
-  function onSearchSelect({ geokey, lat, lon, page_title }) {
-    const selectedMarkerId = geokey;
-    if (appState.selectedMarkerId !== selectedMarkerId) {
-      appState.selectedMarkerId = selectedMarkerId;
-    }
-    appState.wikiSection = "";
-    appState.wikiPage = page_title;
-    appState.paneTab = "wikipedia";
-    uiGlobals.mapTravel({
-      location: { lat, lon },
-      zoom: Math.max(12, appState.zoom),
-      flyDuration: 1,
-    });
-  }
-
   // -------------------------
   // MARKER MANAGEMENT FUNCTIONS
   // -------------------------
@@ -110,7 +92,7 @@
     <div class="map-container">
       <WorldMap />
       <div class="search-wrapper">
-        <SearchBarMenu {onSearchSelect} />
+        <SearchBarMenu />
       </div>
     </div>
   </div>
