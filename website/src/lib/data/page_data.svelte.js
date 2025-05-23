@@ -20,7 +20,6 @@ async function queryPageEventsLists(pageTitles) {
     const queryJSON = await response.json();
     const promisedEventsByPage = queryJSON.results.map(async (result) => {
       const decodedData = atob(result.zlib_json_blob);
-      console.log({ decodedData });
       let compressedData;
       if (decodedData.startsWith("file:")) {
         const path = decodedData.slice(5);

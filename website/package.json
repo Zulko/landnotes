@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:remote-dbs": "REMOTE_DBS=true vite",
     "build": "vite build",
     "preview": "vite preview"
   },

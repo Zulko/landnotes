@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "landnotes",
+	"name": "landnotes-worker",
 	"main": "src/index.js",
 	"compatibility_date": "2025-04-04",
 	"compatibility_flags": [
@@ -15,7 +15,8 @@
 		"directory": "./public"
 	},
 	"observability": {
-		"enabled": true
+		"enabled": true,
+		"head_sampling_rate": 0.1
 	},
 	"env": {
 		"dev": {

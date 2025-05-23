@@ -67,3 +67,9 @@ Upload the data files:
 ```
 rclone copy dev_assets/landnotes-data-files r2:landnotes-data-files
 ```
+
+And deploy:
+
+```
+wrangler deploy
+```

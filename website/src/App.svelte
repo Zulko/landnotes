@@ -44,8 +44,8 @@
       });
     } else {
       uiGlobals.mapTravel({
-        location: { lat: 0, lon: 0 },
-        zoom: 3,
+        location: { lat: 48, lon: 0 },
+        zoom: 4,
         flyDuration: 0,
       });
     }
@@ -83,7 +83,7 @@
   id="main"
 >
   <div class="content-container">
-    {#if appState.wikiPage || appState.paneTab === "same-location-events"}
+    {#if appState.wikiPage || appState.paneTab === "same-location-events" || appState.paneTab === "about"}
       <div class="wiki-pane-container">
         <SlidingPane />
       </div>

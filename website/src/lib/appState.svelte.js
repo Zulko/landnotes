@@ -88,6 +88,7 @@ export function updateURLParams(state, addToHistory = true) {
     selectedMarkerId,
     mode,
     date,
+    paneTab,
     strictDate,
     wikiPage,
     wikiSection,
@@ -112,6 +113,9 @@ export function updateURLParams(state, addToHistory = true) {
   }
   if (wikiPage) {
     params.set("wikiPage", wikiPage);
+  }
+  if (paneTab && paneTab !== "wikipedia") {
+    params.set("paneTab", paneTab);
   }
   if (wikiSection) {
     params.set("wikiSection", wikiSection);
@@ -190,5 +194,6 @@ export function readURLParams() {
     result;
   }
   result.wikiPage = params.get("wikiPage");
+  result.paneTab = params.get("paneTab") || "wikipedia";
   return result;
 }

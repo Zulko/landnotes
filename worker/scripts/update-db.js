@@ -6,7 +6,7 @@
  * It can be run in either local or remote mode and supports various parameters.
  *
  * Usage:
- *   node update-geo-db.js [options]
+ *   node update-db.js [options]
  *
  * Options:
  *   --remote         Execute against the remote database (default: local)
@@ -16,10 +16,10 @@
  *   --sql-dir=PATH   Specify the directory containing SQL files (required)
  *
  * Examples:
- *   node update-geo-db.js --db=my-geo-db --sql-dir=local_assets/sql_dump                   # Run locally without deleting tables
- *   node update-geo-db.js --remote --db=my-geo-db --sql-dir=local_assets/sql_dump          # Run against remote database
- *   node update-geo-db.js --delete --db=my-geo-db --sql-dir=local_assets/sql_dump          # Drop tables before creating new ones
- *   node update-geo-db.js --start-index=5 --db=my-geo-db --sql-dir=local_assets/sql_dump   # Skip the first 5 SQL files
+ *   node scripts/update-db.js --remote --delete --db=landnotes-events-by-month-db --sql-dir=local_assets/sql/events_by_month_region/
+ *   node scripts/update-db.js --remote --delete --db=landnotes-events-by-page-db --sql-dir=local_assets/sql/events_by_page_and_year/
+ *   node scripts/update-db.js --remote --delete --db=landnotes-events-db --sql-dir=local_assets/sql/events/
+ *   node scripts/update-db.js --remote --delete --db=landnotes-geo-db --sql-dir=local_assets/sql/places_db/
  *
  * Notes:
  *   - SQL files are read from the directory specified by --sql-dir
@@ -71,9 +71,17 @@ console.log(files);
 
 // Only execute deletion commands if --delete flag is provided
 if (deleteTables) {
-	execSync(`npx wrangler d1 execute ${executionMode} ${dbName} --command "DROP TABLE IF EXISTS geodata;"`);
-	execSync(`npx wrangler d1 execute ${executionMode} ${dbName} --command "DROP TABLE IF EXISTS places;"`);
-	execSync(`npx wrangler d1 execute ${executionMode} ${dbName} --command "DROP TABLE IF EXISTS text_search;"`);
+	const tablesToDrop = ['geodata', 'places', 'events', 'pages', 'events_by_month_region', 'text_search'];
+
+	console.log(`Dropping ${tablesToDrop.length} tables...`);
+
+	for (let i = 0; i < tablesToDrop.length; i++) {
+		const tableName = tablesToDrop[i];
+		console.log(`Dropping table ${i + 1}/${tablesToDrop.length}: ${tableName}`);
+		execSync(`npx wrangler d1 execute ${executionMode} ${dbName} --command "DROP TABLE IF EXISTS ${tableName};"`);
+	}
+
+	console.log('All tables dropped successfully.');
 }
 
 // Skip the first N files by using slice

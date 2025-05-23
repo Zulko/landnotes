@@ -2,6 +2,7 @@
   import SlidingPaneHeader from "./SlidingPaneHeader.svelte";
   import PageEvents from "./PageEvents.svelte";
   import SameLocationEvents from "./SameLocationEvents.svelte";
+  import About from "./About.svelte";
   import { onMount } from "svelte";
   import { appState, uiState } from "../appState.svelte";
 
@@ -131,6 +132,8 @@
         <PageEvents wikiPage={appState.wikiPage} />
       {:else if appState.paneTab === "same-location-events"}
         <SameLocationEvents sameLocationEvents={uiState.sameLocationEvents} />
+      {:else if appState.paneTab === "about"}
+        <About {closePane} />
       {:else}
         <p>No page specified</p>
       {/if}

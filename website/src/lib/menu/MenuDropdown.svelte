@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from "svelte";
+  import { appState } from "../appState.svelte";
 
   let {
     mode = $bindable("places"),
@@ -71,15 +72,11 @@
 
     <!-- Links section -->
     <div class="menu-links">
-      <a href="/blog-post" class="menu-item">About Landnotes</a>
       <a
-        href="https://github.com/yourusername/yourrepo"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="menu-item"
+        onclick={() => (appState.paneTab = "about")}
+        type="button"
+        class="menu-item">About Landnotes</a
       >
-        Go to the project source on GitHub
-      </a>
     </div>
   </div>
 </div>

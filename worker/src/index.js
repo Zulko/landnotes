@@ -41,7 +41,7 @@ export default {
 				result = await queryEventsByPage(pageTitles, env.eventsByPageDB);
 				return resultsToResponse(result);
 			default:
-				return new Response('Not Found', { status: 404 });
+				return new Response(`Landnotes endpoint ${url.pathname} not found`, { status: 404 });
 		}
 	},
 };

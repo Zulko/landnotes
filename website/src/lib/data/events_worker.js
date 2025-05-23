@@ -337,10 +337,10 @@ async function queryEventsByMonthRegion(monthRegions) {
     }
   );
   const queryJSON = await query.json();
+  console.log("queryJSON", queryJSON);
   const promisedEventsByMonthRegion = queryJSON.results.map(async (result) => {
     const decodedData = atob(result.zlib_json_blob);
     let compressedData;
-    console.log({ decodedData });
     if (decodedData.startsWith("file:")) {
       const path = decodedData.slice(5);
       compressedData = await fetchFromBucket(path);
