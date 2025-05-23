@@ -5,6 +5,8 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#317EFB",
+  "apple-mobile-web-app-capable": "yes",
+  "apple-mobile-web-app-status-bar-style": "black",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
