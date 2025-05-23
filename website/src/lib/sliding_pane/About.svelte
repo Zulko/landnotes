@@ -20,8 +20,9 @@
   </p>
 
   <p>
-    Learn more on the <a href="https://github.com/Zulko/landnotes"
-      >Github page</a
+    Learn more on the <a
+      href="https://github.com/Zulko/landnotes"
+      target="_blank">Github page</a
     >.
   </p>
 

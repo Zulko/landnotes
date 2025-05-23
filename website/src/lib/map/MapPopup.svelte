@@ -85,8 +85,8 @@
       left = rightEdge - popupRect.width - triggerRect.left - 10;
     }
 
-    // Check left edge against parent bounds
-    const leftEdge = parentRect.left;
+    // Check left edge against parent bounds and map bounds
+    const leftEdge = Math.max(parentRect.left, leftStart);
     if (triggerRect.left + left < leftEdge + 10) {
       left = leftEdge + 10 - triggerRect.left;
     }
