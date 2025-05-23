@@ -51,7 +51,7 @@ export async function fetchFromBucket(path) {
   const bucketName = "landnotes-data-files";
 
   const endpoint = import.meta.env.DEV
-    ? `/data/${bucketName}/${path}`
+    ? `/data/${path}`
     : `https://data.landnotes.org/${path}`;
 
   try {

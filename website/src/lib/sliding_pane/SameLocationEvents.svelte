@@ -81,7 +81,6 @@
 
 <div class="same-location-events">
   <h1>Events at this location</h1>
-  <p>for</p>
 
   {#if loadingEvents}
     <div class="loading">Loading events...</div>

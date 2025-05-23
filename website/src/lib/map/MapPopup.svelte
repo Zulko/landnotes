@@ -1,6 +1,6 @@
 <script>
   // Reactive state
-  import { isTouchDevice } from "../device";
+  import { uiGlobals } from "../appState.svelte";
   import { onMount } from "svelte";
 
   let {
@@ -16,7 +16,7 @@
   let popupTop = $state(0);
   let popupLeft = $state(0);
   let isHovered = $state(false);
-  let isOpen = $derived(alwaysOpen || (!isTouchDevice && isHovered));
+  let isOpen = $derived(alwaysOpen || (!uiGlobals.isTouchDevice && isHovered));
   let closeTimeout = $state(null);
   let visibility = $state("hidden");
   let popupStyle = $derived(
@@ -73,7 +73,7 @@
       document.getElementsByClassName("map-container")[0]?.clientWidth ||
       viewportWidth;
     const leftStart =
-      isTouchDevice || !keepWithinMap ? 0 : viewportWidth - mapWidth;
+      uiGlobals.isTouchDevice || !keepWithinMap ? 0 : viewportWidth - mapWidth;
 
     // Default position (above and centered)
     let top = -popupRect.height - 2;

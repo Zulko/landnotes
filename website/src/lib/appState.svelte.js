@@ -41,6 +41,9 @@ export const uiGlobals = {
   isNarrowScreen: false,
   leafletMap: null,
   mapTravel: null,
+  isTouchDevice:
+    typeof window !== "undefined" &&
+    ("ontouchstart" in window || navigator.maxTouchPoints > 0),
 };
 export const uiState = $state({
   sameLocationEvents: null,
@@ -75,6 +78,7 @@ $effect.root(() => {
  * @param {string} [state.selectedMarkerId] - ID of the currently selected marker
  * @param {string} [state.mode] - Current application mode (e.g., "places" or "events")
  * @param {Object} [state.date] - Current date selection for events mode
+ * @param {string} [state.paneTab] - The current pane tab
  * @param {boolean} [state.strictDate] - Whether to use strict date matching for events
  * @param {string} [state.wikiPage] - The current wiki page
  * @param {string} [state.wikiSection] - The current wiki section

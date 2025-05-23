@@ -1,6 +1,6 @@
 <script>
   // Reactive state
-  import { isTouchDevice } from "../device";
+  import { uiGlobals } from "../appState.svelte";
   let { pageTitle, openWikiPage = null, isOpen = false } = $props(); // Title to look up
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
@@ -160,7 +160,7 @@
 
 <div
   class="wiki-content"
-  style="max-height: {isTouchDevice ? '190px' : '260px'};"
+  style="max-height: {uiGlobals.isTouchDevice ? '220px' : '260px'};"
 >
   {#if thumbnail}
     <img
@@ -178,7 +178,7 @@
     {@html summary}
   </div>
 </div>
-{#if isTouchDevice}
+{#if uiGlobals.isTouchDevice}
   <button
     tabindex="0"
     class="open-wiki-page"

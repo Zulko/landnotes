@@ -1,6 +1,5 @@
 <script>
   import { onMount } from "svelte";
-  import { isTouchDevice } from "../device";
   import MapPopup from "./MapPopup.svelte";
   import { appState, uiGlobals, uiState } from "../appState.svelte";
   import WikiPreview from "./WikiPreview.svelte";
@@ -44,6 +43,13 @@
       zoom: 12,
       flyDuration: 0.3,
     });
+    console.log("maaaaaaaybe");
+    if (uiGlobals.isTouchDevice) {
+      console.log("cloooosing");
+      appState.wikiPage = "";
+      appState.wikiSection = "";
+      appState.paneTab = "wikipedia";
+    }
     setTimeout(() => {
       const parsedStartDate = parseEventDate(entry.start_date);
       const parsedEndDate = parseEventDate(entry.end_date);
@@ -186,7 +192,7 @@
 <div
   class="event-card"
   style={constrainHeight
-    ? `max-height: ${isTouchDevice ? "220px" : "230px"}; font-size: ${fontSize}px;`
+    ? `max-height: ${uiGlobals.isTouchDevice ? "230px" : "230px"}; font-size: ${fontSize}px;`
     : ""}
 >
   {#if displayPage}

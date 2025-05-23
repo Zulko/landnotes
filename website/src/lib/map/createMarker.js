@@ -3,7 +3,6 @@ import L from "leaflet";
 import MarkerIcon from "./MarkerIcon.svelte";
 import { uiGlobals } from "../appState.svelte";
 import { mount } from "svelte";
-import { isTouchDevice } from "../device";
 import { appState } from "../appState.svelte";
 
 const iconSizesByDisplayClass = {
@@ -66,7 +65,7 @@ function createDivIcon({ entry, displayClass }) {
 }
 
 function onClick(entry) {
-  if (isTouchDevice) {
+  if (uiGlobals.isTouchDevice) {
     selectMarkerAndCenterOnIt({ entry, selectDelay: 350 });
     if (entry.displayClass == "selected") {
       appState.wikiSection = entry.page_section;
@@ -91,7 +90,7 @@ function bindHoverEvents({ marker, entry }) {
   let isHovered = false;
   let unhoverTimeout = null;
 
-  if (!isTouchDevice) {
+  if (!uiGlobals.isTouchDevice) {
     marker.on("mouseover", () => {
       clearTimeout(unhoverTimeout);
       if (isHovered) return;

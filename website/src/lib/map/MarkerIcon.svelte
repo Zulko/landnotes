@@ -2,8 +2,7 @@
   import MapPopup from "./MapPopup.svelte";
   import EventCard from "./EventCard.svelte";
   import WikiPreview from "./WikiPreview.svelte";
-  import { appState } from "../appState.svelte";
-  import { isTouchDevice } from "../device";
+  import { appState, uiGlobals } from "../appState.svelte.js";
   const { entry, onClick = null } = $props();
 
   const basePath = import.meta.env.BASE_URL;
@@ -78,8 +77,8 @@
 
 <MapPopup
   {popupContent}
-  enterable={entry.isEvent || isTouchDevice}
-  alwaysOpen={isTouchDevice && entry.displayClass === "selected"}
+  enterable={entry.isEvent || uiGlobals.isTouchDevice}
+  alwaysOpen={uiGlobals.isTouchDevice && entry.displayClass === "selected"}
   visibilityDelay={entry.isEvent ? 0 : 100}
   keepWithinMap={true}
 >
