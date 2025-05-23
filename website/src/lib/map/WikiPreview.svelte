@@ -12,7 +12,6 @@
   $effect(() => {
     if (isOpen && !infosFetched) {
       fetchWikiInfos();
-      infosFetched = true;
     }
   });
 
@@ -42,6 +41,7 @@
       summary = "No information available.";
       thumbnail = "";
     }
+    infosFetched = true;
   }
 
   /**
