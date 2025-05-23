@@ -43,9 +43,7 @@
       zoom: 12,
       flyDuration: 0.3,
     });
-    console.log("maaaaaaaybe");
     if (uiGlobals.isTouchDevice) {
-      console.log("cloooosing");
       appState.wikiPage = "";
       appState.wikiSection = "";
       appState.paneTab = "wikipedia";

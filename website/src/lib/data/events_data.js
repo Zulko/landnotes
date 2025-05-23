@@ -110,7 +110,6 @@ async function queryEventsById(eventIds) {
     body: JSON.stringify(eventIds),
   });
   const queryJSON = await response.json();
-  console.log("queryJSON", queryJSON);
   const entries = queryJSON.results;
   entries.forEach((entry) => {
     entry.geohash4 = entry.geohash4.split("|");

@@ -23,9 +23,7 @@ async function queryPageEventsLists(pageTitles) {
       let compressedData;
       if (decodedData.startsWith("file:")) {
         const path = decodedData.slice(5);
-        console.log({ path });
         compressedData = await fetchFromBucket(path);
-        console.log({ compressedData });
       } else {
         compressedData = new Uint8Array(
           Array.from(decodedData, (c) => c.charCodeAt(0))
@@ -33,7 +31,6 @@ async function queryPageEventsLists(pageTitles) {
       }
       const decompressed = inflate(compressedData, { to: "string" });
       const events = JSON.parse(decompressed);
-      console.log({ decompressed, events });
       const page_title = result.page_title;
       return { page_title, events };
     });
