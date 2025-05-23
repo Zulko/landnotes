@@ -27,7 +27,7 @@ import {
 const stateDefaults = {
   mode: "places",
   strictDate: true,
-  date: { year: 1810, month: 3, day: "all" },
+  date: { year: 1949, month: 3, day: "all" },
   zoom: 1,
   location: null,
   selectedMarkerId: null,
