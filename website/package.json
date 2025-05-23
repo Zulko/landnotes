@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:remote-dbs": "REMOTE_DBS=true vite",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -14,7 +15,7 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
-    "jszip": "^3.10.1",
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.9.4",
+    "pako": "^2.1.0"
   }
 }

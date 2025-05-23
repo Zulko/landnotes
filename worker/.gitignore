@@ -174,3 +174,4 @@ dist
 .sqlite
 .sql
 local_assets/
+dev_assets/

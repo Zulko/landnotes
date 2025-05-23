@@ -1,19 +1,40 @@
 <script>
+  import { appState } from "../appState.svelte";
   const basePath = import.meta.env.BASE_URL;
-  // Props
-  export let expanded = false;
 
-  // Events
-  export let onClose = () => {};
-  export let onToggleExpand = () => {};
-  export let onOpenExternal = () => {};
+  let {
+    expanded = $bindable(false),
+    closePane,
+    openWikiPageInNewTab,
+  } = $props();
 </script>
 
 <div class="pane-header">
+  {#if appState.paneTab === "wikipedia" || appState.paneTab === "events"}
+    <div class="tab-buttons">
+      <button
+        class="tab-button"
+        class:active={appState.paneTab === "wikipedia"}
+        onclick={() => (appState.paneTab = "wikipedia")}
+        aria-label="Wikipedia tab"
+      >
+        Wikipedia
+      </button>
+      <button
+        class="tab-button"
+        class:active={appState.paneTab === "events"}
+        onclick={() => (appState.paneTab = "events")}
+        aria-label="Events tab"
+      >
+        Events
+      </button>
+    </div>
+  {/if}
+
   <div class="header-buttons">
     <button
       class="icon-button external-link-button"
-      on:click={onOpenExternal}
+      onclick={openWikiPageInNewTab}
       title="Open in new tab"
       aria-label="Open in new tab"
     >
@@ -27,7 +48,7 @@
     <button
       class="icon-button expand-button desktop-only"
       class:active={expanded}
-      on:click={onToggleExpand}
+      onclick={() => (expanded = !expanded)}
       title={expanded ? "Shrink pane" : "Expand pane"}
       aria-label={expanded ? "Shrink pane" : "Expand pane"}
     >
@@ -43,7 +64,7 @@
     <button
       class="icon-button expand-button mobile-only"
       class:active={expanded}
-      on:click={onToggleExpand}
+      onclick={() => (expanded = !expanded)}
       title={expanded ? "Shrink pane" : "Expand pane"}
       aria-label={expanded ? "Shrink pane" : "Expand pane"}
     >
@@ -55,7 +76,7 @@
         class="icon"
       />
     </button>
-    <button class="close-button" on:click={onClose} aria-label="Close panel">
+    <button class="close-button" onclick={closePane} aria-label="Close panel">
       &times;
     </button>
   </div>
@@ -72,6 +93,31 @@
     top: 0;
     background: white;
     z-index: 1;
+  }
+
+  .tab-buttons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .tab-button {
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .tab-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .tab-button.active {
+    border-bottom: 2px solid #1a73e8;
+    color: #1a73e8;
   }
 
   .header-buttons {

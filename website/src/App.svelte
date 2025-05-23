@@ -6,280 +6,93 @@
   import { onMount } from "svelte";
 
   // Components
-  import WorldMap from "./lib/WorldMap.svelte";
-  import SlidingPane from "./lib/SlidingPane.svelte";
-  import SearchBar from "./lib/SearchBar.svelte";
+  import WorldMap from "./lib/map/WorldMap.svelte";
+  import SlidingPane from "./lib/sliding_pane/SlidingPane.svelte";
+  import SearchBarMenu from "./lib/menu/SearchBarMenu.svelte";
 
   // Utilities
-  import { updateURLParams, readURLParams } from "./lib/urlState";
   import {
-    findNodesInBounds,
-    getGeodataFromBounds,
-    getGeodataFromGeokeys,
-    loadHotSpotsData
-  } from "./lib/geodata";
-  import { latlonSquaresToPolylines } from "./lib/polylines";
+    appState,
+    uiGlobals,
+    setStateFromURLParams,
+  } from "./lib/appState.svelte";
 
-  // -------------------------
-  // STATE MANAGEMENT
-  // -------------------------
-
-  /**
-   * Map configuration and state
-   */
-  let mapComponent;
-  let zoom = 1;
-  let location = null;
-  let targetMapLocation = null;
-  let markers = [];
-  let cachedEntries = new Map();
-  let hotSpotsTree = null;
-  let hotSpotAreasInBounds = [];
-
-  /**
-   * UI state
-   */
-  let isMobile = false;
-  let isPaneOpen = false;
-  let previousPaneState = false;
-  let previousSelectedMarkerId = null;
-  /**
-   * Content state
-   */
-  let wikiPage = "";
-  let selectedMarkerId = null;
+  let isNarrowScreen = $state(false);
 
   // -------------------------
   // LIFECYCLE HOOKS
   // -------------------------
-
   onMount(async () => {
     console.log("App starting!");
-    handleResize(); // Initialize mobile detection
-    
-
-    // Read URL parameters when the app loads
-    const urlState = readURLParams();
-    if (urlState.selectedMarkerId) {
-      selectedMarkerId = urlState.selectedMarkerId;
-    }
-    hotSpotsTree = await loadHotSpotsData();
-    if (urlState.location) {
-      mapComponent.goTo({location: urlState.location, zoom: urlState.zoom, flyDuration: 0})
-    } else {
-      mapComponent.goTo({location: {lat: 0, lon: 0}, zoom: 3, flyDuration: 0})
-    }
-    
-    
-
-    // Add history navigation handler
-    window.addEventListener("popstate", handlePopState);
-
-    // Load and process hot spots data
-    
+    checkForNarrowScreen(); // Initialize mobile detection
+    setStateFromURLParamsAndMoveMap();
+    window.addEventListener("popstate", setStateFromURLParamsAndMoveMap);
   });
-
-  // When pane state changes, update map size after a slight delay to allow transitions
-  $: if (previousPaneState !== isPaneOpen && mapComponent) {
-    setTimeout(() => mapComponent.invalidateMapSize(), 50);
-    if (!isPaneOpen) {
-      selectedMarkerId = null;
+  // -------------------------
+  // STATE MANAGEMENT FUNCTIONS
+  // -------------------------
+  /**
+   * Initialize app state from URL parameters
+   */
+  function setStateFromURLParamsAndMoveMap() {
+    const urlState = setStateFromURLParams();
+    if (urlState.location) {
+      uiGlobals.mapTravel({
+        location: urlState.location,
+        zoom: urlState.zoom,
+        flyDuration: 0.3,
+      });
+    } else {
+      uiGlobals.mapTravel({
+        location: { lat: 48, lon: 0 },
+        zoom: 4,
+        flyDuration: 0,
+      });
     }
-    previousPaneState = isPaneOpen;
-
   }
 
-  $: if (previousSelectedMarkerId !== selectedMarkerId) {
-    handleNewSelectedMarker(selectedMarkerId)
-  }
   // -------------------------
   // EVENT HANDLERS
   // -------------------------
 
-  async function handleNewSelectedMarker(selectedMarkerId) {
-    let newMarkers;
-    console.log("handleNewSelectedMarker", selectedMarkerId)
-    if (selectedMarkerId) {
-      const query = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
-      const selectedMarker = query[0];
-      openWikiPane(selectedMarker.page_title);
-      if (!markers.some(marker => marker.geokey === selectedMarkerId)) {
-        newMarkers = [...markers, selectedMarker];
-      } else {
-        newMarkers = [...markers];
-      }
-    }
-    else {
-      closeWikiPane();
-      newMarkers = [...markers];
-      
-    }
-    addMarkerClasses(newMarkers, zoom)
-    markers = newMarkers
-    updateURLParams({location, zoom, selectedMarkerId})
-    previousSelectedMarkerId = selectedMarkerId
-  }
-
   /**
-   * Handle browser history navigation
+   * Handle closing of the sliding pane
    */
-  function handlePopState(ev: PopStateEvent) {
-    const state = ev.state || {};
-
-    if (state.location) {
-      mapComponent.goTo({location: state.location, zoom: state.zoom, flyDuration: 0})
-    }
-    selectedMarkerId = state.selectedMarkerId;
-  }
 
   /**
    * Update mobile status based on window size
    */
-  function handleResize() {
-    isMobile = window.innerWidth <= 768;
-  }
-
-  /**
-   * Process map bounds changes and fetch new markers
-   */
-  async function handleBoundsChange(event) {
-    const center = event.detail.center;
-
-    // Update URL with new location
-    zoom = event.detail.zoom;
-    location = {lat: center.lat, lon: center.lng}
-    updateURLParams({location, zoom, selectedMarkerId});
-
-    // Get entries for the visible map area
-    const bounds = {
-      minLat: event.detail.bounds._southWest.lat,
-      maxLat: event.detail.bounds._northEast.lat,
-      minLon: event.detail.bounds._southWest.lng,
-      maxLon: event.detail.bounds._northEast.lng,
-    };
-
-    // Fetch geodata for the current bounds
-    try {
-      const entries = await getGeodataFromBounds(
-        bounds,
-        zoom - 1,
-        cachedEntries
-      );
-      if (
-        selectedMarkerId &&
-        !entries.some((entry) => entry.geokey === selectedMarkerId)
-      ) {
-        const selectedMarker = await getGeodataFromGeokeys([selectedMarkerId], cachedEntries);
-        entries.push(selectedMarker[0]);
-      }
-
-      // Update markers with display classes
-      addMarkerClasses(entries, zoom);
-      markers = entries;
-    } catch (error) {
-      console.error("Error fetching geodata:", error);
-    }
-
-    // Fetch hot spot areas in bounds
-    const rawHotSpotAreasInBounds = findNodesInBounds(
-      hotSpotsTree,
-      bounds,
-      Math.max(zoom + 3, 6),
-      "",
-      []
-    );
-    // const polylines = smoothenGeoSquares(rawHotSpotAreasInBounds, 2);
-
-    const { polylines, dots } = latlonSquaresToPolylines(
-      rawHotSpotAreasInBounds
-    );
-    hotSpotAreasInBounds = [...polylines, ...dots].slice(0, 200);
-  }
-
-  /**
-   * Handle marker click events
-   */
-  function handleMarkerClick(event) {
-    if (selectedMarkerId !== event.detail.geokey) {
-      selectedMarkerId = event.detail.geokey
-      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom, flyDuration: 1})
-    } else {
-      const newZoom = Math.min(17, Math.max(12, zoom + 2))
-      mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: newZoom, flyDuration: 1})
-    }
-  }
-
-  /**
-   * Handle search selection
-   */
-  function handleSearchSelect(event) {
-    selectedMarkerId = event.detail.geokey;
-    targetMapLocation = {
-      lat: event.detail.lat,
-      lon: event.detail.lon,
-      zoom: Math.max(12, zoom), // Ensure zoom is at least 12
-    };
-    mapComponent.goTo({location: {lat: event.detail.lat, lon: event.detail.lon}, zoom: Math.max(12, zoom), flyDuration: 1})
+  function checkForNarrowScreen() {
+    isNarrowScreen = window.innerWidth <= 768;
   }
 
   // -------------------------
-  // HELPER FUNCTIONS
+  // MARKER MANAGEMENT FUNCTIONS
   // -------------------------
-
   /**
-   * Opens the wiki pane with the specified page
+   * Update the selected marker and associated data
    */
-  function openWikiPane(page) {
-    wikiPage = page;
-    isPaneOpen = true;
-  }
-
-  function closeWikiPane() {
-    wikiPage = "";
-    isPaneOpen = false;
-  }
-  /**
-   * Classify markers for display based on importance and zoom level
-   */
-  function addMarkerClasses(entries, zoomLevel) {
-    // Sort entries by page length in descending order
-
-    // Assign default display classes based on the sorted order
-    // Handle selected and high-zoom markers
-    for (const entry of entries) {
-      if (selectedMarkerId && entry.geokey == selectedMarkerId) {
-        entry.displayClass = "selected";
-      } else if (zoomLevel > 17 || entry.geokey.length <= zoomLevel - 2) {
-        entry.displayClass = "full";
-      } else if (entry.geokey.length <= zoomLevel - 1) {
-        entry.displayClass = "reduced";
-      } else {
-        entry.displayClass = "dot";
-      }
-    }
-
-    return entries;
-  }
 </script>
 
-<svelte:window on:resize={handleResize} />
+<svelte:window on:resize={checkForNarrowScreen} />
 
-<main class:has-open-pane={isPaneOpen} class:is-mobile={isMobile}>
+<main
+  class:narrow-screen={isNarrowScreen}
+  tabindex="-1"
+  data-focus-target
+  id="main"
+>
   <div class="content-container">
-    <div class="wiki-pane-container">
-      <SlidingPane bind:isOpen={isPaneOpen} page_title={wikiPage} />
-    </div>
+    {#if appState.wikiPage || appState.paneTab === "same-location-events" || appState.paneTab === "about"}
+      <div class="wiki-pane-container">
+        <SlidingPane />
+      </div>
+    {/if}
 
     <div class="map-container">
-      <WorldMap
-        bind:this={mapComponent}
-        {markers}
-        hotSpots={hotSpotAreasInBounds}
-        on:boundschange={handleBoundsChange}
-        on:markerclick={handleMarkerClick}
-      />
+      <WorldMap />
       <div class="search-wrapper">
-        <SearchBar on:select={handleSearchSelect} />
+        <SearchBarMenu />
       </div>
     </div>
   </div>
@@ -306,7 +119,7 @@
 
   .wiki-pane-container {
     flex: 0 0 0;
-    transition: flex 0.3s ease;
+    transition: flex 1s ease;
     height: 100%;
     z-index: 100;
   }
@@ -318,30 +131,23 @@
     position: relative;
   }
 
-  /* When pane is open on desktop */
-  main.has-open-pane:not(.is-mobile) .wiki-pane-container {
-    flex: 0 0 400px; /* Default width, will be adjusted by SlidingPane component */
-  }
-
   /* Mobile layout */
-  main.is-mobile .content-container {
+  main.narrow-screen .content-container {
     flex-direction: column;
   }
 
-  main.is-mobile .wiki-pane-container {
+  main.narrow-screen .wiki-pane-container {
     flex: 0 0 0;
     order: 2; /* Put wiki pane at the bottom */
   }
 
-
-
-  main.is-mobile .map-container {
+  main.narrow-screen .map-container {
     order: 1; /* Put map at the top */
     flex: 1;
   }
 
   /* Mobile adjustments for search bar */
-  main.is-mobile .search-wrapper {
+  main.narrow-screen .search-wrapper {
     top: 3px;
     width: 90%;
     padding: 0;

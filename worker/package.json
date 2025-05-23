@@ -1,5 +1,5 @@
 {
-	"name": "landnotes",
+	"name": "landnotes-worker",
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {

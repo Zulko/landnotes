@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "landnotes",
+	"name": "landnotes-worker",
 	"main": "src/index.js",
 	"compatibility_date": "2025-04-04",
 	"compatibility_flags": [
@@ -15,7 +15,43 @@
 		"directory": "./public"
 	},
 	"observability": {
-		"enabled": true
+		"enabled": true,
+		"head_sampling_rate": 0.1
+	},
+	"env": {
+		"dev": {
+			"assets": {
+				"directory": "dev_assets",
+				"binding": "DEV_FILES",
+				"not_found_handling": "404-page"
+			},
+			"d1_databases": [
+				{
+					"binding": "geoDB",
+					"database_name": "landnotes-geo-db",
+					"database_id": "77e642fc-e1d6-4996-bc1d-11bcb077a838",
+					"preview_database_id": "local-landnotes-geo-db"
+				},
+				{
+					"binding": "eventsDB",
+					"database_name": "landnotes-events-db",
+					"database_id": "2a596312-20f2-4c93-8ffd-8fa6ef9c5c12",
+					"preview_database_id": "local-landnotes-events-db"
+				},
+				{
+					"binding": "eventsByPageDB",
+					"database_name": "landnotes-events-by-page-db",
+					"database_id": "000860d8-e326-4784-96c0-452f0753c261",
+					"preview_database_id": "local-landnotes-events-by-page-db"
+				},
+				{
+					"binding": "eventsByMonthDB",
+					"database_name": "landnotes-events-by-month-db",
+					"database_id": "06cf9626-8e7a-475a-86b5-ea3025824703",
+					"preview_database_id": "local-landnotes-events-by-month-db"
+				}
+			]
+		}
 	},
 	/**
 	 * D1 Database Binding
@@ -27,8 +63,32 @@
 			"database_name": "landnotes-geo-db",
 			"database_id": "77e642fc-e1d6-4996-bc1d-11bcb077a838",
 			"preview_database_id": "local-landnotes-geo-db"
+		},
+		{
+			"binding": "eventsDB",
+			"database_name": "landnotes-events-db",
+			"database_id": "2a596312-20f2-4c93-8ffd-8fa6ef9c5c12",
+			"preview_database_id": "local-landnotes-events-db"
+		},
+		{
+			"binding": "eventsByPageDB",
+			"database_name": "landnotes-events-by-page-db",
+			"database_id": "000860d8-e326-4784-96c0-452f0753c261",
+			"preview_database_id": "local-landnotes-events-by-page-db"
+		},
+		{
+			"binding": "eventsByMonthDB",
+			"database_name": "landnotes-events-by-month-db",
+			"database_id": "06cf9626-8e7a-475a-86b5-ea3025824703",
+			"preview_database_id": "local-landnotes-events-by-month-db"
 		}
 	],
+    "r2_buckets": [
+		{
+            "bucket_name": "landnotes-data-files",
+            "binding": "landnotesDataFiles"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

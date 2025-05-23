@@ -1,15 +1,20 @@
 <script>
-  import { createEventDispatcher, onMount, onDestroy } from "svelte";
-  import { getEntriesfromText } from "./geodata";
-  export let searchQuery = "";
+  import { onDestroy } from "svelte";
+  import { getEntriesfromText } from "../data/places_data";
+  import MenuDropdown from "./MenuDropdown.svelte";
+  import DatePicker from "./DatePicker.svelte";
 
-  const dispatch = createEventDispatcher();
+  import { appState, uiGlobals } from "../appState.svelte";
 
-  let searchResults = [];
-  let isActive = false;
-  let isLoading = false;
+  let searchQuery = $state("");
+  let searchResults = $state([]);
+  let isActive = $state(false);
+  let isLoading = $state(false);
+  let selectedIndex = $state(-1); // Track the currently selected suggestion
+  let isMenuOpen = $state(false); // State for menu dropdown visibility
+
   let debounceTimer = null;
-  let selectedIndex = -1; // Track the currently selected suggestion
+  const basePath = import.meta.env.BASE_URL;
 
   // Debounced search function
   function debouncedSearch() {
@@ -21,7 +26,9 @@
     // Set a new timer
     debounceTimer = setTimeout(async () => {
       if (searchQuery && searchQuery.length > 1) {
-        searchResults = await getEntriesfromText(searchQuery);
+        // Different API endpoints based on mode
+        const searchMode = appState.mode === "events" ? "pages" : "places";
+        searchResults = await getEntriesfromText(searchQuery, searchMode);
         isActive = true;
       } else {
         searchResults = [];
@@ -32,7 +39,7 @@
   }
 
   // Search text reactive statement
-  $: {
+  $effect(() => {
     if (searchQuery && searchQuery.length > 1) {
       isLoading = true;
       searchResults = [];
@@ -44,6 +51,23 @@
       // Clear any pending search
       if (debounceTimer) clearTimeout(debounceTimer);
     }
+  });
+
+  // Reset selected index when search results change
+  $effect(() => {
+    if (searchResults) {
+      selectedIndex = -1;
+    }
+  });
+
+  // Toggle menu open/closed
+  function toggleMenu() {
+    isMenuOpen = !isMenuOpen;
+  }
+
+  // Handle menu close request from MenuDropdown
+  function onCloseMenu() {
+    isMenuOpen = false;
   }
 
   onDestroy(() => {
@@ -53,23 +77,43 @@
 
   function handleKeydown(event) {
     if (!isActive || searchResults.length === 0) return;
-    
-    if (event.key === 'ArrowDown') {
+
+    if (event.key === "ArrowDown") {
       event.preventDefault();
       selectedIndex = (selectedIndex + 1) % searchResults.length;
-    } else if (event.key === 'ArrowUp') {
+    } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      selectedIndex = selectedIndex <= 0 ? searchResults.length - 1 : selectedIndex - 1;
-    } else if (event.key === 'Enter' && selectedIndex >= 0) {
+      selectedIndex =
+        selectedIndex <= 0 ? searchResults.length - 1 : selectedIndex - 1;
+    } else if (event.key === "Enter" && selectedIndex >= 0) {
       event.preventDefault();
       handleSelect(searchResults[selectedIndex]);
-    } else if (event.key === 'Escape') {
+    } else if (event.key === "Escape") {
       isActive = false;
     }
   }
 
   function handleSelect(entry) {
-    dispatch("select", entry);
+    if (appState.mode === "places") {
+      const { geokey, lat, lon, page_title } = entry;
+      const selectedMarkerId = geokey;
+      if (appState.selectedMarkerId !== selectedMarkerId) {
+        appState.selectedMarkerId = selectedMarkerId;
+      }
+      appState.wikiSection = "";
+      appState.wikiPage = page_title;
+      appState.paneTab = "wikipedia";
+      uiGlobals.mapTravel({
+        location: { lat, lon },
+        zoom: Math.max(12, appState.zoom),
+        flyDuration: 1,
+      });
+    } else {
+      const { page_title } = entry;
+      appState.wikiSection = "";
+      appState.wikiPage = page_title;
+      appState.paneTab = "wikipedia";
+    }
     searchQuery = "";
     isActive = false;
     selectedIndex = -1;
@@ -89,28 +133,23 @@
       selectedIndex = -1;
     }
   }
-
-  // Reset selected index when search results change
-  $: if (searchResults) {
-    selectedIndex = -1;
-  }
 </script>
 
 <div class="search-container">
   <div class="search-input-wrapper">
     <input
       type="text"
-      placeholder="Search locations (regions already visited only)"
+      placeholder={`Search a ${appState.mode === "places" ? "place" : "page"}`}
       bind:value={searchQuery}
-      on:focus={handleFocus}
-      on:blur={handleBlur}
-      on:keydown={handleKeydown}
+      onfocus={handleFocus}
+      onblur={handleBlur}
+      onkeydown={handleKeydown}
       class="search-input"
     />
     {#if searchQuery}
       <button
         class="clear-button"
-        on:click={() => {
+        onclick={() => {
           searchQuery = "";
           isActive = false;
         }}
@@ -121,6 +160,13 @@
     <div class="search-icon">
       <img src={`${import.meta.env.BASE_URL}icons/search.svg`} alt="Search" />
     </div>
+
+    <!-- Menu button wrapper with the hamburger icon now here -->
+    <div class="menu-button-wrapper">
+      <button class="menu-button" onclick={toggleMenu} title="Menu">
+        <img src={`${basePath}icons/menu.svg`} alt="Menu" class="icon" />
+      </button>
+    </div>
   </div>
 
   {#if isActive && searchResults.length > 0}
@@ -128,7 +174,7 @@
       {#each searchResults as entry, i}
         <div
           class="suggestion-item {i === selectedIndex ? 'selected' : ''}"
-          on:mousedown={() => handleSelect(entry)}
+          onmousedown={() => handleSelect(entry)}
           role="option"
           aria-selected={i === selectedIndex}
           tabindex="0"
@@ -136,9 +182,13 @@
           <span class="suggestion-title"
             >{entry.page_title.replaceAll("_", " ")}</span
           >
-          <span class="suggestion-location"
-            >({entry.lat.toFixed(4)}, {entry.lon.toFixed(4)})</span
-          >
+          <span class="suggestion-location">
+            {#if appState.mode === "events"}
+              ({entry.n_events || 0} events)
+            {:else}
+              ({entry.lat.toFixed(2)}, {entry.lon.toFixed(2)})
+            {/if}
+          </span>
         </div>
       {/each}
     </div>
@@ -152,6 +202,18 @@
         {/if}
       </div>
     </div>
+  {/if}
+
+  <!-- Menu component -->
+  {#if appState.mode === "events" && searchResults.length == 0}
+    <DatePicker bind:date={appState.date} />
+  {/if}
+  {#if isMenuOpen}
+    <MenuDropdown
+      bind:mode={appState.mode}
+      bind:strictDate={appState.strictDate}
+      {onCloseMenu}
+    />
   {/if}
 </div>
 
@@ -197,9 +259,39 @@
     opacity: 0.5;
   }
 
+  .menu-button-wrapper {
+    position: absolute;
+    right: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    width: 28px;
+    border-radius: 50%;
+    padding: 5px;
+  }
+
+  .menu-button {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+
+  .menu-button-wrapper:hover {
+    background-color: #eee;
+  }
+
   .clear-button {
     position: absolute;
-    right: 10px;
+    right: 40px; /* Keeps space for menu button */
     background: none;
     border: none;
     font-size: 20px;
