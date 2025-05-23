@@ -186,7 +186,7 @@
 <div
   class="event-card"
   style={constrainHeight
-    ? `max-height: ${isTouchDevice ? "190px" : "230px"}; font-size: ${fontSize}px;`
+    ? `max-height: ${isTouchDevice ? "220px" : "230px"}; font-size: ${fontSize}px;`
     : ""}
 >
   {#if displayPage}

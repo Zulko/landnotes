@@ -1,6 +1,6 @@
 # Landnotes
 
-Landnotes shows Wikipedia places and events on top of OpenStreetMap - [try it out!](https://landnotes.org/?paneTab=about)
+Landnotes shows Wikipedia places and events on top of OpenStreetMap - <a href="https://landnotes.org/?paneTab=about" target="_blank">try it out!</a>
 
 There are currently 6.5 million events extracted from 400,000 articles using Google Gemini. If anything doesn't make sense, blame it on the AI! There are 10 times more articles to process but this might take $3000 dollars. See the [docs](./docs) for more details.
 
