@@ -52,7 +52,7 @@ export async function fetchFromBucket(path) {
 
   const endpoint = import.meta.env.DEV
     ? `/data/${bucketName}/${path}`
-    : `https://data.landnotes.org/${bucketName}/${path}`;
+    : `https://data.landnotes.org/${path}`;
 
   try {
     const response = await fetch(endpoint);
