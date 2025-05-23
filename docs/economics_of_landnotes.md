@@ -5,7 +5,7 @@
 - We process one page per request. The page is ~3000 tokens in average, the prompt adds ~500 tokens. The output size is very variable but seems to be around 1000 tokens in average.
 - We use Gemini Flash 2.0 (see [Extracting events with AI](./events_extraction.md)) in batch mode which costs 7.5c/million input tokens and 30c/million output tokens. This brings us to a cost of $70/100,000 pages.
 - Gemini offers a promotional $300 credit to new customers, and these were used to process the first ~400,000 pages.
-  -Processing the ~4 million wikipedia pages which are estimated to contain dates (from a regular-expression search on the 12 million pages of English wikipedia) would therefore cost ~$3000.
+- Processing the ~4 million wikipedia pages which are estimated to contain dates (from a regular-expression search on the 12 million pages of English wikipedia) would therefore cost ~$3000.
 
 ## Server costs
 
