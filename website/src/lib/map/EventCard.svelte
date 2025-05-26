@@ -24,7 +24,11 @@
     places = parsePlaces();
     people = parsePeople();
     const summaryLength = entry.summary?.length || 0;
-    const totalItems = people.length + places.length + summaryLength / 40;
+    const totalItems =
+      (entry.pageTitle?.length + entry.page_section?.length > 30 ? 1 : 0) +
+      people.length +
+      places.length +
+      summaryLength / 40;
     fontSize = constrainHeight
       ? totalItems > 7
         ? 12

@@ -18,6 +18,7 @@
 
   $effect(() => {
     if (sameLocationEvents) {
+      console.log(sameLocationEvents);
       loadEventList();
     }
   });

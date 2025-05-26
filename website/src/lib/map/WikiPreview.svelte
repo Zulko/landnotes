@@ -22,10 +22,22 @@
    */
   async function fetchWikiInfos() {
     const wikiEndpoint = "https://en.wikipedia.org/api/rest_v1/page/summary/";
-    const url = `${wikiEndpoint}${encodeURIComponent(pageTitle.replaceAll(" ", "_"))}`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "landnotes/1.0 (website@landnotes.org)" },
-    });
+    const encodedTitle = encodeURIComponent(pageTitle.replaceAll(" ", "_"));
+
+    let url;
+    let requestOptions;
+
+    if (uiGlobals.isSafari) {
+      url = `${wikiEndpoint}${encodedTitle}?origin=*`;
+      requestOptions = { headers: {} };
+    } else {
+      url = `${wikiEndpoint}${encodedTitle}`;
+      requestOptions = {
+        headers: { "User-Agent": "landnotes/1.0 (website@landnotes.org)" },
+      };
+    }
+
+    const res = await fetch(url, requestOptions);
     if (res.ok) {
       const data = await res.json();
       summary = extractSummary(data.extract_html);
@@ -34,6 +46,7 @@
       // Calculate dimensions that maintain aspect ratio within our constraints
       if (data.thumbnail) {
         ({ imageWidth, imageHeight } = calculateDimensions(data.thumbnail));
+        console.log(imageWidth, imageHeight);
         imageHasWhiteBackground =
           await checkImageCornersForWhiteBackground(thumbnail);
       }
@@ -162,38 +175,46 @@
   class="wiki-content"
   style="max-height: {uiGlobals.isTouchDevice ? '220px' : '260px'};"
 >
-  {#if thumbnail}
-    <img
-      src={thumbnail}
-      alt="{pageTitle} thumbnail"
-      class="thumb {imageHasWhiteBackground ? '' : 'with-shadow'}"
-      fetchpriority="high"
-      style={`height: ${imageHeight}px; width: ${imageWidth}px;`}
-    />
+  {#if infosFetched}
+    {#if thumbnail}
+      <img
+        src={thumbnail}
+        alt="{pageTitle} thumbnail"
+        class="thumb {imageHasWhiteBackground ? '' : 'with-shadow'}"
+        fetchpriority="high"
+        style={`height: ${imageHeight}px; width: ${imageWidth}px;`}
+      />
+    {/if}
+    <div class="wiki-header">
+      <h3>From Wikipedia</h3>
+    </div>
+    <div class="wiki-summary">
+      {@html summary}
+    </div>
+    {#if uiGlobals.isTouchDevice}
+      <button
+        tabindex="0"
+        class="open-wiki-page"
+        onclick={() => {
+          openWikiPage && openWikiPage(pageTitle);
+        }}
+        onkeydown={(e) => {
+          if (e.key === "Enter") {
+            openWikiPage && openWikiPage(pageTitle);
+          }
+        }}
+      >
+        Tap for more
+      </button>
+    {/if}
+  {:else}
+    <div class="wiki-content">
+      <div class="wiki-header">
+        <div class="spinner"></div>
+      </div>
+    </div>
   {/if}
-  <div class="wiki-header">
-    <h3>From Wikipedia</h3>
-  </div>
-  <div class="wiki-summary">
-    {@html summary}
-  </div>
 </div>
-{#if uiGlobals.isTouchDevice}
-  <button
-    tabindex="0"
-    class="open-wiki-page"
-    onclick={() => {
-      openWikiPage && openWikiPage(pageTitle);
-    }}
-    onkeydown={(e) => {
-      if (e.key === "Enter") {
-        openWikiPage && openWikiPage(pageTitle);
-      }
-    }}
-  >
-    Tap for more
-  </button>
-{/if}
 
 <style>
   .wiki-content {
@@ -263,5 +284,24 @@
       background-color 0.2s,
       transform 0.1s;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .spinner {
+    width: 24px;
+    height: 24px;
+    margin: 20px auto;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0645ad;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 </style>
