@@ -173,5 +173,8 @@ dist
 
 .sqlite
 .sql
-local_assets/
-dev_assets/
+# Ignore contents of asset directories but keep the directories
+dev_assets/*
+!dev_assets/.gitkeep
+local_assets/*
+!local_assets/.gitkeep

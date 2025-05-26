@@ -172,13 +172,6 @@ async function precomputeEventsForRegionAndDate(region, date, strictDate) {
       );
     });
   }
-  console.log({
-    monthsRegions,
-    eventsByMonthRegion,
-    allEvents,
-    dedupEvents,
-    filteredEvents,
-  });
 
   // Assign geokeys to the events
   assignGeokeysToEvents(filteredEvents);
@@ -250,6 +243,12 @@ function assignGeokeysToEvents(events) {
   const geohashToGeokey = new Map();
 
   for (const event of events) {
+    const existingGeokey = geohashToGeokey.get(event.geohash4);
+    if (existingGeokey) {
+      const existingEntry = eventsByGeoKeyForDate.get(existingGeokey);
+      existingEntry.same_location_events.push(event);
+      continue;
+    }
     let prefix = "";
     for (const char of event.geohash4) {
       prefix += char;
@@ -277,16 +276,19 @@ function assignGeokeysToEvents(events) {
         // Prefix already exists in the map
         const zoomLevel = prefix.length;
         const existingEntry = eventsByGeoKeyForDate.get(prefix);
-        if (existingEntry.geohash4 === event.geohash4) {
-          existingEntry.same_location_events.push(event);
-          break;
-        } else {
-          // Add to subeventsByZoomLevel for this zoom level
-          if (!existingEntry.subeventsByZoomLevel[zoomLevel]) {
-            existingEntry.subeventsByZoomLevel[zoomLevel] = [];
-          }
+        // Add to subeventsByZoomLevel for this zoom level
+        if (!existingEntry.subeventsByZoomLevel[zoomLevel]) {
+          existingEntry.subeventsByZoomLevel[zoomLevel] = [];
+        }
 
-          if (existingEntry.subeventsByZoomLevel[zoomLevel].length < 10) {
+        if (existingEntry.subeventsByZoomLevel[zoomLevel].length < 10) {
+          // Check if any existing event in the list shares the same geohash4 prefix
+          const prefixLength = prefix.length + 3;
+          const longerPrefix = event.geohash4.substring(0, prefixLength);
+          const hasMatchingPrefix = existingEntry.subeventsByZoomLevel[zoomLevel].some(
+            existingEvent => existingEvent.geohash4.substring(0, prefixLength) === longerPrefix
+          );
+          if (!hasMatchingPrefix) {
             existingEntry.subeventsByZoomLevel[zoomLevel].push(event);
           }
         }
