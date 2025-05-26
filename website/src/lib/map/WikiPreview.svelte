@@ -8,10 +8,20 @@
   let imageWidth = $state(120);
   let imageHasWhiteBackground = $state(false);
   let infosFetched = $state(false);
+  let fontSize = $state("1rem"); // New state for dynamic font size
 
   $effect(() => {
     if (isOpen && !infosFetched) {
       fetchWikiInfos();
+    }
+  });
+
+  // New effect to update font size based on content
+  $effect(() => {
+    if (summary) {
+      const baseSize = 0.9;
+      const shouldReduce = summary.length > 250;
+      fontSize = `${shouldReduce ? "12px" : "14px"}`; // 0.0625rem = 1px
     }
   });
 
@@ -173,7 +183,9 @@
 
 <div
   class="wiki-content"
-  style="max-height: {uiGlobals.isTouchDevice ? '220px' : '260px'};"
+  style="max-height: {uiGlobals.isTouchDevice
+    ? '220px'
+    : '260px'}; font-size: {fontSize};"
 >
   {#if infosFetched}
     {#if thumbnail}
@@ -186,13 +198,13 @@
       />
     {/if}
     <div class="wiki-header">
-      <h3>From Wikipedia</h3>
+      <h3 style="font-size: 1.1rem;">From Wikipedia</h3>
     </div>
-    <div class="wiki-summary">
+    <div class="wiki-summary" style="font-size: {fontSize};">
       {@html summary}
     </div>
     {#if uiGlobals.isTouchDevice}
-      <div style="margin-top: 2em;"></div>
+      <div style="margin-top: 2rem;"></div>
       <button
         tabindex="0"
         class="open-wiki-page"
