@@ -88,7 +88,7 @@ async function updateMapPlaceEntries({ mapBounds, zoom }) {
  * @returns {Promise<Object>} - Object containing event information and dots for the map
  */
 async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
-  console.time("updateMarkersWithEventsData");
+
   const { events, dotEvents } = await getEventsForBoundsAndDate({
     date,
     bounds: mapBounds,
@@ -97,7 +97,6 @@ async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
   });
   const eventIds = events.map((event) => event.event_id);
   const eventInfos = await getEventsById(eventIds);
-
   // Add type annotation to make it clear this is a Map of objects
   const eventInfosById = new Map(
     eventInfos.map((eventInfo) => [eventInfo.event_id, eventInfo])
