@@ -7,20 +7,16 @@
   <h1>Welcome to Landnotes</h1>
 
   <p>
-    Landnotes shows wikipedia places and events on a map (use the menu
+    Landnotes shows Wikipedia places and events on a map (use the menu
     <img src="/icons/menu.svg" alt="menu" class="menu-icon" />
     to switch between the two).
   </p>
 
   <p>
-    It is a work in progress with 6.5 million events extracted from 400,000
-    articles using Google Gemini. If anything doesn't make sense, blame it on
-    the AI! There are 10 times more articles to process but this might take
-    $3000 dollars.
-  </p>
-
-  <p>
-    Learn more on the <a
+    There are currently 6.5 million events extracted from 400,000 articles using
+    Google Gemini. If anything doesn't make sense, blame it on the AI! There
+    might be 10 times more events to extract by scanning all of Wikipedia -
+    learn more on the project's <a
       href="https://github.com/Zulko/landnotes"
       target="_blank">Github page</a
     >.
