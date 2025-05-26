@@ -192,6 +192,7 @@
       {@html summary}
     </div>
     {#if uiGlobals.isTouchDevice}
+      <div style="margin-top: 2em;"></div>
       <button
         tabindex="0"
         class="open-wiki-page"
@@ -236,7 +237,6 @@
       rgba(255, 255, 255, 1)
     );
     pointer-events: none;
-    overflow-y: hidden;
   }
 
   .wiki-header h3 {
@@ -279,11 +279,17 @@
     font-weight: 600;
     border: 1px solid #0645ad;
     border-radius: 4px;
-    margin: 0 auto 1em;
+    margin: 0.2em auto 0.2em;
     transition:
       background-color 0.2s,
       transform 0.1s;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    width: max-content;
   }
 
   .spinner {
