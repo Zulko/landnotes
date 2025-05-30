@@ -32,6 +32,10 @@
   }
 
   function updateDate(field, value) {
+    if (field === "year" && value === 0) {
+      // If setting year to 0, change to -1 if current year is positive, or 1 otherwise
+      value = date.year > 0 ? -1 : 1;
+    }
     date = constrainedDate({ ...date, [field]: value });
   }
 </script>
