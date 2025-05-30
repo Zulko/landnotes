@@ -44,7 +44,10 @@ export const uiGlobals = {
   isTouchDevice:
     typeof window !== "undefined" &&
     ("ontouchstart" in window || navigator.maxTouchPoints > 0),
-  isSafari: typeof window !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+  isSafariOrFirefox:
+    typeof window !== "undefined" &&
+    (/^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
+      /Firefox/i.test(navigator.userAgent)),
 };
 export const uiState = $state({
   sameLocationEvents: null,

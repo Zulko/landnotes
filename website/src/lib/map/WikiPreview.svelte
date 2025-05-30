@@ -37,7 +37,7 @@
     let url;
     let requestOptions;
 
-    if (uiGlobals.isSafari) {
+    if (uiGlobals.isSafariOrFirefox) {
       url = `${wikiEndpoint}${encodedTitle}?origin=*`;
       requestOptions = { headers: {} };
     } else {
