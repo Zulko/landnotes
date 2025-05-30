@@ -72,11 +72,23 @@
 
     <!-- Links section -->
     <div class="menu-links">
-      <a
-        onclick={() => (appState.paneTab = "about")}
-        type="button"
-        class="menu-item">About Landnotes</a
+      <span
+        onclick={() => {
+          appState.paneTab = "about";
+          onCloseMenu();
+        }}
+        onkeydown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            appState.paneTab = "about";
+            onCloseMenu();
+          }
+        }}
+        class="menu-item"
+        role="button"
+        tabindex="0"
       >
+        About Landnotes
+      </span>
     </div>
   </div>
 </div>
