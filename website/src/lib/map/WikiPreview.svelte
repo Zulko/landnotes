@@ -56,7 +56,6 @@
       // Calculate dimensions that maintain aspect ratio within our constraints
       if (data.thumbnail) {
         ({ imageWidth, imageHeight } = calculateDimensions(data.thumbnail));
-        console.log(imageWidth, imageHeight);
         imageHasWhiteBackground =
           await checkImageCornersForWhiteBackground(thumbnail);
       }

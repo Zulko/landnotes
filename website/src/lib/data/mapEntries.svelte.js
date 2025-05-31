@@ -59,7 +59,6 @@ $effect.root(() => {
  */
 async function updateMapPlaceEntries({ mapBounds, zoom }) {
   const willBeLoadingTimeOut = setTimeout(() => {
-    console.log("setting dataIsLoading to true");
     uiState.dataIsLoading = true;
   }, 500);
   const { entryInfos, dots } = await getGeodataFromBounds({
@@ -95,7 +94,6 @@ async function updateMapPlaceEntries({ mapBounds, zoom }) {
  */
 async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
   const willBeLoadingTimeOut = setTimeout(() => {
-    console.log("setting dataIsLoading to true");
     uiState.dataIsLoading = true;
   }, 500);
   const { events, dotEvents } = await getEventsForBoundsAndDate({
@@ -116,7 +114,6 @@ async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
     const eventInfo = eventInfosById.get(event.event_id) || {};
     return { ...eventInfo, ...event };
   });
-  console.timeEnd("updateMarkersWithEventsData");
 
   updateMapEntriesFromQueryResults({
     entryInfos: eventsWithInfos,
