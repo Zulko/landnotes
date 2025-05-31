@@ -51,6 +51,7 @@ export const uiGlobals = {
 };
 export const uiState = $state({
   sameLocationEvents: null,
+  dataIsLoading: false,
 });
 let dontPushToHistory = $state(false);
 let currentMode = $state("places");

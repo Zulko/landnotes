@@ -7,9 +7,9 @@
   <h1>Welcome to Landnotes</h1>
 
   <p>
-    Landnotes shows Wikipedia places and events on a map (use the menu
+    Landnotes shows Wikipedia places and events on a map (see the menu
     <img src="/icons/menu.svg" alt="menu" class="menu-icon" />
-    to switch between the two).
+    for options).
   </p>
 
   <p>

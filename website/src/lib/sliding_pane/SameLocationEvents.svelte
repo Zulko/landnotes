@@ -2,6 +2,7 @@
   import EventCard from "../map/EventCard.svelte";
   import { getEventsById } from "../data/events_data";
   import { normalizeMapEntryInfo } from "../data/mapEntries.svelte";
+  import { appState } from "../appState.svelte";
   let { sameLocationEvents } = $props();
   let loadingEvents = $state(true);
   let expandedMonths = $state({});
@@ -82,6 +83,23 @@
 
 <div class="same-location-events">
   <h1>Events at this location</h1>
+  <div class="date-info">
+    Showing events for
+    <b>
+      {appState.date.year}
+      {#if typeof appState.date.month === "number"}
+        / {appState.date.month}
+        {#if typeof appState.date.day === "number"}
+          / {appState.date.day}
+        {/if}
+      {/if}
+    </b>
+    {#if !appState.strictDate}
+      <span class="date-range-note"
+        >and any time range containing this date</span
+      >
+    {/if}
+  </div>
 
   {#if loadingEvents}
     <div class="loading">Loading events...</div>
@@ -133,11 +151,17 @@
   }
 
   h1 {
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     font-size: 1.8em;
     font-weight: normal;
     border-bottom: 1px solid #a2a9b1;
     padding-bottom: 0.2em;
+  }
+
+  .date-info {
+    margin-bottom: 16px;
+    color: #54595d;
+    font-size: 1.1em;
   }
 
   .loading,
