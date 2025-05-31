@@ -4,7 +4,7 @@
   import MenuDropdown from "./MenuDropdown.svelte";
   import DatePicker from "./DatePicker.svelte";
 
-  import { appState, uiGlobals } from "../appState.svelte";
+  import { appState, uiGlobals, uiState } from "../appState.svelte";
 
   let searchQuery = $state("");
   let searchResults = $state([]);
@@ -163,9 +163,15 @@
 
     <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
-      <button class="menu-button" onclick={toggleMenu} title="Menu">
-        <img src={`${basePath}icons/menu.svg`} alt="Menu" class="icon" />
-      </button>
+      {#if uiState.dataIsLoading}
+        <button class="menu-button loading" title="Loading...">
+          <div class="spinner"></div>
+        </button>
+      {:else}
+        <button class="menu-button" onclick={toggleMenu} title="Menu">
+          <img src={`${basePath}icons/menu.svg`} alt="Menu" class="icon" />
+        </button>
+      {/if}
     </div>
   </div>
 
@@ -356,5 +362,27 @@
     text-align: center;
     color: #666;
     font-style: italic;
+  }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 3px solid #e0e0e0;
+    border-top: 3px solid #666;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .menu-button.loading {
+    cursor: wait;
   }
 </style>

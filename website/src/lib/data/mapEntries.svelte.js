@@ -14,7 +14,7 @@
  * state changes occur, such as mode switches, date changes, or map movement.
  */
 
-import { appState } from "../appState.svelte";
+import { appState, uiState } from "../appState.svelte";
 import { getPlaceDataFromGeokeys, getGeodataFromBounds } from "./places_data";
 import { getEventsById, getEventsForBoundsAndDate } from "./events_data";
 
@@ -58,6 +58,10 @@ $effect.root(() => {
  * @param {number} options.zoom - The current zoom level of the map
  */
 async function updateMapPlaceEntries({ mapBounds, zoom }) {
+  const willBeLoadingTimeOut = setTimeout(() => {
+    console.log("setting dataIsLoading to true");
+    uiState.dataIsLoading = true;
+  }, 500);
   const { entryInfos, dots } = await getGeodataFromBounds({
     bounds: mapBounds,
     maxZoomLevel: zoom - 1,
@@ -76,6 +80,8 @@ async function updateMapPlaceEntries({ mapBounds, zoom }) {
     entryInfos.push(selectedMarker[0]);
   }
   updateMapEntriesFromQueryResults({ entryInfos, dots });
+  clearTimeout(willBeLoadingTimeOut);
+  uiState.dataIsLoading = false;
 }
 
 /**
@@ -88,7 +94,10 @@ async function updateMapPlaceEntries({ mapBounds, zoom }) {
  * @returns {Promise<Object>} - Object containing event information and dots for the map
  */
 async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
-
+  const willBeLoadingTimeOut = setTimeout(() => {
+    console.log("setting dataIsLoading to true");
+    uiState.dataIsLoading = true;
+  }, 500);
   const { events, dotEvents } = await getEventsForBoundsAndDate({
     date,
     bounds: mapBounds,
@@ -113,6 +122,8 @@ async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
     entryInfos: eventsWithInfos,
     dots: dotEvents,
   });
+  clearTimeout(willBeLoadingTimeOut);
+  uiState.dataIsLoading = false;
 }
 
 function updateMapEntriesFromQueryResults({ entryInfos, dots }) {
