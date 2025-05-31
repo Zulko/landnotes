@@ -2,9 +2,52 @@
 
 The goal of Landnotes is to extract as many events as possible to render a rich world where millions of people, places and actions. For these events to appear on the map we need to extract basic where/when/what/who information, which is done using classic scripts with regexes for the most structured data, and AI for reading plain text.
 
+## Dated events in Wikipedia
+
+We can use simple regular expressions to parse wikipedia articles and extract dates like *"1516"*, *"March 1657"*, *"April 14, 2012"*, *"15 March 44 BC"* etc.  This is slightly tricky for various reasons:
+- Wikipedia also has its own markup language for dates
+- Wikipedia is full of citations of sources which might have their own publication date but are not exactly events (these are not events)
+- It is difficult to differentiate years (*"Charlemagne was crowned in 800"*) from standard numbers(*"Charlemagne had prefects in 800 cities"*), especially for small years like *"40"*.
+
+### Dates by year
+
+Here is what we obtain (there is some artifact around the first century BC because only dates with *"AD"* in the date, e.g. *"55 AD"*, are shown for this century):
+
+<center><img src="./assets/dates_by_year.png" alt="dates by year" style="max-width: 800px" /></center>
+
+There are 100 million dates represented here. We can see the more-than-exponential growth of the number of dates per year, which might simply be due to the fact that there is more documentation and more precise dates as we get closer to our time:
+- Years before 1BC have less than 100 events per year (and most are about the Greek and Roman worlds)
+- From year 1200 on, all years have over ~1000 events.
+- Around 1750, years have ~10,000 events.
+- Around 1950, years have ~100,000 events.
+- After 2000, the number of dates jumps to ~1,000,000 per year, probably because due to the internet that makes it easier to record events, the birth of wikipedia (and so events are added "as they happen") and other factors.
+
+To build Landnotes we'll need to parse these pages and find out which of these dates are attributed to a place and description.
+
+### Pages to parse
+
+For each given year, there is a number of pages that would need to be parsed to find all the events in that year. For instance, getting all events for year 1949 requires to parse the ~100,000 pages which have a detected date in 1949. However, pages are shared accross years. Once we have parsed all of 1949, we got many of the events of 1948 or 1950 and other years in the process.
+
+If we ask *"how many different pages contain a date before year X"*, we get this graph:
+
+<center><img src="./assets/pages_until_year.png" alt="dates by year" style="max-width: 800px" /></center>
+
+So we would need to parse
+- 500,000 different pages to get all events until year 1500
+- ~1 million pages to get all events until year 1800
+- ~2 million pages to get all events until year 1920
+- ~4 million pages to get all events until year 2000
+- ~7.5 million pages to get all events until year 2020
+
+For the website to be fairly interesting, it should probably have events until at least 2000 (aka "the distant past" for Gen Z), and so feed from 4 million pages, which would cost around $3000 (see [The Economics of Landnotes](./economics_of_landnotes.md)).
+
 ## Parsing events in infoboxes
 
-Right off the bat a simple script that looks at infoboxes for places and dates of births and deaths can scrap 1.4 million births and 900,000 deaths (which might mean that one third of the people on wikipedia are alive today!). Around 20,000 pages describe a specific event, for instance the [Boston tea party](https://en.wikipedia.org/wiki/Boston_Tea_Party) or [assassination of Julius Caesar](https://en.wikipedia.org/wiki/Assassination_of_Julius_Caesar). And there is a flurry of infoboxes that describe buildings openings (~300k), artwork release, etc.
+English Wikipedia has 12 million pages, of which 4.4 millions have an infobox (the square with key infos at the beginning of the article), and 2.7 millions of these infoboxes feature at least one date and one place.
+
+Right off the bat a simple script that looks at infoboxes for places and dates of births and deaths can scrap 1.4 million births and 900,000 deaths (which might mean that one third of the people on wikipedia are alive today!).
+
+Around 20,000 pages describe a specific event, for instance the [Boston tea party](https://en.wikipedia.org/wiki/Boston_Tea_Party) or [assassination of Julius Caesar](https://en.wikipedia.org/wiki/Assassination_of_Julius_Caesar). And there is a flurry of infoboxes that describe buildings openings (~300k), artwork release, etc.
 
 The information in infoboxes is generally also available in structured form in the wikimedia database. But it is often not the whole story. For instance, the page on the assassination of Julius Caesar refers to a series of events in the months preceding the assassination, but these are not available in structured form. Which is why parsing pages with an AI can help retrieve more events.
 
