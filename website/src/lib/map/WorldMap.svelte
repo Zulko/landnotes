@@ -91,7 +91,7 @@
 
     // Add a lightweight but visually appealing tile layer
     L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "https://{s}.tile.openstreetmap.org/osmfr/{z}/{x}/{y}.png",
       // "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
       // "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       // "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
@@ -99,7 +99,7 @@
       // "https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg",
       {
         attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
         minZoom: 2,
       }
@@ -364,11 +364,13 @@
     background: none !important;
     border: none !important;
     box-shadow: none !important;
-    /* Center horizontally at the top */
+    /* Center horizontally at the top with responsive width */
     top: 10px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     position: absolute !important;
+    width: 80% !important;
+    max-width: 500px !important;
   }
 
   /* Alternative more specific override */
@@ -377,6 +379,8 @@
     left: 50% !important;
     transform: translateX(-50%) !important;
     position: absolute !important;
+    width: 80% !important;
+    max-width: 500px !important;
   }
 
   /* Override the parent container positioning */
@@ -387,11 +391,12 @@
   }
 
   :global(.search-bar-container) {
-    min-width: 300px;
+    width: 100%;
   }
 
   /* Override any margin/padding from the SearchBarMenu when in map control */
   :global(.custom-search-control .search-container) {
     margin-bottom: 0;
+    width: 100%;
   }
 </style>
