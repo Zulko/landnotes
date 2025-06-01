@@ -2,7 +2,7 @@ import L from "leaflet";
 // @ts-ignore
 import MarkerIcon from "./MarkerIcon.svelte";
 import { uiGlobals } from "../appState.svelte";
-import { mount } from "svelte";
+import { mount, unmount } from "svelte";
 import { appState } from "../appState.svelte";
 
 const iconSizesByDisplayClass = {
@@ -12,6 +12,9 @@ const iconSizesByDisplayClass = {
   selected: [128, 32],
 };
 
+// Store component references to properly unmount them
+const markerComponents = new WeakMap();
+
 /**
  * Creates a marker with appropriate behavior based on type
  * @param {Object} options - Options object
@@ -20,7 +23,7 @@ const iconSizesByDisplayClass = {
  */
 export function createMarker({ entry }) {
   // No longer need to normalize here as the entry should already be normalized
-  const { divIcon } = createDivIcon({
+  const { divIcon, markerComponent } = createDivIcon({
     entry,
     displayClass: entry.displayClass,
   });
@@ -29,22 +32,44 @@ export function createMarker({ entry }) {
     pane: entry.displayClass + "MarkersPane",
   });
 
+  // Store the component reference
+  markerComponents.set(marker, markerComponent);
+
   bindHoverEvents({ marker, entry });
 
   return marker;
 }
 
 export function updateMarkerIcon({ marker, entry }) {
-  const { divIcon } = createDivIcon({
+  // Unmount the old component before creating a new one
+  const oldComponent = markerComponents.get(marker);
+  if (oldComponent) {
+    unmount(oldComponent);
+  }
+
+  const { divIcon, markerComponent } = createDivIcon({
     entry,
     displayClass: entry.displayClass,
   });
   marker.setIcon(divIcon);
+  
+  // Store the new component reference
+  markerComponents.set(marker, markerComponent);
 }
+
 export function updateMarkerPane(marker, pane) {
   uiGlobals.leafletMap.removeLayer(marker);
   marker.options.pane = pane;
   marker.addTo(uiGlobals.leafletMap);
+}
+
+export function cleanupMarker(marker) {
+  // Unmount the Svelte component when the marker is removed
+  const component = markerComponents.get(marker);
+  if (component) {
+    unmount(component);
+    markerComponents.delete(marker);
+  }
 }
 
 function createDivIcon({ entry, displayClass }) {
@@ -103,7 +128,13 @@ function bindHoverEvents({ marker, entry }) {
     });
     marker.on("mouseout", () => {
       unhoverTimeout = setTimeout(() => {
-        const { divIcon } = createDivIcon({
+        // Unmount the old component before creating a new one
+        const oldComponent = markerComponents.get(marker);
+        if (oldComponent) {
+          unmount(oldComponent);
+        }
+
+        const { divIcon, markerComponent } = createDivIcon({
           entry,
           displayClass: entry.displayClass,
         });
@@ -111,6 +142,10 @@ function bindHoverEvents({ marker, entry }) {
         marker.setIcon(divIcon);
         marker.options.pane = entry.displayClass + "MarkersPane";
         marker.addTo(uiGlobals.leafletMap);
+        
+        // Store the new component reference
+        markerComponents.set(marker, markerComponent);
+        
         isHovered = false;
       }, 100);
     });
