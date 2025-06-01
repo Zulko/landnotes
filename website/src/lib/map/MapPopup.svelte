@@ -2,7 +2,7 @@
   // Reactive state
   import { uiGlobals } from "../appState.svelte";
   import { onMount } from "svelte";
-
+  import { portal } from "svelte-portal";
   let {
     popupContent,
     children,
@@ -164,6 +164,7 @@
 
 <div
   class="map-popup"
+  use:portal={"#main"}
   bind:this={popupElement}
   style={popupStyle}
   onmouseenter={() => {
@@ -194,7 +195,7 @@
 </span>
 
 <style>
-  .map-popup {
+  :global(.map-popup) {
     position: absolute;
     width: 350px;
     max-height: 260px;
