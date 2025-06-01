@@ -20,18 +20,19 @@
   let closeTimeout = $state(null);
   let visibility = $state("hidden");
   let popupStyle = $derived(
-    `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility};`
+    `left: ${popupLeft}px; top: ${popupTop}px; visibility: ${visibility};`
   );
   let resizeObserver = $state(null);
 
   onMount(() => {
     if (popupElement) {
+      document.body.appendChild(popupElement); // Move to body
+
       resizeObserver = new ResizeObserver(() => {
         if (isOpen) {
           updateTooltipPosition();
         }
       });
-
       resizeObserver.observe(popupElement);
     }
 
@@ -39,13 +40,16 @@
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
+      if (popupElement && popupElement.parentNode === document.body) {
+        document.body.removeChild(popupElement); // Clean up from body
+      }
     };
   });
 
   // Lifecycle
   $effect(() => {
     if (isOpen) {
-      updateTooltipPosition();
+      updateTooltipPosition(); // Position before making visible
       setTimeout(() => {
         visibility = "visible";
       }, visibilityDelay);
@@ -59,88 +63,87 @@
     if (!popupElement || !triggerElement) return;
 
     const triggerRect = triggerElement.getBoundingClientRect();
-    const popupRect = popupElement.getBoundingClientRect();
+    const popupRect = popupElement.getBoundingClientRect(); // This rect is valid as element is in body, styled with fixed pos
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // Find scrollable parent and get its dimensions and scroll position
-    const scrollableParent = findScrollableParent(triggerElement);
-    const parentRect = scrollableParent.getBoundingClientRect();
-    const scrollTop = scrollableParent.scrollTop;
-    const scrollLeft = scrollableParent.scrollLeft;
+    // Default position: centered above the trigger
+    let newPopupLeft =
+      triggerRect.left + triggerRect.width / 2 - popupRect.width / 2;
+    let newPopupTop = triggerRect.top - popupRect.height - 5; // 5px offset from trigger's top
 
-    const mapWidth =
-      document.getElementsByClassName("map-container")[0]?.clientWidth ||
-      viewportWidth;
-    const leftStart =
-      uiGlobals.isTouchDevice || !keepWithinMap ? 0 : viewportWidth - mapWidth;
+    // Determine horizontal boundaries
+    let boundaryMinX = 10; // Default to viewport padding
+    let boundaryMaxX = viewportWidth - 10; // Default to viewport padding (popup's right edge ends here)
 
-    // Default position (above and centered)
-    let top = -popupRect.height - 2;
-    let left = -popupRect.width / 2 + triggerRect.width / 2;
-
-    // Check right edge against parent bounds
-    const rightEdge = parentRect.left + parentRect.width;
-    if (triggerRect.left + left + popupRect.width > rightEdge) {
-      left = rightEdge - popupRect.width - triggerRect.left - 10;
+    if (keepWithinMap && !uiGlobals.isTouchDevice) {
+      const mapContainer = document.getElementsByClassName("map-container")[0];
+      const mapRect = mapContainer
+        ? mapContainer.getBoundingClientRect()
+        : null;
+      if (mapRect) {
+        boundaryMinX = mapRect.left + 10;
+        boundaryMaxX = mapRect.right - 10;
+      }
+      // If mapRect is not found, it defaults to viewport boundaries set above.
     }
 
-    // Check left edge against parent bounds and map bounds
-    const leftEdge = Math.max(parentRect.left, leftStart);
-    if (triggerRect.left + left < leftEdge + 10) {
-      left = leftEdge + 10 - triggerRect.left;
+    // Adjust horizontally
+    if (newPopupLeft < boundaryMinX) {
+      newPopupLeft = boundaryMinX;
+    }
+    // The popup's right edge is newPopupLeft + popupRect.width
+    if (newPopupLeft + popupRect.width > boundaryMaxX) {
+      newPopupLeft = boundaryMaxX - popupRect.width;
+    }
+    // Re-check if pushing from right violated left boundary (for narrow map/viewport)
+    if (newPopupLeft < boundaryMinX) {
+      newPopupLeft = boundaryMinX;
+      // If popupRect.width is still too large, it will overflow boundaryMaxX. Prioritize left boundary.
     }
 
-    // Available space calculations within the scrollable parent
-    const spaceAbove = triggerRect.top - parentRect.top;
-    const spaceBelow =
-      parentRect.bottom - (triggerRect.top + triggerRect.height);
+    // Vertical positioning:
+    // Prefer above, then below, then best fit.
+    const spaceAboveInViewport = triggerRect.top; // Space from viewport top to trigger top
+    const spaceBelowInViewport = viewportHeight - triggerRect.bottom; // Space from trigger bottom to viewport bottom
+    const requiredVerticalSpace = popupRect.height + 10; // popup height + 5px margin + 5px buffer
 
-    // Check if enough space above
-    if (spaceAbove < popupRect.height + 10) {
-      // Not enough space above, try below
-      if (spaceBelow >= popupRect.height + 10) {
-        // Enough space below
-        top = triggerRect.height + 5;
+    if (spaceAboveInViewport >= requiredVerticalSpace) {
+      // Enough space above
+      newPopupTop = triggerRect.top - popupRect.height - 5; // 5px offset from trigger's top
+    } else if (spaceBelowInViewport >= requiredVerticalSpace) {
+      // Not enough above, but enough below
+      newPopupTop = triggerRect.bottom + 5; // 5px offset from trigger's bottom
+    } else {
+      // Not enough space either above or below fully. Position in the larger space, or clamp.
+      if (spaceAboveInViewport > spaceBelowInViewport) {
+        // More space above, position as high as possible without going off top of viewport
+        newPopupTop = Math.max(10, triggerRect.top - popupRect.height - 5); // 10px from viewport top
       } else {
-        // Not enough space above or below, use the side with more space
-        top =
-          spaceAbove > spaceBelow
-            ? Math.max(-popupRect.height - 2, -spaceAbove + 10)
-            : Math.min(
-                triggerRect.height + 5,
-                triggerRect.height + spaceBelow - popupRect.height - 10
-              );
+        // More space below (or equal), position as low as possible without going off bottom of viewport
+        newPopupTop = Math.min(
+          triggerRect.bottom + 5,
+          viewportHeight - popupRect.height - 10 // 10px from viewport bottom
+        );
       }
     }
 
-    // Use the calculated position, adjusted for scrolling
-    // This ensures the popup always stays with its target regardless of scroll position
-    popupTop = top - scrollTop;
-    popupLeft = left;
-  }
-
-  // Helper function to find the nearest scrollable parent
-  function findScrollableParent(element) {
-    if (!element) return document.documentElement;
-
-    // Start with the closest parent
-    let parent = element.parentElement;
-
-    // Go up the DOM tree until we find a scrollable element
-    while (parent && parent !== document.body) {
-      const overflowY = window.getComputedStyle(parent).overflowY;
-      const isScrollable = overflowY === "auto" || overflowY === "scroll";
-
-      if (isScrollable && parent.scrollHeight > parent.clientHeight) {
-        return parent;
-      }
-      parent = parent.parentElement;
+    // Final clamping to ensure popup is within viewport vertically
+    if (newPopupTop < 10) {
+      // 10px from viewport top
+      newPopupTop = 10;
+    }
+    if (newPopupTop + popupRect.height > viewportHeight - 10) {
+      // 10px from viewport bottom
+      newPopupTop = viewportHeight - popupRect.height - 10;
     }
 
-    // Default to document if no scrollable parent found
-    return document.documentElement;
+    popupLeft = newPopupLeft;
+    popupTop = newPopupTop;
   }
+
+  // Helper function to find the nearest scrollable parent - NO LONGER NEEDED
+  // function findScrollableParent(element) { ... } // REMOVED
 
   function onMouseLeave() {
     if (enterable) {
@@ -195,7 +198,7 @@
 
 <style>
   .map-popup {
-    position: absolute;
+    position: fixed; /* Changed from absolute to fixed */
     width: 350px;
     max-height: 260px;
     overflow: visible;
