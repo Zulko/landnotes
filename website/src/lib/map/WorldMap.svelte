@@ -360,10 +360,30 @@
   }
 
   /* Custom search control styles */
-  :global(.custom-search-control) {
+  :global(.leaflet-container .leaflet-top.leaflet-left .custom-search-control) {
     background: none !important;
     border: none !important;
     box-shadow: none !important;
+    /* Center horizontally at the top */
+    top: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    position: absolute !important;
+  }
+
+  /* Alternative more specific override */
+  :global(.leaflet-container .custom-search-control) {
+    top: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    position: absolute !important;
+  }
+
+  /* Override the parent container positioning */
+  :global(.leaflet-container .leaflet-top.leaflet-left) {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
   }
 
   :global(.search-bar-container) {
