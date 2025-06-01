@@ -114,40 +114,46 @@ function onClick(entry) {
 function bindHoverEvents({ marker, entry }) {
   let isHovered = false;
   let unhoverTimeout = null;
+  let originalIcon = null;
 
   if (!uiGlobals.isTouchDevice) {
     marker.on("mouseover", () => {
       clearTimeout(unhoverTimeout);
       if (isHovered) return;
-      uiGlobals.leafletMap.removeLayer(marker);
+      
+      // Store the original icon if not already stored
+      if (!originalIcon) {
+        originalIcon = marker.options.icon;
+      }
+      
+      // Create a new icon with updated size but reuse the same HTML element
       const [width, height] = iconSizesByDisplayClass["full"];
-      marker.options.icon.options.iconSize = [width, height];
+      const hoverIcon = L.divIcon({
+        className: originalIcon.options.className,
+        html: originalIcon.options.html,
+        iconSize: [width, height],
+      });
+      
+      // Move to top pane and update icon
+      uiGlobals.leafletMap.removeLayer(marker);
+      marker.setIcon(hoverIcon);
       marker.options.pane = "topPane";
       marker.addTo(uiGlobals.leafletMap);
       isHovered = true;
     });
+    
     marker.on("mouseout", () => {
       unhoverTimeout = setTimeout(() => {
-        // Unmount the old component before creating a new one
-        const oldComponent = markerComponents.get(marker);
-        if (oldComponent) {
-          unmount(oldComponent);
-        }
-
-        const { divIcon, markerComponent } = createDivIcon({
-          entry,
-          displayClass: entry.displayClass,
-        });
+        if (!originalIcon) return;
+        
+        // Restore original icon
         uiGlobals.leafletMap.removeLayer(marker);
-        marker.setIcon(divIcon);
+        marker.setIcon(originalIcon);
         marker.options.pane = entry.displayClass + "MarkersPane";
         marker.addTo(uiGlobals.leafletMap);
         
-        // Store the new component reference
-        markerComponents.set(marker, markerComponent);
-        
         isHovered = false;
-      }, 100);
+      }, 250); // Increase timeout to be longer than MapPopup's 200ms grace period
     });
   }
 }
