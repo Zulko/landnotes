@@ -91,7 +91,7 @@
 
     // Add a lightweight but visually appealing tile layer
     L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/osmfr/{z}/{x}/{y}.png",
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       // "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
       // "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       // "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
