@@ -83,27 +83,12 @@
     }).setView([0, 0], 2);
     uiGlobals["leafletMap"] = map;
 
-    // Add tile layer (OpenStreetMap)
-    // L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    //   attribution:
-    //     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    // }).addTo(map);
-
-    // Add a lightweight but visually appealing tile layer
-    L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      // "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      // "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-      // "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-      // "https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png",
-      // "https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg",
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-        minZoom: 2,
-      }
-    ).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+      minZoom: 2,
+    }).addTo(map);
 
     // Add zoom control to bottom right
 
@@ -398,5 +383,10 @@
   :global(.custom-search-control .search-container) {
     margin-bottom: 0;
     width: 100%;
+  }
+
+  :global(.leaflet-top, .leaflet-bottom) {
+    position: absolute;
+    z-index: 400 !important;
   }
 </style>
