@@ -127,7 +127,7 @@
   .map-container {
     flex: 1;
     height: 100%;
-    z-index: 50;
+    z-index: 500;
     position: relative;
   }
 
@@ -160,7 +160,7 @@
     transform: translateX(-50%);
     width: 80%;
     max-width: 500px;
-    z-index: 1000;
+    z-index: 200;
     background-color: none;
     border-radius: 20px;
     padding: 5px;

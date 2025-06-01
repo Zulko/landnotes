@@ -226,6 +226,7 @@
 <style>
   .search-container {
     position: relative;
+    z-index: 400;
     width: 100%;
     margin-bottom: 10px;
   }

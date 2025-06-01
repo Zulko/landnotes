@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from "svelte";
+  import { mount, unmount } from "svelte";
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import {
@@ -9,6 +10,7 @@
   } from "./createMarker";
   import { mapEntries, mapBounds } from "../data/mapEntries.svelte";
   import { appState, uiGlobals } from "../appState.svelte";
+  import SearchBarMenu from "../menu/SearchBarMenu.svelte";
 
   // ===== STATE VARIABLES =====
   let mapElement;
@@ -22,6 +24,7 @@
   let boundsChangeTimeout = null;
   let handleBoundChangesAfterFlyToTimeOut = null;
   let fixZoomAfterFlyToTimeOut = null;
+  let searchBarComponent = null; // Store the mounted component reference
 
   // ===== LIFECYCLE METHODS =====
   onMount(() => {
@@ -49,6 +52,11 @@
 
     if (resizeObserver) {
       resizeObserver.disconnect();
+    }
+
+    if (searchBarComponent) {
+      unmount(searchBarComponent);
+      searchBarComponent = null;
     }
   });
 
@@ -98,11 +106,33 @@
     ).addTo(map);
 
     // Add zoom control to bottom right
+
+    // Create and add custom search control
+    const searchControl = L.control({ position: "topleft" });
+    searchControl.onAdd = function (map) {
+      const container = L.DomUtil.create(
+        "div",
+        "leaflet-bar custom-search-control"
+      );
+
+      // Create a container for the Svelte component
+      const searchContainer = L.DomUtil.create("div", "search-bar-container");
+      container.appendChild(searchContainer);
+
+      // Mount the SearchBarMenu component
+      searchBarComponent = mount(SearchBarMenu, { target: searchContainer });
+
+      L.DomEvent.disableClickPropagation(container);
+      return container;
+    };
+    searchControl.addTo(map);
+
     L.control
       .zoom({
         position: "bottomright",
       })
       .addTo(map);
+
     // Create layer groups for different marker types
     const panes = {
       dots: 200,
@@ -327,5 +357,21 @@
 
   :global(.leaflet-fade-anim .leaflet-popup) {
     transition: none;
+  }
+
+  /* Custom search control styles */
+  :global(.custom-search-control) {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  :global(.search-bar-container) {
+    min-width: 300px;
+  }
+
+  /* Override any margin/padding from the SearchBarMenu when in map control */
+  :global(.custom-search-control .search-container) {
+    margin-bottom: 0;
   }
 </style>
