@@ -82,7 +82,6 @@ async function queryPlacesFromGeokeys(geokeys, db) {
 			entry.dots = btoa(String.fromCharCode(...dots));
 		}
 	});
-	console.log(result.meta.rows_read);
 	return { results: result.results, rowsRead: result.meta.rows_read };
 }
 
@@ -134,7 +133,6 @@ async function queryEventsByMonthRegionByBatch(monthRegions, eventsByMonthDB) {
 }
 
 async function queryEventsById(eventIds, eventsDB) {
-	console.log('queryEventsById', eventIds, eventsDB);
 	const placeholders = eventIds.map(() => '?').join(',');
 	const stmt = eventsDB.prepare(`SELECT * from events WHERE event_id IN (${placeholders})`);
 	const result = await stmt.bind(...eventIds).all();
