@@ -1,6 +1,6 @@
 <script>
   // Reactive state
-  import { uiGlobals } from "../appState.svelte";
+  import { uiGlobals, appState } from "../appState.svelte";
   let { pageTitle, openWikiPage = null, isOpen = false } = $props(); // Title to look up
   let summary = $state(""); // Fetched extract
   let thumbnail = $state(""); // Fetched thumbnail URL
@@ -209,10 +209,12 @@
         class="open-wiki-page"
         onclick={() => {
           openWikiPage && openWikiPage(pageTitle);
+          appState.selectedMarkerId = null; // Deselect marker to close popup
         }}
         onkeydown={(e) => {
           if (e.key === "Enter") {
             openWikiPage && openWikiPage(pageTitle);
+            appState.selectedMarkerId = null; // Deselect marker to close popup
           }
         }}
       >
