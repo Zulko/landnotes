@@ -36,7 +36,7 @@
   h1 {
     margin-top: 0;
     margin-bottom: 16px;
-    font-size: 1.8em;
+    font-size: 1.4em;
     font-weight: normal;
     border-bottom: 1px solid #a2a9b1;
     padding-bottom: 0.2em;

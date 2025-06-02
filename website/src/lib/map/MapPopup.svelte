@@ -25,7 +25,6 @@
     `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility}; z-index: ${zIndex};`
   );
   let resizeObserver = $state(null);
-  let prevIsOpen = $state(false);
 
   onMount(() => {
     if (popupElement) {
@@ -58,33 +57,22 @@
   });
 
   // Lifecycle
-  $effect.pre(() => {
-    // Only run when isOpen actually changes
-    if (isOpen !== prevIsOpen) {
-      if (isOpen) {
-        // Schedule position update for next tick to ensure DOM is ready
-        setTimeout(() => {
-          updateTooltipPosition();
-        }, 0);
-        // Clear any existing visibility timeout
-        clearTimeout(visibilityTimeout);
-        visibilityTimeout = setTimeout(() => {
-          visibility = "visible";
-        }, visibilityDelay);
-      } else {
-        // Clear visibility timeout to prevent it from firing after close
-        clearTimeout(visibilityTimeout);
-        visibility = "hidden";
-        // For non-enterable popups, ensure immediate hiding
-        if (!enterable) {
-          // Force immediate style update
-          if (popupElement) {
-            popupElement.style.visibility = "hidden";
-          }
-        }
+  let wasOpen = false;
+  $effect(() => {
+    if (isOpen && !wasOpen) {
+      updateTooltipPosition();
+      clearTimeout(visibilityTimeout);
+      visibilityTimeout = setTimeout(() => {
+        visibility = "visible";
+      }, visibilityDelay);
+    } else if (!isOpen && wasOpen) {
+      clearTimeout(visibilityTimeout);
+      visibility = "hidden";
+      if (!enterable && popupElement) {
+        popupElement.style.visibility = "hidden";
       }
-      prevIsOpen = isOpen;
     }
+    wasOpen = isOpen;
   });
 
   // Position the popup based on available screen space
@@ -206,9 +194,6 @@
   onmouseenter={() => {
     if (enterable) {
       clearTimeout(closeTimeout);
-    } else {
-      isHovered = false;
-      visibility = "hidden";
     }
   }}
   onmouseleave={onMouseLeave}
