@@ -3,6 +3,10 @@
   import { uiGlobals } from "../appState.svelte";
   import { onMount } from "svelte";
   import { portal } from "svelte-portal";
+
+  // Add portal target check
+  let portalTarget = $state(null);
+
   let {
     popupContent,
     children,
@@ -27,6 +31,12 @@
   let resizeObserver = $state(null);
 
   onMount(() => {
+    // Check if portal target exists
+    portalTarget = document.getElementById("main");
+    if (!portalTarget) {
+      console.error("MapPopup: Portal target #main not found");
+    }
+
     if (popupElement) {
       // Find parent popup if it exists
       let parent = triggerElement.closest(".map-popup");
@@ -38,16 +48,18 @@
       }
 
       resizeObserver = new ResizeObserver(() => {
-        if (isOpen) {
+        if (isOpen && popupElement) {
           updateTooltipPosition();
         }
       });
 
-      resizeObserver.observe(popupElement);
+      if (popupElement) {
+        resizeObserver.observe(popupElement);
+      }
     }
 
     return () => {
-      if (resizeObserver) {
+      if (resizeObserver && popupElement) {
         resizeObserver.disconnect();
       }
       // Clear any pending timeouts on unmount
@@ -60,7 +72,22 @@
   let wasOpen = false;
   $effect(() => {
     if (isOpen && !wasOpen) {
-      updateTooltipPosition();
+      // Re-check portal target when opening
+      if (!portalTarget) {
+        portalTarget = document.getElementById("main");
+      }
+
+      // Ensure we have valid element references before updating position
+      if (!popupElement || !triggerElement) {
+        // Wait for next tick to allow elements to be rendered
+        requestAnimationFrame(() => {
+          if (popupElement && triggerElement) {
+            updateTooltipPosition();
+          }
+        });
+      } else {
+        updateTooltipPosition();
+      }
       clearTimeout(visibilityTimeout);
       visibilityTimeout = setTimeout(() => {
         visibility = "visible";
@@ -77,63 +104,93 @@
 
   // Position the popup based on available screen space
   function updateTooltipPosition() {
-    if (!popupElement || !triggerElement) return;
-
-    const triggerRect = triggerElement.getBoundingClientRect();
-    const popupRect = popupElement.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Get the absolute position of the trigger element
-    const absoluteTop = triggerRect.top + window.scrollY;
-    const absoluteLeft = triggerRect.left + window.scrollX;
-
-    const mapWidth =
-      document.getElementsByClassName("map-container")[0]?.clientWidth ||
-      viewportWidth;
-    const leftStart =
-      uiGlobals.isTouchDevice || !keepWithinMap ? 0 : viewportWidth - mapWidth;
-
-    // Default position (above and centered)
-    let top = absoluteTop - popupRect.height - 2;
-    let left = absoluteLeft - popupRect.width / 2 + triggerRect.width / 2;
-
-    // Check right edge
-    if (left + popupRect.width > viewportWidth - 10) {
-      left = viewportWidth - popupRect.width - 10;
-    }
-
-    // Check left edge against map bounds
-    const leftEdge = Math.max(0, leftStart);
-    if (left < leftEdge + 10) {
-      left = leftEdge + 10;
-    }
-
-    // Check vertical positioning
-    const spaceAbove = triggerRect.top;
-    const spaceBelow = viewportHeight - (triggerRect.top + triggerRect.height);
-
-    // Adjust vertical position if needed
-    if (spaceAbove < popupRect.height + 10) {
-      // Not enough space above, try below
-      if (spaceBelow >= popupRect.height + 10) {
-        // Enough space below
-        top = absoluteTop + triggerRect.height + 5;
-      } else {
-        // Not enough space above or below, use the side with more space
-        top =
-          spaceAbove > spaceBelow
-            ? Math.max(window.scrollY + 10, absoluteTop - popupRect.height - 2)
-            : Math.min(
-                absoluteTop + triggerRect.height + 5,
-                window.scrollY + viewportHeight - popupRect.height - 10
-              );
+    // Add defensive checks for null elements
+    if (!popupElement || !triggerElement) {
+      // Try to re-acquire references if they're null
+      if (!popupElement && isOpen) {
+        console.warn("MapPopup: popupElement is null during positioning");
       }
+      return;
     }
 
-    // Set absolute position
-    popupTop = top;
-    popupLeft = left;
+    // Additional check to ensure elements are still in the DOM
+    if (!document.body.contains(triggerElement)) {
+      console.warn("MapPopup: triggerElement is no longer in the DOM");
+      return;
+    }
+
+    try {
+      const triggerRect = triggerElement.getBoundingClientRect();
+      const popupRect = popupElement.getBoundingClientRect();
+
+      // Validate rect values
+      if (popupRect.width === 0 || popupRect.height === 0) {
+        // Element might not be rendered yet, try again on next frame
+        requestAnimationFrame(() => updateTooltipPosition());
+        return;
+      }
+
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Get the absolute position of the trigger element
+      const absoluteTop = triggerRect.top + window.scrollY;
+      const absoluteLeft = triggerRect.left + window.scrollX;
+
+      const mapContainer = document.getElementsByClassName("map-container")[0];
+      const mapWidth = mapContainer?.clientWidth || viewportWidth;
+      const leftStart =
+        uiGlobals.isTouchDevice || !keepWithinMap
+          ? 0
+          : viewportWidth - mapWidth;
+
+      // Default position (above and centered)
+      let top = absoluteTop - popupRect.height - 2;
+      let left = absoluteLeft - popupRect.width / 2 + triggerRect.width / 2;
+
+      // Check right edge
+      if (left + popupRect.width > viewportWidth - 10) {
+        left = viewportWidth - popupRect.width - 10;
+      }
+
+      // Check left edge against map bounds
+      const leftEdge = Math.max(0, leftStart);
+      if (left < leftEdge + 10) {
+        left = leftEdge + 10;
+      }
+
+      // Check vertical positioning
+      const spaceAbove = triggerRect.top;
+      const spaceBelow =
+        viewportHeight - (triggerRect.top + triggerRect.height);
+
+      // Adjust vertical position if needed
+      if (spaceAbove < popupRect.height + 10) {
+        // Not enough space above, try below
+        if (spaceBelow >= popupRect.height + 10) {
+          // Enough space below
+          top = absoluteTop + triggerRect.height + 5;
+        } else {
+          // Not enough space above or below, use the side with more space
+          top =
+            spaceAbove > spaceBelow
+              ? Math.max(
+                  window.scrollY + 10,
+                  absoluteTop - popupRect.height - 2
+                )
+              : Math.min(
+                  absoluteTop + triggerRect.height + 5,
+                  window.scrollY + viewportHeight - popupRect.height - 10
+                );
+        }
+      }
+
+      // Set absolute position
+      popupTop = top;
+      popupLeft = left;
+    } catch (error) {
+      console.error("MapPopup: Error updating position", error);
+    }
   }
 
   // Helper function to find the nearest scrollable parent
@@ -187,22 +244,40 @@
   }
 </script>
 
-<div
-  class="map-popup"
-  use:portal={"#main"}
-  bind:this={popupElement}
-  style={popupStyle}
-  onmouseenter={() => {
-    if (enterable) {
-      clearTimeout(closeTimeout);
-    }
-  }}
-  onmouseleave={onMouseLeave}
-  tabindex="-1"
-  role="tooltip"
->
-  {@render popupContent(isOpen)}
-</div>
+{#if portalTarget}
+  <div
+    class="map-popup"
+    use:portal={"#main"}
+    bind:this={popupElement}
+    style={popupStyle}
+    onmouseenter={() => {
+      if (enterable) {
+        clearTimeout(closeTimeout);
+      }
+    }}
+    onmouseleave={onMouseLeave}
+    tabindex="-1"
+    role="tooltip"
+  >
+    {@render popupContent(isOpen)}
+  </div>
+{:else}
+  <div
+    class="map-popup"
+    bind:this={popupElement}
+    style={popupStyle}
+    onmouseenter={() => {
+      if (enterable) {
+        clearTimeout(closeTimeout);
+      }
+    }}
+    onmouseleave={onMouseLeave}
+    tabindex="-1"
+    role="tooltip"
+  >
+    {@render popupContent(isOpen)}
+  </div>
+{/if}
 
 <span
   bind:this={triggerElement}
