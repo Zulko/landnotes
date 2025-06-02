@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy } from "svelte";
   import { appState } from "../appState.svelte";
+  import DropdownMenu from "./DropdownMenu.svelte";
 
   let {
     mode = $bindable("places"),
@@ -22,6 +23,27 @@
       onCloseMenu();
     }
   }
+
+  function handleDateFilterSelect(value) {
+    strictDate = value === "strict";
+  }
+
+  const dateFilterOptions = [
+    { value: "overlapping", label: "All events overlapping with the date" },
+    { value: "strict", label: "Only events strictly within the date" },
+  ];
+
+  let dateFilterValue = $state(strictDate ? "strict" : "overlapping");
+  const dateFilterDisplayValue = $derived(
+    strictDate
+      ? "Only events strictly within the date"
+      : "All events overlapping with the date"
+  );
+
+  // Sync the internal state with the prop
+  $effect(() => {
+    dateFilterValue = strictDate ? "strict" : "overlapping";
+  });
 
   onMount(() => {
     document.addEventListener("click", handleClickOutside);
@@ -57,16 +79,13 @@
     {#if mode === "events"}
       <div class="menu-group">
         <span class="menu-label">Date filter</span>
-        <select
-          class="mode-option mode-select"
-          value={strictDate ? "strict" : "overlapping"}
-          onchange={(e) => (strictDate = e.currentTarget.value === "strict")}
-        >
-          <option value="strict">Only events strictly within the date</option>
-          <option value="overlapping"
-            >All events overlapping with the date</option
-          >
-        </select>
+        <DropdownMenu
+          bind:value={dateFilterValue}
+          options={dateFilterOptions}
+          displayValue={dateFilterDisplayValue}
+          minWidth="280px"
+          onSelect={handleDateFilterSelect}
+        />
       </div>
     {/if}
 
@@ -157,10 +176,6 @@
     transition: all 0.2s ease;
     outline: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    /* Safari-specific overrides */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
   }
 
   .mode-option:hover {
@@ -196,22 +211,6 @@
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
   }
 
-  .mode-select {
-    padding: 8px 12px;
-    min-width: 220px;
-    background-color: #ffffff;
-    /* Add custom dropdown arrow for Safari */
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23858585' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 14px;
-    padding-right: 36px;
-  }
-
-  .mode-select:hover {
-    background-color: #ffffff;
-  }
-
   .menu-item {
     display: block;
     padding: 16px 20px;
@@ -243,31 +242,5 @@
 
   .menu-links {
     border-top: 1px solid #f3f4f6;
-  }
-
-  /* Option styling for select elements */
-  option {
-    color: #374151;
-    background-color: #ffffff;
-    padding: 8px;
-  }
-
-  /* Additional Safari fixes */
-  select.mode-option {
-    -webkit-border-radius: 8px;
-    -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  select.mode-option::-webkit-inner-spin-button,
-  select.mode-option::-webkit-outer-spin-button {
-    display: none;
-    -webkit-appearance: none;
-  }
-
-  /* Ensure buttons don't have Safari's default styling */
-  button.mode-option {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
   }
 </style>

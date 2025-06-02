@@ -1,5 +1,7 @@
 <script>
   import { constrainedDate } from "../data/date_utils";
+  import DropdownMenu from "./DropdownMenu.svelte";
+
   // Define a date object to hold the values
   let { date = $bindable({ year: 1810, month: 3, day: "all" }) } = $props();
 
@@ -18,9 +20,6 @@
     "November",
     "December",
   ];
-
-  // Optional: you can also export individual props if needed
-  // but they should be bound to date properties
 
   // const firstYearRequiringMonth = 1500;
   // const firstYearRequiringDay = 1920;
@@ -56,48 +55,65 @@
       updateDate("year", newYear);
     }
   }
+
+  function handleDaySelect(value) {
+    updateDate("day", value);
+  }
+
+  function handleMonthSelect(value) {
+    updateDate("month", value);
+  }
+
+  // Computed properties for dropdown options and display values
+  const dayOptions = $derived.by(() => {
+    const options = [];
+    if (date.year < firstYearRequiringDay) {
+      options.push({ value: "all", label: "All" });
+    }
+    for (let i = 1; i <= getDaysInMonth(date.year, date.month); i++) {
+      options.push({ value: i, label: i.toString() });
+    }
+    return options;
+  });
+
+  const monthOptions = $derived.by(() => {
+    const options = [];
+    if (date.year < firstYearRequiringMonth) {
+      options.push({ value: "all", label: "All year" });
+    }
+    for (let i = 1; i <= 12; i++) {
+      options.push({ value: i, label: monthAbbreviations[i - 1] });
+    }
+    return options;
+  });
+
+  const dayDisplayValue = $derived(
+    date.day === "all" ? "All" : date.day.toString()
+  );
+  const monthDisplayValue = $derived(
+    date.month === "all" ? "All year" : monthAbbreviations[date.month - 1]
+  );
 </script>
 
 <div class="date-picker">
   {#if date.month !== "all"}
-    <select
-      value={date.day}
-      onchange={(e) =>
-        updateDate(
-          "day",
-          e.currentTarget.value === "all"
-            ? "all"
-            : parseInt(e.currentTarget.value)
-        )}
-      aria-label="Day"
-      class="date-select"
-    >
-      {#if date.year < firstYearRequiringDay}
-        <option value="all">All</option>
-      {/if}
-      {#each Array.from({ length: getDaysInMonth(date.year, date.month) }, (_, i) => 1 + i) as day}
-        <option value={day}>{day}</option>
-      {/each}
-    </select>
+    <DropdownMenu
+      bind:value={date.day}
+      options={dayOptions}
+      displayValue={dayDisplayValue}
+      minWidth="60px"
+      onSelect={handleDaySelect}
+    />
   {/if}
-  <select
-    value={date.month}
-    onchange={(e) =>
-      updateDate(
-        "month",
-        e.currentTarget.value === "all"
-          ? "all"
-          : parseInt(e.currentTarget.value)
-      )}
-    class="date-select month-select"
-  >
-    {#if date.year < firstYearRequiringMonth}
-      <option value="all">All year</option>
-    {/if}
-    {#each Array.from({ length: 12 }, (_, i) => 1 + i) as month}
-      <option value={month}>{monthAbbreviations[month - 1]}</option>
-    {/each}
-  </select>
+
+  <DropdownMenu
+    bind:value={date.month}
+    options={monthOptions}
+    displayValue={monthDisplayValue}
+    minWidth="75px"
+    onSelect={handleMonthSelect}
+  />
+
   <div class="year-container">
     <input
       type="number"
@@ -167,10 +183,9 @@
     padding: 8px;
     width: fit-content;
     margin: 0 auto;
-    gap: 6px;
+    gap: 4px;
   }
 
-  .date-select,
   .date-input {
     padding: 8px 12px;
     border: 1px solid #d1d5db;
@@ -183,27 +198,8 @@
     transition: all 0.2s ease;
     outline: none;
     text-align: center;
-    cursor: pointer;
+    cursor: text;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    /* Safari-specific overrides */
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-  }
-
-  .date-select {
-    width: auto;
-    min-width: 70px;
-    /* Add custom dropdown arrow for Safari */
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23858585' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 14px;
-    padding-right: 32px;
-  }
-
-  .month-select {
-    min-width: 90px;
   }
 
   .year-container {
@@ -212,15 +208,16 @@
   }
 
   .year-input {
-    width: 80px;
+    width: 65px;
     cursor: text;
     background-image: none;
-    padding-right: 32px;
+    padding-right: 28px;
+    padding-left: 8px;
   }
 
   .year-spinners {
     position: absolute;
-    right: 4px;
+    right: 3px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
@@ -232,7 +229,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
+    width: 18px;
     height: 14px;
     border: none;
     border-radius: 3px;
@@ -259,25 +256,18 @@
     transform: scale(0.9);
   }
 
-  .date-select:hover,
   .date-input:hover {
     border-color: #9ca3af;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     transform: translateY(-1px);
   }
 
-  .date-select:focus,
   .date-input:focus {
     border-color: #3b82f6;
     box-shadow:
       0 0 0 3px rgba(59, 130, 246, 0.1),
       0 2px 6px rgba(0, 0, 0, 0.15);
     transform: translateY(-1px);
-  }
-
-  .date-select:active {
-    background-color: #f9fafb;
-    transform: translateY(0);
   }
 
   /* Hide native number input spinners */
@@ -290,24 +280,5 @@
   /* Firefox number input styling */
   .year-input[type="number"] {
     -moz-appearance: textfield;
-  }
-
-  /* Option styling */
-  option {
-    color: #374151;
-    background-color: #ffffff;
-    padding: 6px;
-  }
-
-  /* Additional Safari fixes */
-  select.date-select {
-    -webkit-border-radius: 8px;
-    -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  select.date-select::-webkit-inner-spin-button,
-  select.date-select::-webkit-outer-spin-button {
-    display: none;
-    -webkit-appearance: none;
   }
 </style>
