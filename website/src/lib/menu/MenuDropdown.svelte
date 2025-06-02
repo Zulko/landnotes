@@ -105,52 +105,58 @@
     left: 0;
     right: 0;
     background: white;
-    border: 1px solid #a2a9b1;
-    border-radius: 2px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     max-height: 300px;
     overflow-y: auto;
-    margin-top: 5px;
+    margin-top: 8px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
       "Liberation Sans", sans-serif;
   }
 
   .menu-group {
-    padding: 12px 16px;
-    border-bottom: 1px solid #eaecf0;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3f4f6;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     flex-wrap: wrap;
   }
 
+  .menu-group:last-of-type {
+    border-bottom: none;
+  }
+
   .menu-label {
-    font-weight: 500;
-    color: #000000;
-    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
     min-width: fit-content;
   }
 
   .menu-options {
     display: flex;
     flex-direction: row;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
   }
 
   .mode-option {
-    padding: 6px 12px;
-    border: 1px solid #a2a9b1;
-    border-radius: 2px;
-    background-color: #f8f9fa;
-    color: #000000;
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #374151;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     font-family: inherit;
+    font-weight: 500;
     white-space: nowrap;
-    transition: all 0.15s ease-in-out;
+    transition: all 0.2s ease;
     outline: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     /* Safari-specific overrides */
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -158,40 +164,48 @@
   }
 
   .mode-option:hover {
-    background-color: #eaecf0;
-    border-color: #72777d;
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
   }
 
   .mode-option:focus {
-    border-color: #36c;
-    box-shadow: inset 0 0 0 1px #36c;
+    border-color: #3b82f6;
+    box-shadow:
+      0 0 0 3px rgba(59, 130, 246, 0.1),
+      0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
   }
 
   .mode-option:active {
-    background-color: #c8ccd1;
+    background-color: #f3f4f6;
+    transform: translateY(0);
   }
 
   .mode-option.active {
-    background-color: #36c;
+    background-color: #3b82f6;
     color: white;
-    border-color: #36c;
+    border-color: #3b82f6;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
   }
 
   .mode-option.active:hover {
-    background-color: #2a4b8d;
-    border-color: #2a4b8d;
+    background-color: #2563eb;
+    border-color: #2563eb;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
   }
 
   .mode-select {
-    padding: 6px 8px;
-    min-width: 200px;
+    padding: 8px 12px;
+    min-width: 220px;
     background-color: #ffffff;
     /* Add custom dropdown arrow for Safari */
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23858585' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
     background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 12px;
-    padding-right: 28px;
+    background-position: right 12px center;
+    background-size: 14px;
+    padding-right: 36px;
   }
 
   .mode-select:hover {
@@ -200,13 +214,14 @@
 
   .menu-item {
     display: block;
-    padding: 12px 16px;
+    padding: 16px 20px;
     text-decoration: none;
-    color: #0645ad;
-    border-bottom: 1px solid #eaecf0;
+    color: #3b82f6;
+    border-bottom: 1px solid #f3f4f6;
     cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.15s ease-in-out;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s ease;
   }
 
   .menu-item:last-child {
@@ -214,31 +229,33 @@
   }
 
   .menu-item:hover {
-    background-color: #eaecf0;
-    text-decoration: underline;
+    background-color: #f8fafc;
+    color: #2563eb;
+    text-decoration: none;
   }
 
   .menu-item:focus {
-    background-color: #eaecf0;
-    outline: 2px solid #36c;
+    background-color: #f8fafc;
+    outline: 2px solid #3b82f6;
     outline-offset: -2px;
+    color: #2563eb;
   }
 
   .menu-links {
-    border-top: 1px solid #eaecf0;
+    border-top: 1px solid #f3f4f6;
   }
 
   /* Option styling for select elements */
   option {
-    color: #000000;
+    color: #374151;
     background-color: #ffffff;
-    padding: 4px;
+    padding: 8px;
   }
 
   /* Additional Safari fixes */
   select.mode-option {
-    -webkit-border-radius: 2px;
-    -webkit-box-shadow: none;
+    -webkit-border-radius: 8px;
+    -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   select.mode-option::-webkit-inner-spin-button,
