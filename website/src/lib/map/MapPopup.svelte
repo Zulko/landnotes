@@ -181,6 +181,7 @@
     }
   }
   function onMouseEnter() {
+    console.log("onMouseEnter");
     clearCloseTimeoutIfEnterable();
     isHovered = true;
   }
