@@ -114,43 +114,59 @@ function onClick(entry) {
 function bindHoverEvents({ marker, entry }) {
   let isHovered = false;
   let unhoverTimeout = null;
-  let originalIcon = null;
+  let originalIconSize = null;
+  let originalPane = null;
 
   if (!uiGlobals.isTouchDevice) {
     marker.on("mouseover", () => {
       clearTimeout(unhoverTimeout);
       if (isHovered) return;
       
-      // Store the original icon if not already stored
-      if (!originalIcon) {
-        originalIcon = marker.options.icon;
+      // Store the original icon size and pane if not already stored
+      if (!originalIconSize) {
+        originalIconSize = marker.options.icon.options.iconSize;
+        originalPane = marker.options.pane;
       }
       
-      // Create a new icon with updated size but reuse the same HTML element
+      // Update icon size directly without creating a new icon
       const [width, height] = iconSizesByDisplayClass["full"];
-      const hoverIcon = L.divIcon({
-        className: originalIcon.options.className,
-        html: originalIcon.options.html,
-        iconSize: [width, height],
-      });
+      marker.options.icon.options.iconSize = [width, height];
       
-      // Move to top pane and update icon
-      uiGlobals.leafletMap.removeLayer(marker);
-      marker.setIcon(hoverIcon);
-      marker.options.pane = "topPane";
-      marker.addTo(uiGlobals.leafletMap);
+      // Force Leaflet to update the icon element
+      // @ts-ignore - accessing internal Leaflet property
+      const iconElement = marker._icon;
+      if (iconElement) {
+        iconElement.style.width = width + 'px';
+        iconElement.style.height = height + 'px';
+        iconElement.style.marginLeft = -(width / 2) + 'px';
+        iconElement.style.marginTop = -(height / 2) + 'px';
+      }
+      
+      // Move to top pane
+      updateMarkerPane(marker, "topPane");
       isHovered = true;
     });
     
     marker.on("mouseout", () => {
       unhoverTimeout = setTimeout(() => {
-        if (!originalIcon) return;
+        if (!originalIconSize || !originalPane) return;
         
-        // Restore original icon
-        uiGlobals.leafletMap.removeLayer(marker);
-        marker.setIcon(originalIcon);
-        marker.options.pane = entry.displayClass + "MarkersPane";
-        marker.addTo(uiGlobals.leafletMap);
+        // Restore original icon size
+        marker.options.icon.options.iconSize = originalIconSize;
+        
+        // Force Leaflet to update the icon element
+        // @ts-ignore - accessing internal Leaflet property
+        const iconElement = marker._icon;
+        if (iconElement) {
+          const [width, height] = originalIconSize;
+          iconElement.style.width = width + 'px';
+          iconElement.style.height = height + 'px';
+          iconElement.style.marginLeft = -(width / 2) + 'px';
+          iconElement.style.marginTop = -(height / 2) + 'px';
+        }
+        
+        // Restore original pane
+        updateMarkerPane(marker, originalPane);
         
         isHovered = false;
       }, 250); // Increase timeout to be longer than MapPopup's 200ms grace period
