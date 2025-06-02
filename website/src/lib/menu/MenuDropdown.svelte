@@ -32,25 +32,37 @@
     const currentUrl = window.location.href;
 
     try {
-      if (appState.isTouchDevice && navigator.share) {
+      if (navigator.share) {
         // Use native share on mobile devices
         await navigator.share({
-          title: "Landnotes - Current View",
+          title: "Landnotes - Wikipedia on the map",
           url: currentUrl,
         });
+        // If we reach here, sharing was successful
+        console.log("Share completed successfully");
       } else {
         // Copy to clipboard on desktop
         await navigator.clipboard.writeText(currentUrl);
-        // You could add a toast notification here if desired
-        console.log("Link copied to clipboard");
+        alert("Link copied to clipboard");
       }
     } catch (error) {
-      // Fallback: copy to clipboard even on mobile if share fails
+      console.log("Share operation failed:", error.name, error.message);
+
+      // Check if it's a user cancellation (common with navigator.share)
+      if (error.name === "AbortError" || error.message.includes("canceled")) {
+        console.log("User canceled the share operation");
+        // Don't show fallback for user cancellation
+        onCloseMenu();
+        return;
+      }
+
+      // Fallback: copy to clipboard for other errors
       try {
         await navigator.clipboard.writeText(currentUrl);
-        console.log("Link copied to clipboard");
+        alert("Link copied to clipboard!");
       } catch (clipboardError) {
         console.error("Failed to share or copy link:", error, clipboardError);
+        alert("Failed to copy link to clipboard");
       }
     }
 
@@ -131,7 +143,7 @@
         role="button"
         tabindex="0"
       >
-        Share link to current view
+        Share the link for the current view
       </span>
       <span
         onclick={() => {
