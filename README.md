@@ -1,10 +1,16 @@
 # Landnotes
 
-Landnotes shows Wikipedia places and events on top of OpenStreetMap - <a href="https://landnotes.org/?paneTab=about" target="_blank">try it out!</a>
+Landnotes shows Wikipedia places and events on top of OpenStreetMap - <a href="https://landnotes.org/?location=u01hvp8p-5&date=1949--2&strictDate=true&paneTab=about" target="_blank">try it out!</a>
 
 There are currently 6.5 million events extracted from 400,000 articles using Google Gemini. If anything doesn't make sense, blame it on the AI! There might be 10 times more events to extract by scanning all of Wikipedia. Learn more about future directions in the [project's documentation](./docs/README.md).
 
-![Screenshot from 2025-03-10 00-34-36](https://github.com/user-attachments/assets/f7bde8cb-e966-4600-a03c-d54bb0d20685)
+<p>
+<center>
+  <a href="https://landnotes.org/?location=wudvf6g5-10&selected=w31030312100&wikiPage=Shikina-en" target="_blank">
+    <img src="https://github.com/user-attachments/assets/f7bde8cb-e966-4600-a03c-d54bb0d20685" alt="screenshot" target="_blank"/>
+  </a>
+</center>
+</p>
 
 ## Stack
 
