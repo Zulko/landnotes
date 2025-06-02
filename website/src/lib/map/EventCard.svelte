@@ -206,19 +206,20 @@
         {#snippet popupContent(isOpen)}
           <WikiPreview pageTitle={entry.pageTitle} {isOpen} />
         {/snippet}
-        <MapPopup
-          {popupContent}
-          enterable={false}
-          keepWithinMap={keepPopupsWithinMap}
-        >
-          from <i>"{@render linkedPage(entry.pageTitle, entry.page_section)}"</i
+        <span class="page-title-wrapper">
+          <MapPopup
+            {popupContent}
+            enterable={false}
+            keepWithinMap={keepPopupsWithinMap}
           >
-          {#if entry.page_section && entry.page_section !== "Root"}
-            <span class="wiki-section">
-              ({entry.page_section})
-            </span>
-          {/if}
-        </MapPopup>
+            {@render linkedPage(entry.pageTitle, entry.page_section)}
+          </MapPopup>
+        </span>
+        {#if entry.page_section && entry.page_section !== "Root"}
+          <span class="wiki-section">
+            ({entry.page_section})
+          </span>
+        {/if}
       </div>
     </div>
   {/if}
@@ -438,5 +439,10 @@
     background-color: #f0f5ff;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     cursor: pointer;
+  }
+
+  .page-title-wrapper {
+    display: inline-block;
+    position: relative;
   }
 </style>

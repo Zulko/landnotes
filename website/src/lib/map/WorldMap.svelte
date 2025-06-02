@@ -6,6 +6,7 @@
     createMarker,
     updateMarkerIcon,
     updateMarkerPane,
+    cleanupMarker,
   } from "./createMarker";
   import { mapEntries, mapBounds } from "../data/mapEntries.svelte";
   import { appState, uiGlobals } from "../appState.svelte";
@@ -37,6 +38,11 @@
 
   onDestroy(() => {
     if (map) {
+      // Cleanup all markers before destroying the map
+      for (const [markerId, markerData] of currentMarkers) {
+        cleanupMarker(markerData.existingMarker);
+      }
+
       map.off("moveend", handleBoundsChange);
       map.off("zoomend", handleBoundsChange);
       map.off("resize", handleBoundsChange);
@@ -242,6 +248,13 @@
         existingMarker: marker,
         existingClass: displayClass,
       });
+    }
+
+    // Cleanup markers that are no longer needed
+    for (const [markerId, markerData] of currentMarkers) {
+      if (!newMarkers.has(markerId)) {
+        cleanupMarker(markerData.existingMarker);
+      }
     }
 
     // Swap the layer groups

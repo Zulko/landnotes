@@ -2,7 +2,7 @@ import L from "leaflet";
 // @ts-ignore
 import MarkerIcon from "./MarkerIcon.svelte";
 import { uiGlobals } from "../appState.svelte";
-import { mount } from "svelte";
+import { mount, unmount } from "svelte";
 import { appState } from "../appState.svelte";
 
 const iconSizesByDisplayClass = {
@@ -12,6 +12,9 @@ const iconSizesByDisplayClass = {
   selected: [128, 32],
 };
 
+// Store component references to properly unmount them
+const markerComponents = new WeakMap();
+
 /**
  * Creates a marker with appropriate behavior based on type
  * @param {Object} options - Options object
@@ -20,7 +23,7 @@ const iconSizesByDisplayClass = {
  */
 export function createMarker({ entry }) {
   // No longer need to normalize here as the entry should already be normalized
-  const { divIcon } = createDivIcon({
+  const { divIcon, markerComponent } = createDivIcon({
     entry,
     displayClass: entry.displayClass,
   });
@@ -29,22 +32,52 @@ export function createMarker({ entry }) {
     pane: entry.displayClass + "MarkersPane",
   });
 
+  // Store the current display class on the marker
+  // @ts-ignore - adding custom property
+  marker._currentDisplayClass = entry.displayClass;
+
+  // Store the component reference
+  markerComponents.set(marker, markerComponent);
+
   bindHoverEvents({ marker, entry });
 
   return marker;
 }
 
 export function updateMarkerIcon({ marker, entry }) {
-  const { divIcon } = createDivIcon({
+  // Unmount the old component before creating a new one
+  const oldComponent = markerComponents.get(marker);
+  if (oldComponent) {
+    unmount(oldComponent);
+  }
+
+  const { divIcon, markerComponent } = createDivIcon({
     entry,
     displayClass: entry.displayClass,
   });
   marker.setIcon(divIcon);
+  
+  // Update the stored display class
+  // @ts-ignore - adding custom property
+  marker._currentDisplayClass = entry.displayClass;
+  
+  // Store the new component reference
+  markerComponents.set(marker, markerComponent);
 }
+
 export function updateMarkerPane(marker, pane) {
   uiGlobals.leafletMap.removeLayer(marker);
   marker.options.pane = pane;
   marker.addTo(uiGlobals.leafletMap);
+}
+
+export function cleanupMarker(marker) {
+  // Unmount the Svelte component when the marker is removed
+  const component = markerComponents.get(marker);
+  if (component) {
+    unmount(component);
+    markerComponents.delete(marker);
+  }
 }
 
 function createDivIcon({ entry, displayClass }) {
@@ -94,25 +127,52 @@ function bindHoverEvents({ marker, entry }) {
     marker.on("mouseover", () => {
       clearTimeout(unhoverTimeout);
       if (isHovered) return;
-      uiGlobals.leafletMap.removeLayer(marker);
+      
+      // Update icon size directly without creating a new icon
       const [width, height] = iconSizesByDisplayClass["full"];
       marker.options.icon.options.iconSize = [width, height];
-      marker.options.pane = "topPane";
-      marker.addTo(uiGlobals.leafletMap);
+      
+      // Force Leaflet to update the icon element
+      // @ts-ignore - accessing internal Leaflet property
+      const iconElement = marker._icon;
+      if (iconElement) {
+        iconElement.style.width = width + 'px';
+        iconElement.style.height = height + 'px';
+        iconElement.style.marginLeft = -(width / 2) + 'px';
+        iconElement.style.marginTop = -(height / 2) + 'px';
+      }
+      
+      // Move to top pane
+      updateMarkerPane(marker, "topPane");
       isHovered = true;
     });
+    
     marker.on("mouseout", () => {
       unhoverTimeout = setTimeout(() => {
-        const { divIcon } = createDivIcon({
-          entry,
-          displayClass: entry.displayClass,
-        });
-        uiGlobals.leafletMap.removeLayer(marker);
-        marker.setIcon(divIcon);
-        marker.options.pane = entry.displayClass + "MarkersPane";
-        marker.addTo(uiGlobals.leafletMap);
+        // Use the current display class stored on the marker
+        // @ts-ignore - accessing custom property
+        const currentDisplayClass = marker._currentDisplayClass || 'reduced';
+        
+        // Use the icon size for the current display class
+        const [width, height] = iconSizesByDisplayClass[currentDisplayClass];
+        marker.options.icon.options.iconSize = [width, height];
+        
+        // Force Leaflet to update the icon element
+        // @ts-ignore - accessing internal Leaflet property
+        const iconElement = marker._icon;
+        if (iconElement) {
+          iconElement.style.width = width + 'px';
+          iconElement.style.height = height + 'px';
+          iconElement.style.marginLeft = -(width / 2) + 'px';
+          iconElement.style.marginTop = -(height / 2) + 'px';
+        }
+        
+        // Restore original pane
+        const targetPane = currentDisplayClass + "MarkersPane";
+        updateMarkerPane(marker, targetPane);
+        
         isHovered = false;
-      }, 100);
+      }, 250); // Increase timeout to be longer than MapPopup's 200ms grace period
     });
   }
 }
