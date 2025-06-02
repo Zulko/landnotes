@@ -124,7 +124,7 @@
       box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
       z-index: 900 !important;
     }
-    
+
     &:hover > .marker-text-container,
     &.marker-display-selected > .marker-text-container {
       z-index: 901 !important;

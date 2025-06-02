@@ -32,6 +32,10 @@ export function createMarker({ entry }) {
     pane: entry.displayClass + "MarkersPane",
   });
 
+  // Store the current display class on the marker
+  // @ts-ignore - adding custom property
+  marker._currentDisplayClass = entry.displayClass;
+
   // Store the component reference
   markerComponents.set(marker, markerComponent);
 
@@ -52,6 +56,10 @@ export function updateMarkerIcon({ marker, entry }) {
     displayClass: entry.displayClass,
   });
   marker.setIcon(divIcon);
+  
+  // Update the stored display class
+  // @ts-ignore - adding custom property
+  marker._currentDisplayClass = entry.displayClass;
   
   // Store the new component reference
   markerComponents.set(marker, markerComponent);
@@ -114,19 +122,11 @@ function onClick(entry) {
 function bindHoverEvents({ marker, entry }) {
   let isHovered = false;
   let unhoverTimeout = null;
-  let originalIconSize = null;
-  let originalPane = null;
 
   if (!uiGlobals.isTouchDevice) {
     marker.on("mouseover", () => {
       clearTimeout(unhoverTimeout);
       if (isHovered) return;
-      
-      // Store the original icon size and pane if not already stored
-      if (!originalIconSize) {
-        originalIconSize = marker.options.icon.options.iconSize;
-        originalPane = marker.options.pane;
-      }
       
       // Update icon size directly without creating a new icon
       const [width, height] = iconSizesByDisplayClass["full"];
@@ -149,16 +149,18 @@ function bindHoverEvents({ marker, entry }) {
     
     marker.on("mouseout", () => {
       unhoverTimeout = setTimeout(() => {
-        if (!originalIconSize || !originalPane) return;
+        // Use the current display class stored on the marker
+        // @ts-ignore - accessing custom property
+        const currentDisplayClass = marker._currentDisplayClass || 'reduced';
         
-        // Restore original icon size
-        marker.options.icon.options.iconSize = originalIconSize;
+        // Use the icon size for the current display class
+        const [width, height] = iconSizesByDisplayClass[currentDisplayClass];
+        marker.options.icon.options.iconSize = [width, height];
         
         // Force Leaflet to update the icon element
         // @ts-ignore - accessing internal Leaflet property
         const iconElement = marker._icon;
         if (iconElement) {
-          const [width, height] = originalIconSize;
           iconElement.style.width = width + 'px';
           iconElement.style.height = height + 'px';
           iconElement.style.marginLeft = -(width / 2) + 'px';
@@ -166,7 +168,8 @@ function bindHoverEvents({ marker, entry }) {
         }
         
         // Restore original pane
-        updateMarkerPane(marker, originalPane);
+        const targetPane = currentDisplayClass + "MarkersPane";
+        updateMarkerPane(marker, targetPane);
         
         isHovered = false;
       }, 250); // Increase timeout to be longer than MapPopup's 200ms grace period
