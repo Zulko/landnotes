@@ -2,7 +2,7 @@
   // Reactive state
   import { uiGlobals } from "../appState.svelte";
   import { onMount } from "svelte";
-
+  import { portal } from "svelte-portal";
   let {
     popupContent,
     children,
@@ -18,14 +18,26 @@
   let isHovered = $state(false);
   let isOpen = $derived(alwaysOpen || (!uiGlobals.isTouchDevice && isHovered));
   let closeTimeout = $state(null);
+  let visibilityTimeout = $state(null); // Track visibility timeout
   let visibility = $state("hidden");
+  let zIndex = $state(8000);
   let popupStyle = $derived(
-    `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility};`
+    `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility}; z-index: ${zIndex};`
   );
   let resizeObserver = $state(null);
+  let prevIsOpen = $state(false);
 
   onMount(() => {
     if (popupElement) {
+      // Find parent popup if it exists
+      let parent = triggerElement.closest(".map-popup");
+      if (parent) {
+        // Get parent's z-index and increment by 10
+        const parentZIndex =
+          parseInt(window.getComputedStyle(parent).zIndex) || 8000;
+        zIndex = parentZIndex + 10;
+      }
+
       resizeObserver = new ResizeObserver(() => {
         if (isOpen) {
           updateTooltipPosition();
@@ -39,18 +51,39 @@
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
+      // Clear any pending timeouts on unmount
+      clearTimeout(closeTimeout);
+      clearTimeout(visibilityTimeout);
     };
   });
 
   // Lifecycle
-  $effect(() => {
-    if (isOpen) {
-      updateTooltipPosition();
-      setTimeout(() => {
-        visibility = "visible";
-      }, visibilityDelay);
-    } else {
-      visibility = "hidden";
+  $effect.pre(() => {
+    // Only run when isOpen actually changes
+    if (isOpen !== prevIsOpen) {
+      if (isOpen) {
+        // Schedule position update for next tick to ensure DOM is ready
+        setTimeout(() => {
+          updateTooltipPosition();
+        }, 0);
+        // Clear any existing visibility timeout
+        clearTimeout(visibilityTimeout);
+        visibilityTimeout = setTimeout(() => {
+          visibility = "visible";
+        }, visibilityDelay);
+      } else {
+        // Clear visibility timeout to prevent it from firing after close
+        clearTimeout(visibilityTimeout);
+        visibility = "hidden";
+        // For non-enterable popups, ensure immediate hiding
+        if (!enterable) {
+          // Force immediate style update
+          if (popupElement) {
+            popupElement.style.visibility = "hidden";
+          }
+        }
+      }
+      prevIsOpen = isOpen;
     }
   });
 
@@ -63,11 +96,9 @@
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // Find scrollable parent and get its dimensions and scroll position
-    const scrollableParent = findScrollableParent(triggerElement);
-    const parentRect = scrollableParent.getBoundingClientRect();
-    const scrollTop = scrollableParent.scrollTop;
-    const scrollLeft = scrollableParent.scrollLeft;
+    // Get the absolute position of the trigger element
+    const absoluteTop = triggerRect.top + window.scrollY;
+    const absoluteLeft = triggerRect.left + window.scrollX;
 
     const mapWidth =
       document.getElementsByClassName("map-container")[0]?.clientWidth ||
@@ -76,47 +107,44 @@
       uiGlobals.isTouchDevice || !keepWithinMap ? 0 : viewportWidth - mapWidth;
 
     // Default position (above and centered)
-    let top = -popupRect.height - 2;
-    let left = -popupRect.width / 2 + triggerRect.width / 2;
+    let top = absoluteTop - popupRect.height - 2;
+    let left = absoluteLeft - popupRect.width / 2 + triggerRect.width / 2;
 
-    // Check right edge against parent bounds
-    const rightEdge = parentRect.left + parentRect.width;
-    if (triggerRect.left + left + popupRect.width > rightEdge) {
-      left = rightEdge - popupRect.width - triggerRect.left - 10;
+    // Check right edge
+    if (left + popupRect.width > viewportWidth - 10) {
+      left = viewportWidth - popupRect.width - 10;
     }
 
-    // Check left edge against parent bounds and map bounds
-    const leftEdge = Math.max(parentRect.left, leftStart);
-    if (triggerRect.left + left < leftEdge + 10) {
-      left = leftEdge + 10 - triggerRect.left;
+    // Check left edge against map bounds
+    const leftEdge = Math.max(0, leftStart);
+    if (left < leftEdge + 10) {
+      left = leftEdge + 10;
     }
 
-    // Available space calculations within the scrollable parent
-    const spaceAbove = triggerRect.top - parentRect.top;
-    const spaceBelow =
-      parentRect.bottom - (triggerRect.top + triggerRect.height);
+    // Check vertical positioning
+    const spaceAbove = triggerRect.top;
+    const spaceBelow = viewportHeight - (triggerRect.top + triggerRect.height);
 
-    // Check if enough space above
+    // Adjust vertical position if needed
     if (spaceAbove < popupRect.height + 10) {
       // Not enough space above, try below
       if (spaceBelow >= popupRect.height + 10) {
         // Enough space below
-        top = triggerRect.height + 5;
+        top = absoluteTop + triggerRect.height + 5;
       } else {
         // Not enough space above or below, use the side with more space
         top =
           spaceAbove > spaceBelow
-            ? Math.max(-popupRect.height - 2, -spaceAbove + 10)
+            ? Math.max(window.scrollY + 10, absoluteTop - popupRect.height - 2)
             : Math.min(
-                triggerRect.height + 5,
-                triggerRect.height + spaceBelow - popupRect.height - 10
+                absoluteTop + triggerRect.height + 5,
+                window.scrollY + viewportHeight - popupRect.height - 10
               );
       }
     }
 
-    // Use the calculated position, adjusted for scrolling
-    // This ensures the popup always stays with its target regardless of scroll position
-    popupTop = top - scrollTop;
+    // Set absolute position
+    popupTop = top;
     popupLeft = left;
   }
 
@@ -148,7 +176,15 @@
         isHovered = false;
       }, 200);
     } else {
+      // For non-enterable popups, immediately close
       isHovered = false;
+      // Clear any pending visibility timeout
+      clearTimeout(visibilityTimeout);
+      // Force immediate visibility hiding
+      visibility = "hidden";
+      if (popupElement) {
+        popupElement.style.visibility = "hidden";
+      }
     }
   }
   function clearCloseTimeoutIfEnterable() {
@@ -164,6 +200,7 @@
 
 <div
   class="map-popup"
+  use:portal={"#main"}
   bind:this={popupElement}
   style={popupStyle}
   onmouseenter={() => {
@@ -194,8 +231,8 @@
 </span>
 
 <style>
-  .map-popup {
-    position: absolute;
+  :global(.map-popup) {
+    position: fixed;
     width: 350px;
     max-height: 260px;
     overflow: visible;
@@ -206,7 +243,6 @@
     border-radius: 2px;
     box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
     transition: opacity 0.2s ease-out;
-    z-index: 8000 !important;
     font-size: 14px;
   }
 </style>

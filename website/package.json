@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "leaflet": "^1.9.4",
-    "pako": "^2.1.0"
+    "pako": "^2.1.0",
+    "svelte-portal": "^2.2.1"
   }
 }
