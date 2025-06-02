@@ -25,7 +25,3 @@ If the project goes this far, it would be interesting to extract events from sou
 Landnote displays historical events on Open Street Map, so the old settlements, battles and travels are superimposed on today's streets, fields and highways. But this deprives us of important historical context. Some regions of the world were very different just one or two centuries ago, and borders have moved a lot. Famous German scientist Max Born and Alois Alzheimer were born in the German city of Breslau, which is now called Wroclaw in Poland. Verdi was born in a small Italian village that was technically in France at the time.
 
 Having a layer showing historical borders on the map depending on the year would go a long way to give a better understanding of the historical events. This data is mostly available. The [historical-basemaps](https://github.com/aourednik/historical-basemaps?tab=readme-ov-file) project on Github has a great data collection and a [demo for it](https://historicborders.app/?lng=6.4513466&lat=39.3328695&zoom=4.1297515&year=1492) but the viral GPL license makes me a bit worried. There are many other projects like [Open Historical Maps](https://openhistoricalmaps.org/) and [OldMapsOnline.org](https://oldmapsonline.org/) that make me think it is achievable.
-
-## Developer tools
-
-- Make it possible to to develop against the live online database. This is kind of dangerous as I pay for queries to the live database, but should help getting contributors.
