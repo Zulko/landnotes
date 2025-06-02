@@ -212,7 +212,9 @@
             enterable={false}
             keepWithinMap={keepPopupsWithinMap}
           >
-            {@render linkedPage(entry.pageTitle, entry.page_section)}
+            from <i
+              >"{@render linkedPage(entry.pageTitle, entry.page_section)}"</i
+            >
           </MapPopup>
         </span>
         {#if entry.page_section && entry.page_section !== "Root"}
