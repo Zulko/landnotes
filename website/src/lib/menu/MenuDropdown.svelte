@@ -28,6 +28,35 @@
     strictDate = value === "strict";
   }
 
+  async function handleShareLink() {
+    const currentUrl = window.location.href;
+
+    try {
+      if (appState.isTouchDevice && navigator.share) {
+        // Use native share on mobile devices
+        await navigator.share({
+          title: "Landnotes - Current View",
+          url: currentUrl,
+        });
+      } else {
+        // Copy to clipboard on desktop
+        await navigator.clipboard.writeText(currentUrl);
+        // You could add a toast notification here if desired
+        console.log("Link copied to clipboard");
+      }
+    } catch (error) {
+      // Fallback: copy to clipboard even on mobile if share fails
+      try {
+        await navigator.clipboard.writeText(currentUrl);
+        console.log("Link copied to clipboard");
+      } catch (clipboardError) {
+        console.error("Failed to share or copy link:", error, clipboardError);
+      }
+    }
+
+    onCloseMenu();
+  }
+
   const dateFilterOptions = [
     { value: "overlapping", label: "All events overlapping with the date" },
     { value: "strict", label: "Only events strictly within the date" },
@@ -92,6 +121,19 @@
     <!-- Links section -->
     <div class="menu-links">
       <span
+        onclick={handleShareLink}
+        onkeydown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            handleShareLink();
+          }
+        }}
+        class="menu-item"
+        role="button"
+        tabindex="0"
+      >
+        Share link to current view
+      </span>
+      <span
         onclick={() => {
           appState.paneTab = "about";
           onCloseMenu();
@@ -136,11 +178,11 @@
   }
 
   .menu-group {
-    padding: 16px 20px;
+    padding: 12px 16px;
     border-bottom: 1px solid #f3f4f6;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
   }
 
@@ -158,12 +200,12 @@
   .menu-options {
     display: flex;
     flex-direction: row;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
   }
 
   .mode-option {
-    padding: 8px 16px;
+    padding: 6px 12px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     background-color: #ffffff;
@@ -213,7 +255,7 @@
 
   .menu-item {
     display: block;
-    padding: 16px 20px;
+    padding: 12px 16px;
     text-decoration: none;
     color: #3b82f6;
     border-bottom: 1px solid #f3f4f6;
