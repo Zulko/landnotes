@@ -47,10 +47,12 @@
       onchange={(e) =>
         updateDate(
           "day",
-          e.target.value === "all" ? "all" : parseInt(e.target.value)
+          e.currentTarget.value === "all"
+            ? "all"
+            : parseInt(e.currentTarget.value)
         )}
       aria-label="Day"
-      style="width: 60px;"
+      class="date-select"
     >
       {#if date.year < firstYearRequiringDay}
         <option value="all">All</option>
@@ -65,8 +67,11 @@
     onchange={(e) =>
       updateDate(
         "month",
-        e.target.value === "all" ? "all" : parseInt(e.target.value)
+        e.currentTarget.value === "all"
+          ? "all"
+          : parseInt(e.currentTarget.value)
       )}
+    class="date-select month-select"
   >
     {#if date.year < firstYearRequiringMonth}
       <option value="all">All year</option>
@@ -78,12 +83,12 @@
   <input
     type="number"
     value={date.year}
-    onchange={(e) => updateDate("year", parseInt(e.target.value))}
+    onchange={(e) => updateDate("year", parseInt(e.currentTarget.value))}
     min="-10000"
     max="2000"
     placeholder="Year"
     aria-label="Year"
-    style="width: 60px;"
+    class="date-input year-input"
   />
 </div>
 
@@ -92,46 +97,107 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family:
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      Roboto,
-      sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Liberation Sans", sans-serif;
     flex-wrap: nowrap;
     padding: 8px;
     width: fit-content;
     margin: 0 auto;
+    gap: 4px;
   }
 
-  input,
-  select {
-    margin-left: 4px;
-    padding: 6px 4px 6px 4px;
-    border: 1px solid #e0e4e8;
-    border-radius: 6px;
-    background-color: #fff;
-    color: #333;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
+  .date-select,
+  .date-input {
+    padding: 6px 8px;
+    border: 1px solid #a2a9b1;
+    border-radius: 2px;
+    background-color: #ffffff;
+    color: #000000;
+    font-size: 13px;
+    font-family: inherit;
+    transition:
+      border-color 0.15s ease-in-out,
+      box-shadow 0.15s ease-in-out;
     outline: none;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     text-align: center;
+    cursor: pointer;
+    /* Safari-specific overrides */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
   }
 
-  input:focus {
-    border-color: #4f86ed;
-    box-shadow: 0 0 0 2px rgba(79, 134, 237, 0.2);
+  .date-select {
+    width: auto;
+    min-width: 60px;
+    /* Add custom dropdown arrow for Safari */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 12px;
+    padding-right: 24px;
   }
 
-  /* Style the spinner buttons to be always visible */
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
+  .month-select {
+    min-width: 80px;
+  }
+
+  .year-input {
+    width: 70px;
+    cursor: text;
+    background-image: none;
+    padding-right: 8px;
+  }
+
+  .date-select:hover,
+  .date-input:hover {
+    border-color: #72777d;
+  }
+
+  .date-select:focus,
+  .date-input:focus {
+    border-color: #36c;
+    box-shadow: inset 0 0 0 1px #36c;
+  }
+
+  .date-select:active {
+    background-color: #eaecf0;
+  }
+
+  /* Style the spinner buttons to be more subtle */
+  .year-input::-webkit-inner-spin-button,
+  .year-input::-webkit-outer-spin-button {
+    opacity: 0.7;
+    height: 1.2em;
+    width: 1em;
+  }
+
+  .year-input::-webkit-inner-spin-button:hover,
+  .year-input::-webkit-outer-spin-button:hover {
     opacity: 1;
-    height: 1.5em;
-    width: 1.2em;
-    position: relative;
-    right: -2px;
+  }
+
+  /* Firefox number input styling */
+  .year-input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* Option styling */
+  option {
+    color: #000000;
+    background-color: #ffffff;
+    padding: 4px;
+  }
+
+  /* Additional Safari fixes */
+  select.date-select {
+    -webkit-border-radius: 2px;
+    -webkit-box-shadow: none;
+  }
+
+  select.date-select::-webkit-inner-spin-button,
+  select.date-select::-webkit-outer-spin-button {
+    display: none;
+    -webkit-appearance: none;
   }
 </style>
