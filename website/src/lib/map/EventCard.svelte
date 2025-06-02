@@ -421,14 +421,6 @@
       0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  .event-card-section.go-to-event-button button img {
-    width: 16px;
-    height: 16px;
-    opacity: 0.9;
-    margin-right: 8px;
-    filter: none;
-  }
-
   .event-card-section.other-events-button button {
     background-color: white;
     border: 1px solid #3366cc;

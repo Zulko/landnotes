@@ -164,9 +164,9 @@
     <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
       {#if uiState.dataIsLoading}
-        <button class="menu-button loading" title="Loading...">
+        <div class="menu-button loading" title="Loading...">
           <div class="spinner"></div>
-        </button>
+        </div>
       {:else}
         <button class="menu-button" onclick={toggleMenu} title="Menu">
           <img src={`${basePath}icons/menu.svg`} alt="Menu" class="icon" />

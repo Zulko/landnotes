@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:remote-dbs": "REMOTE_DBS=true vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "REMOTE_DBS=true vite preview"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
