@@ -1,0 +1,4 @@
+cartopy
+wiki_dump_extractor[llm]
+sqlalchemy
+rapidfuzz
