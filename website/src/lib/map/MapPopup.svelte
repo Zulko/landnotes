@@ -18,6 +18,7 @@
   let isHovered = $state(false);
   let isOpen = $derived(alwaysOpen || (!uiGlobals.isTouchDevice && isHovered));
   let closeTimeout = $state(null);
+  let visibilityTimeout = $state(null); // Track visibility timeout
   let visibility = $state("hidden");
   let zIndex = $state(8000);
   let popupStyle = $derived(
@@ -49,6 +50,9 @@
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
+      // Clear any pending timeouts on unmount
+      clearTimeout(closeTimeout);
+      clearTimeout(visibilityTimeout);
     };
   });
 
@@ -56,11 +60,22 @@
   $effect(() => {
     if (isOpen) {
       updateTooltipPosition();
-      setTimeout(() => {
+      // Clear any existing visibility timeout
+      clearTimeout(visibilityTimeout);
+      visibilityTimeout = setTimeout(() => {
         visibility = "visible";
       }, visibilityDelay);
     } else {
+      // Clear visibility timeout to prevent it from firing after close
+      clearTimeout(visibilityTimeout);
       visibility = "hidden";
+      // For non-enterable popups, ensure immediate hiding
+      if (!enterable) {
+        // Force immediate style update
+        if (popupElement) {
+          popupElement.style.visibility = "hidden";
+        }
+      }
     }
   });
 
@@ -153,7 +168,15 @@
         isHovered = false;
       }, 200);
     } else {
+      // For non-enterable popups, immediately close
       isHovered = false;
+      // Clear any pending visibility timeout
+      clearTimeout(visibilityTimeout);
+      // Force immediate visibility hiding
+      visibility = "hidden";
+      if (popupElement) {
+        popupElement.style.visibility = "hidden";
+      }
     }
   }
   function clearCloseTimeoutIfEnterable() {
