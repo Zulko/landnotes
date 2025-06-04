@@ -14,7 +14,7 @@ There are currently 6.5 million events extracted from 400,000 articles using Goo
 
 <p>
 <center>
-  <a href="https://landnotes.org/?location=wk26740j-5&selected=Ambroise_Par%C3%A9_004&date=1545&strictDate=true&wikiPage=Ambroise+Par%C3%A9&wikiSection=Medicine" target="_blank">
+  <a href="https://landnotes.org/?location=u09y8j21-5&selected=Ambroise_Par%C3%A9_004&date=1545&strictDate=true&wikiPage=Ambroise+Par%C3%A9&wikiSection=Medicine" target="_blank">
     <img src="./docs/assets/event_screenshot.jpeg" alt="screenshot" target="_blank"/>
   </a>
 </center>
