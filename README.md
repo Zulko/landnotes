@@ -12,6 +12,15 @@ There are currently 6.5 million events extracted from 400,000 articles using Goo
 </center>
 </p>
 
+<p>
+<center>
+  <a href="https://landnotes.org/?location=wk26740j-5&selected=Ambroise_Par%C3%A9_004&date=1545&strictDate=true&wikiPage=Ambroise+Par%C3%A9&wikiSection=Medicine" target="_blank">
+    <img src="./docs/assets/event_screenshot.jpeg" alt="screenshot" target="_blank"/>
+  </a>
+</center>
+</p>
+
+
 ## Stack
 
 Landnotes is built on top of the following technologies :pray:
