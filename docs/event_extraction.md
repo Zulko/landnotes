@@ -61,6 +61,18 @@ Take this paragraph from the [Assassination of Julius Caesar](https://en.wikiped
 
 When did matters escalate ? On the 26th of January 44 BC. The year, month, and day are given in three different sentences, which would be too complex for a rule-based script to handle, but should be understood easily by a decent AI model.
 
+## First subsets of pages processed with AI
+
+The downside of AI is that it is expensive. Fortunately, Google AI offers $300 credit to new users, which was enough to process ~450,000 pages and extract ~6.5 million events (see [Economics of Landnotes](./economics_of_landnotes.md)). The pages were selected as follows:
+
+- All the pages linked in the wikipedia “year pages” such as “Year 1925”, for all years from -500 to 2000. That’s 144,000 pages in total.
+- All the pages with a geocoordinates with more than 20 dates (117,000 pages)
+- All the pages with “1949” (~107,000)
+- All the pages with more than 10 dates between 250 and 1920 (143,000)
+- All pages with a “BC” date because it was only 17,000
+
+Note that the categories above overlap to some extent and so the total number of pages is less than the sum.
+
 ## Using whole pages vs. page extracts with dates
 
 In Landnotes, we use regular expressions to detect dates in pages, and we only feed these pages which have a date to the AI. It would be tempting to be even more specific and only give the AI the sentences or paragraphs to that have a date.
