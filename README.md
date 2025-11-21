@@ -33,7 +33,7 @@ Web application:
 
 Data curation:
 - [Google Gemini](https://gemini.google.com/) for the event extraction
-- [wiki-dump-extractor](https://github.com/zulko/wiki-dump-extractor) (written specially for this project) for handling, indexing, parsing the wikipedia page dump.
+- [wiki-dump-extractor](https://github.com/zulko/wiki_dump_extractor) (written specially for this project) for handling, indexing, parsing the wikipedia page dump.
 - [mwparserfromhell](https://mwparserfromhell.readthedocs.io/en/latest/) for parsing Wikipedia markup into plain text.
 
 
