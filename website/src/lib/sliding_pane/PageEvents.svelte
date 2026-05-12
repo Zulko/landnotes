@@ -70,6 +70,11 @@
       .map(normalizeMapEntryInfo)
       .sort((a, b) => a.start_date.localeCompare(b.start_date));
   }
+
+  /** @param {string} year */
+  function yearEventsId(year) {
+    return `page-events-year-${year}-events`;
+  }
 </script>
 
 <div class="page-events">
@@ -82,24 +87,26 @@
   {:else}
     {#each sortedYearEntries as [year, yearEventIds] (year)}
       <div class="year-section">
-        <div
-          class="year-header"
-          onclick={() => toggleYear(year)}
-          onkeydown={(e) => e.key === "Enter" && toggleYear(year)}
-          role="button"
-          tabindex="0"
-        >
-          <h2>{year}</h2>
-          <span class="event-count"
-            >{yearEventIds.length} event{yearEventIds.length !== 1
-              ? "s"
-              : ""}</span
+        <h2 class="year-heading">
+          <button
+            type="button"
+            class="year-header"
+            onclick={() => toggleYear(year)}
+            aria-expanded={expandedYears[year]}
+            aria-controls={yearEventsId(year)}
           >
-          <span class="expand-icon">{expandedYears[year] ? "▼" : "►"}</span>
-        </div>
+            <span class="section-title">{year}</span>
+            <span class="event-count"
+              >{yearEventIds.length} event{yearEventIds.length !== 1
+                ? "s"
+                : ""}</span
+            >
+            <span class="expand-icon">{expandedYears[year] ? "▼" : "►"}</span>
+          </button>
+        </h2>
 
         {#if expandedYears[year]}
-          <div class="year-events">
+          <div class="year-events" id={yearEventsId(year)}>
             {#each dataLoadedByYear[year] as event (event.id)}
               <div class="event-card-container">
                 <EventCard
@@ -142,21 +149,32 @@
     margin-bottom: 8px;
   }
 
+  .year-heading {
+    margin: 0;
+    font-size: 1em;
+    font-weight: normal;
+  }
+
   .year-header {
+    width: 100%;
     display: flex;
     align-items: center;
     padding: 4px 0;
     cursor: pointer;
     user-select: none;
+    border: 0;
     border-bottom: 1px solid #eaecf0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
   }
 
   .year-header:hover {
     background-color: #f8f9fa;
   }
 
-  .year-header h2 {
-    margin: 0;
+  .section-title {
     font-size: 1.3em;
     font-weight: normal;
     flex-grow: 1;

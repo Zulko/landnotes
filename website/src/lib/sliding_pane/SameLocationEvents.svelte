@@ -3,18 +3,42 @@
   import { getEventsById } from "../data/events_data";
   import { normalizeMapEntryInfo } from "../data/mapEntries.svelte";
   import { appState } from "../appState.svelte";
+
+  /**
+   * @typedef {{ year: string | number, month: string | number }} EventMonthDate
+   * @typedef {{ event_id: string, start_date: EventMonthDate, [key: string]: unknown }} SameLocationEvent
+   * @typedef {{ id: string, start_date: string, [key: string]: unknown }} NormalizedEvent
+   * @typedef {Record<string, string[]>} EventIdsByMonth
+   * @typedef {Record<string, boolean>} ExpandedMonths
+   * @typedef {Record<string, NormalizedEvent[]>} DataLoadedByMonth
+   * @typedef {Record<string, NormalizedEvent>} EventInfosById
+   */
+
+  /** @type {{ sameLocationEvents: SameLocationEvent[] }} */
   let { sameLocationEvents } = $props();
   let loadingEvents = $state(true);
+
+  /** @type {ExpandedMonths} */
   let expandedMonths = $state({});
+
+  /** @type {DataLoadedByMonth} */
   let dataLoadedByMonth = $state({});
 
   const eventIdsByMonth = $derived(
-    sameLocationEvents.reduce((acc, event) => {
-      const monthKey = `${event.start_date.year}-${event.start_date.month}`;
-      acc[monthKey] = acc[monthKey] || [];
-      acc[monthKey].push(event.event_id);
-      return acc;
-    }, {})
+    sameLocationEvents.reduce(
+      /**
+       * @param {EventIdsByMonth} acc
+       * @param {SameLocationEvent} event
+       * @returns {EventIdsByMonth}
+       */
+      (acc, event) => {
+        const monthKey = `${event.start_date.year}-${event.start_date.month}`;
+        acc[monthKey] = acc[monthKey] || [];
+        acc[monthKey].push(event.event_id);
+        return acc;
+      },
+      /** @type {EventIdsByMonth} */ ({})
+    )
   );
   const sortedMonthEntries = $derived(
     Object.entries(eventIdsByMonth).sort(([monthA], [monthB]) =>
@@ -46,13 +70,26 @@
     loadingEvents = false;
   }
 
+  /** @param {string[]} allEventIds */
   async function loadAllEvents(allEventIds) {
     const rawEventInfos = await getEventsById(allEventIds);
-    const eventInfos = rawEventInfos.map(normalizeMapEntryInfo);
-    const eventInfosById = eventInfos.reduce((acc, event) => {
-      acc[event.id] = event;
-      return acc;
-    }, {});
+    /** @type {NormalizedEvent[]} */
+    const eventInfos = rawEventInfos.map((event) =>
+      /** @type {NormalizedEvent} */ (normalizeMapEntryInfo(event))
+    );
+    /** @type {EventInfosById} */
+    const eventInfosById = eventInfos.reduce(
+      /**
+       * @param {EventInfosById} acc
+       * @param {NormalizedEvent} event
+       * @returns {EventInfosById}
+       */
+      (acc, event) => {
+        acc[event.id] = event;
+        return acc;
+      },
+      /** @type {EventInfosById} */ ({})
+    );
 
     Object.entries(eventIdsByMonth).forEach(([month, monthEventIds]) => {
       dataLoadedByMonth[month] = monthEventIds
@@ -62,6 +99,7 @@
     });
   }
 
+  /** @param {string} month */
   async function toggleMonth(month) {
     const toggledValue = !expandedMonths[month];
     if (toggledValue && !dataLoadedByMonth[month]) {
@@ -70,18 +108,31 @@
     expandedMonths[month] = toggledValue;
   }
 
+  /**
+   * @param {string} month
+   * @returns {Promise<NormalizedEvent[]>}
+   */
   async function loadEventData(month) {
     const eventsByMonth = await getEventsById(eventIdsByMonth[month]);
     return eventsByMonth
-      .map(normalizeMapEntryInfo)
+      .map((event) => /** @type {NormalizedEvent} */ (normalizeMapEntryInfo(event)))
       .sort((a, b) => a.start_date.localeCompare(b.start_date));
   }
 
   // Format month for display (YYYY-MM to Month YYYY)
+  /** @param {string} monthKey */
   function formatMonth(monthKey) {
     const [year, month] = monthKey.split("-");
-    const date = new Date(year, parseInt(month) - 1, 1);
+    const date = new Date(Number(year), parseInt(month) - 1, 1);
     return date.toLocaleString("default", { month: "long", year: "numeric" });
+  }
+
+  /**
+   * @param {string} month
+   * @returns {string}
+   */
+  function monthEventsId(month) {
+    return `same-location-events-month-${month}-events`;
   }
 </script>
 
@@ -112,24 +163,26 @@
   {:else}
     {#each sortedMonthEntries as [month, monthEventIds] (month)}
       <div class="month-section">
-        <div
-          class="month-header"
-          onclick={() => toggleMonth(month)}
-          onkeydown={(e) => e.key === "Enter" && toggleMonth(month)}
-          role="button"
-          tabindex="0"
-        >
-          <h2>{formatMonth(month)}</h2>
-          <span class="event-count"
-            >{monthEventIds.length} event{monthEventIds.length !== 1
-              ? "s"
-              : ""}</span
+        <h2 class="month-heading">
+          <button
+            type="button"
+            class="month-header"
+            onclick={() => toggleMonth(month)}
+            aria-expanded={expandedMonths[month]}
+            aria-controls={monthEventsId(month)}
           >
-          <span class="expand-icon">{expandedMonths[month] ? "▼" : "►"}</span>
-        </div>
+            <span class="section-title">{formatMonth(month)}</span>
+            <span class="event-count"
+              >{monthEventIds.length} event{monthEventIds.length !== 1
+                ? "s"
+                : ""}</span
+            >
+            <span class="expand-icon">{expandedMonths[month] ? "▼" : "►"}</span>
+          </button>
+        </h2>
 
         {#if expandedMonths[month]}
-          <div class="month-events">
+          <div class="month-events" id={monthEventsId(month)}>
             {#each dataLoadedByMonth[month] as event (event.id)}
               <div class="event-card-container">
                 <EventCard
@@ -178,21 +231,32 @@
     margin-bottom: 8px;
   }
 
+  .month-heading {
+    margin: 0;
+    font-size: 1em;
+    font-weight: normal;
+  }
+
   .month-header {
+    width: 100%;
     display: flex;
     align-items: center;
     padding: 4px 0;
     cursor: pointer;
     user-select: none;
+    border: 0;
     border-bottom: 1px solid #eaecf0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
   }
 
   .month-header:hover {
     background-color: #f8f9fa;
   }
 
-  .month-header h2 {
-    margin: 0;
+  .section-title {
     font-size: 1.3em;
     font-weight: normal;
     flex-grow: 1;
