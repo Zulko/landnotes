@@ -11,19 +11,25 @@
 
 <div class="pane-header">
   {#if appState.paneTab === "wikipedia" || appState.paneTab === "events"}
-    <div class="tab-buttons">
+    <div class="tab-buttons" role="tablist" aria-label="Sliding pane content">
       <button
+        type="button"
+        role="tab"
         class="tab-button"
         class:active={appState.paneTab === "wikipedia"}
         onclick={() => (appState.paneTab = "wikipedia")}
+        aria-selected={appState.paneTab === "wikipedia"}
         aria-label="Wikipedia tab"
       >
         Wikipedia
       </button>
       <button
+        type="button"
+        role="tab"
         class="tab-button"
         class:active={appState.paneTab === "events"}
         onclick={() => (appState.paneTab = "events")}
+        aria-selected={appState.paneTab === "events"}
         aria-label="Events tab"
       >
         Events
@@ -32,20 +38,24 @@
   {/if}
 
   <div class="header-buttons">
-    <button
-      class="icon-button external-link-button"
-      onclick={openWikiPageInNewTab}
-      title="Open in new tab"
-      aria-label="Open in new tab"
-    >
-      <img
-        src={`${basePath}icons/external-link.svg`}
-        alt="Open in new tab"
-        class="icon"
-      />
-    </button>
+    {#if appState.wikiPage}
+      <button
+        type="button"
+        class="icon-button external-link-button"
+        onclick={openWikiPageInNewTab}
+        title="Open in new tab"
+        aria-label="Open in new tab"
+      >
+        <img
+          src={`${basePath}icons/external-link.svg`}
+          alt="Open in new tab"
+          class="icon"
+        />
+      </button>
+    {/if}
     <!-- Desktop Expand Button (hidden on mobile) -->
     <button
+      type="button"
       class="icon-button expand-button desktop-only"
       class:active={expanded}
       onclick={() => (expanded = !expanded)}
@@ -62,6 +72,7 @@
     </button>
     <!-- Mobile Expand Button (hidden on desktop) -->
     <button
+      type="button"
       class="icon-button expand-button mobile-only"
       class:active={expanded}
       onclick={() => (expanded = !expanded)}
@@ -76,7 +87,12 @@
         class="icon"
       />
     </button>
-    <button class="close-button" onclick={closePane} aria-label="Close panel">
+    <button
+      type="button"
+      class="close-button"
+      onclick={closePane}
+      aria-label="Close panel"
+    >
       &times;
     </button>
   </div>
