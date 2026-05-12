@@ -7,6 +7,21 @@
     strictDate = $bindable(false),
     onCloseMenu,
   } = $props();
+  let shareStatus = $state("");
+  let shareStatusType = $state("success");
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let closeAfterStatusTimeout;
+
+  /** @param {string} message */
+  function setShareStatus(message, type = "success") {
+    shareStatus = message;
+    shareStatusType = type;
+  }
+
+  function closeAfterStatus() {
+    clearTimeout(closeAfterStatusTimeout);
+    closeAfterStatusTimeout = setTimeout(onCloseMenu, 1600);
+  }
 
   function handleMenuBlur() {
     // Small delay to allow click events on menu items to fire
@@ -60,10 +75,14 @@
         });
         // If we reach here, sharing was successful
         console.log("Share completed successfully");
+        onCloseMenu();
+        return;
       } else {
         // Copy to clipboard on desktop
         await navigator.clipboard.writeText(currentUrl);
-        alert("Link copied to clipboard");
+        setShareStatus("Link copied to clipboard.");
+        closeAfterStatus();
+        return;
       }
     } catch (error) {
       const shareError = hasErrorDetails(error)
@@ -86,14 +105,13 @@
       // Fallback: copy to clipboard for other errors
       try {
         await navigator.clipboard.writeText(currentUrl);
-        alert("Link copied to clipboard!");
+        setShareStatus("Link copied to clipboard.");
+        closeAfterStatus();
       } catch (clipboardError) {
         console.error("Failed to share or copy link:", error, clipboardError);
-        alert("Failed to copy link to clipboard");
+        setShareStatus("Unable to copy link. Please try again.", "error");
       }
     }
-
-    onCloseMenu();
   }
 
   const dateFilterOptions = [
@@ -162,6 +180,9 @@
       >
         Share the link for the current view
       </span>
+      <div class="share-status {shareStatusType}" role="status" aria-live="polite">
+        {shareStatus}
+      </div>
       <span
         onclick={() => {
           appState.paneTab = "about";
@@ -313,5 +334,16 @@
 
   .menu-links {
     border-top: 1px solid #f3f4f6;
+  }
+
+  .share-status {
+    min-height: 20px;
+    padding: 0 16px 8px;
+    color: #166534;
+    font-size: 13px;
+  }
+
+  .share-status.error {
+    color: #b91c1c;
   }
 </style>
