@@ -23,7 +23,6 @@
   // LIFECYCLE HOOKS
   // -------------------------
   onMount(async () => {
-    console.log("App starting!");
     checkForNarrowScreen(); // Initialize mobile detection
     setStateFromURLParamsAndMoveMap();
     window.addEventListener("popstate", setStateFromURLParamsAndMoveMap);
@@ -74,7 +73,7 @@
    */
 </script>
 
-<svelte:window on:resize={checkForNarrowScreen} />
+<svelte:window onresize={checkForNarrowScreen} />
 
 <main
   class:narrow-screen={isNarrowScreen}

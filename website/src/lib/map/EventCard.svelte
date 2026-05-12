@@ -237,7 +237,7 @@
         <img src="{basePath}icons/map.svg" alt="map" />
       </div>
       <div class="event-text">
-        {#each places as place, index}
+        {#each places as place, index (place.name)}
           {#if place.hasPage}
             {#snippet popupContent(isOpen)}
               <WikiPreview pageTitle={place.name} {isOpen} />
@@ -265,7 +265,7 @@
         <img src="{basePath}icons/square-user-round.svg" alt="person" />
       </div>
       <div class="event-text">
-        {#each people as person, index}
+        {#each people as person, index (person.name)}
           {#if person.hasPage}
             {#snippet popupContent(isOpen)}
               <WikiPreview pageTitle={person.name} {isOpen} />

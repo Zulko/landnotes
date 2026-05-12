@@ -55,25 +55,6 @@
         : "")
   );
 
-  // Reference to the iframe element
-  let wikiIframe = $state(null);
-
-  $inspect(wikiUrl);
-
-  // Focus the iframe whenever wikiUrl changes
-  $effect(() => {
-    if (
-      wikiIframe &&
-      wikiUrl !== "about:blank" &&
-      appState.paneTab === "wikipedia"
-    ) {
-      console.log("focusing iframe");
-      setTimeout(() => {
-        wikiIframe.focus();
-      }, 400); // Small delay to ensure iframe has loaded
-    }
-  });
-
   // ===== EVENT HANDLERS =====
 
   // Toggle expanded mode (works for both desktop and mobile)
@@ -119,10 +100,7 @@
     <div class="pane-content">
       {#if appState.paneTab === "wikipedia" && appState.wikiPage}
         <iframe
-          bind:this={wikiIframe}
           id="wiki-iframe"
-          tabindex="-2"
-          aria-hidden="true"
           title="Wikipedia Content"
           src={wikiUrl}
           frameborder="0"

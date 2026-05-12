@@ -9,6 +9,11 @@
   let loadingEvents = $state(true);
   let expandedYears = $state({});
   let dataLoadedByYear = $state({});
+  const sortedYearEntries = $derived(
+    Object.entries(eventIdsByYear).sort(
+      ([yearA], [yearB]) => Number(yearA) - Number(yearB)
+    )
+  );
 
   $effect(() => {
     loadEventList(wikiPage);
@@ -75,7 +80,7 @@
   {:else if Object.keys(eventIdsByYear).length === 0}
     <div class="no-events">No events found for this page.</div>
   {:else}
-    {#each Object.entries(eventIdsByYear).sort(([yearA], [yearB]) => Number(yearA) - Number(yearB)) as [year, yearEventIds]}
+    {#each sortedYearEntries as [year, yearEventIds] (year)}
       <div class="year-section">
         <div
           class="year-header"
@@ -95,7 +100,7 @@
 
         {#if expandedYears[year]}
           <div class="year-events">
-            {#each dataLoadedByYear[year] as event}
+            {#each dataLoadedByYear[year] as event (event.id)}
               <div class="event-card-container">
                 <EventCard
                   entry={event}

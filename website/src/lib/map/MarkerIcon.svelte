@@ -51,7 +51,7 @@
   const iconName = $derived(iconByType[entry.category] || iconByType.other);
 
   // Compute the label based on entry name and page title
-  const label = $derived(() => {
+  const label = $derived.by(() => {
     if (entry.name !== entry.pageTitle) {
       const fullLabel = entry.name + " - " + entry.pageTitle;
       if (fullLabel.length <= 30) {
@@ -60,10 +60,23 @@
     }
     return entry.name;
   });
+  const markerTitle = $derived(
+    `Show ${entry.name}${entry.name !== entry.pageTitle ? ` from ${entry.pageTitle}` : ""}`
+  );
 
   function openWikiPage(pageTitle) {
     appState.wikiPage = pageTitle;
     appState.paneTab = "wikipedia";
+  }
+
+  /** @param {KeyboardEvent} event */
+  function handleKeydown(event) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    onClick?.(event);
   }
 </script>
 
@@ -85,9 +98,11 @@
   <div
     class={`map-marker marker-display-${entry.displayClass}`}
     onclick={onClick}
-    onkeydown={onClick}
+    onkeydown={handleKeydown}
     role="button"
     tabindex="0"
+    aria-label={markerTitle}
+    title={markerTitle}
   >
     <div class="marker-icon-circle">
       <img src={basePath + "icons/" + iconName + ".svg"} alt="icon" />
@@ -99,8 +114,8 @@
     </div>
 
     <div class="marker-text-container">
-      <div class="marker-text marker-text-outline">{label()}</div>
-      <div class="marker-text">{label()}</div>
+      <div class="marker-text marker-text-outline">{label}</div>
+      <div class="marker-text">{label}</div>
     </div>
   </div>
 </MapPopup>

@@ -16,10 +16,14 @@
       return acc;
     }, {})
   );
+  const sortedMonthEntries = $derived(
+    Object.entries(eventIdsByMonth).sort(([monthA], [monthB]) =>
+      monthA.localeCompare(monthB)
+    )
+  );
 
   $effect(() => {
     if (sameLocationEvents) {
-      console.log(sameLocationEvents);
       loadEventList();
     }
   });
@@ -106,7 +110,7 @@
   {:else if Object.keys(eventIdsByMonth).length === 0}
     <div class="no-events">No events found at this location.</div>
   {:else}
-    {#each Object.entries(eventIdsByMonth).sort( ([monthA], [monthB]) => monthA.localeCompare(monthB) ) as [month, monthEventIds]}
+    {#each sortedMonthEntries as [month, monthEventIds] (month)}
       <div class="month-section">
         <div
           class="month-header"
@@ -126,7 +130,7 @@
 
         {#if expandedMonths[month]}
           <div class="month-events">
-            {#each dataLoadedByMonth[month] as event}
+            {#each dataLoadedByMonth[month] as event (event.id)}
               <div class="event-card-container">
                 <EventCard
                   entry={event}

@@ -101,7 +101,7 @@
       bind:value={date.day}
       options={dayOptions}
       displayValue={dayDisplayValue}
-      minWidth="60px"
+      minWidth="72px"
       onSelect={handleDaySelect}
     />
   {/if}
@@ -110,7 +110,7 @@
     bind:value={date.month}
     options={monthOptions}
     displayValue={monthDisplayValue}
-    minWidth="75px"
+    minWidth="128px"
     onSelect={handleMonthSelect}
   />
 
@@ -183,10 +183,11 @@
     padding: 8px;
     width: fit-content;
     margin: 0 auto;
-    gap: 4px;
+    gap: 8px;
   }
 
   .date-input {
+    box-sizing: border-box;
     padding: 8px 12px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
@@ -205,10 +206,11 @@
   .year-container {
     position: relative;
     display: inline-block;
+    flex: 0 0 auto;
   }
 
   .year-input {
-    width: 65px;
+    width: 104px;
     cursor: text;
     background-image: none;
     padding-right: 28px;

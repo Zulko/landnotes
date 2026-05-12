@@ -13,8 +13,17 @@
   let selectedIndex = $state(-1); // Track the currently selected suggestion
   let isMenuOpen = $state(false); // State for menu dropdown visibility
 
+  /** @type {ReturnType<typeof setTimeout> | null} */
   let debounceTimer = null;
+  let searchRequestId = 0;
   const basePath = import.meta.env.BASE_URL;
+  const searchInputId = "search-input";
+  const searchResultsId = "search-results";
+  const activeDescendantId = $derived(
+    isActive && selectedIndex >= 0 && searchResults[selectedIndex]
+      ? getSearchOptionId(searchResults[selectedIndex])
+      : undefined
+  );
 
   // Debounced search function
   function debouncedSearch() {
@@ -22,15 +31,25 @@
 
     // Clear any existing timer
     if (debounceTimer) clearTimeout(debounceTimer);
+    const requestId = ++searchRequestId;
 
     // Set a new timer
     debounceTimer = setTimeout(async () => {
-      if (searchQuery && searchQuery.length > 1) {
+      const query = searchQuery;
+      const searchMode = appState.mode === "events" ? "pages" : "places";
+
+      if (query && query.length > 1) {
         // Different API endpoints based on mode
-        const searchMode = appState.mode === "events" ? "pages" : "places";
-        searchResults = await getEntriesfromText(searchQuery, searchMode);
+        const results = await getEntriesfromText(query, searchMode);
+        if (requestId !== searchRequestId) {
+          return;
+        }
+        searchResults = results;
         isActive = true;
       } else {
+        if (requestId !== searchRequestId) {
+          return;
+        }
         searchResults = [];
         isActive = false;
       }
@@ -45,6 +64,7 @@
       searchResults = [];
       debouncedSearch();
     } else {
+      searchRequestId += 1;
       searchResults = [];
       isActive = false;
       isLoading = false;
@@ -119,6 +139,30 @@
     selectedIndex = -1;
   }
 
+  function clearSearch() {
+    searchRequestId += 1;
+    searchQuery = "";
+    searchResults = [];
+    isActive = false;
+    selectedIndex = -1;
+    isLoading = false;
+    if (debounceTimer) clearTimeout(debounceTimer);
+  }
+
+  /**
+   * @param {{ id?: string | number, geokey?: string | number, page_title?: string }} entry
+   */
+  function getSearchResultKey(entry) {
+    return entry.id ?? entry.geokey ?? entry.page_title;
+  }
+
+  /**
+   * @param {{ id?: string | number, geokey?: string | number, page_title?: string }} entry
+   */
+  function getSearchOptionId(entry) {
+    return `search-option-${String(getSearchResultKey(entry)).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  }
+
   function handleBlur() {
     // Small delay to allow click events on suggestions to fire
     setTimeout(() => {
@@ -138,6 +182,7 @@
 <div class="search-container">
   <div class="search-input-wrapper">
     <input
+      id={searchInputId}
       type="text"
       placeholder={`Search a ${appState.mode === "places" ? "place" : "page"}`}
       bind:value={searchQuery}
@@ -145,14 +190,18 @@
       onblur={handleBlur}
       onkeydown={handleKeydown}
       class="search-input"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded={isActive}
+      aria-controls={searchResultsId}
+      aria-activedescendant={activeDescendantId}
     />
     {#if searchQuery}
       <button
         class="clear-button"
-        onclick={() => {
-          searchQuery = "";
-          isActive = false;
-        }}
+        onclick={clearSearch}
+        aria-label="Clear search"
+        title="Clear search"
       >
         ×
       </button>
@@ -176,9 +225,10 @@
   </div>
 
   {#if isActive && searchResults.length > 0}
-    <div class="suggestions" role="listbox">
-      {#each searchResults as entry, i}
+    <div class="suggestions" id={searchResultsId} role="listbox" aria-labelledby={searchInputId}>
+      {#each searchResults as entry, i (getSearchResultKey(entry))}
         <div
+          id={getSearchOptionId(entry)}
           class="suggestion-item {i === selectedIndex ? 'selected' : ''}"
           onmousedown={() => handleSelect(entry)}
           role="option"
@@ -199,7 +249,7 @@
       {/each}
     </div>
   {:else if isActive && searchQuery.length > 1}
-    <div class="suggestions" role="listbox">
+    <div class="suggestions" id={searchResultsId} role="listbox" aria-labelledby={searchInputId}>
       <div class="no-results" role="presentation">
         {#if isLoading}
           Searching...
