@@ -2,8 +2,13 @@
   import { constrainedDate } from "../data/date_utils";
   import DropdownMenu from "./DropdownMenu.svelte";
 
+  /** @typedef {number | "all"} DatePart */
+  /** @typedef {{ year: number, month: DatePart, day: DatePart }} DateValue */
+  /** @typedef {"year" | "month" | "day"} DateField */
+
   // Define a date object to hold the values
-  let { date = $bindable({ year: 1810, month: 3, day: "all" }) } = $props();
+  let { date = $bindable({ year: 1810, month: 3, day: "all" }) } =
+    /** @type {{ date?: DateValue }} */ ($props());
 
   // Add an array of month abbreviations
   const monthAbbreviations = [
@@ -26,16 +31,25 @@
   const firstYearRequiringMonth = 3000;
   const firstYearRequiringDay = 3000;
 
+  /**
+   * @param {number} year
+   * @param {number} month
+   */
   function getDaysInMonth(year, month) {
     return new Date(year < 0 ? year + 1 : year, month, 0).getDate();
   }
 
+  /**
+   * @param {DateField} field
+   * @param {DatePart} value
+   */
   function updateDate(field, value) {
     if (field === "year" && value === 0) {
       // If setting year to 0, change to -1 if current year is positive, or 1 otherwise
       value = date.year > 0 ? -1 : 1;
     }
-    date = constrainedDate({ ...date, [field]: value });
+    const nextDate = /** @type {DateValue} */ ({ ...date, [field]: value });
+    date = /** @type {DateValue} */ (constrainedDate(nextDate));
   }
 
   function incrementYear() {
@@ -56,10 +70,12 @@
     }
   }
 
+  /** @param {DatePart} value */
   function handleDaySelect(value) {
     updateDate("day", value);
   }
 
+  /** @param {DatePart} value */
   function handleMonthSelect(value) {
     updateDate("month", value);
   }
@@ -70,7 +86,9 @@
     if (date.year < firstYearRequiringDay) {
       options.push({ value: "all", label: "All" });
     }
-    for (let i = 1; i <= getDaysInMonth(date.year, date.month); i++) {
+    const daysInMonth =
+      date.month === "all" ? 0 : getDaysInMonth(date.year, date.month);
+    for (let i = 1; i <= daysInMonth; i++) {
       options.push({ value: i, label: i.toString() });
     }
     return options;
@@ -102,6 +120,7 @@
       options={dayOptions}
       displayValue={dayDisplayValue}
       minWidth="72px"
+      ariaLabel="Day"
       onSelect={handleDaySelect}
     />
   {/if}
@@ -111,6 +130,7 @@
     options={monthOptions}
     displayValue={monthDisplayValue}
     minWidth="128px"
+    ariaLabel="Month"
     onSelect={handleMonthSelect}
   />
 
@@ -132,7 +152,6 @@
         onclick={incrementYear}
         aria-label="Increment year"
         title="Increment year"
-        tabindex="-1"
       >
         <svg
           width="10"
@@ -153,7 +172,6 @@
         onclick={decrementYear}
         aria-label="Decrement year"
         title="Decrement year"
-        tabindex="-1"
       >
         <svg
           width="10"
@@ -281,6 +299,7 @@
 
   /* Firefox number input styling */
   .year-input[type="number"] {
+    appearance: textfield;
     -moz-appearance: textfield;
   }
 </style>

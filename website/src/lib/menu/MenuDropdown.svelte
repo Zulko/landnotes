@@ -1,5 +1,4 @@
 <script>
-  import { onMount, onDestroy } from "svelte";
   import { appState } from "../appState.svelte";
   import DropdownMenu from "./DropdownMenu.svelte";
 
@@ -14,8 +13,13 @@
     setTimeout(onCloseMenu, 200);
   }
 
+  /** @param {MouseEvent} event */
   function handleClickOutside(event) {
     // Close menu when clicking outside
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+
     if (
       !event.target.closest(".menu-container") &&
       !event.target.closest(".menu-button")
@@ -24,8 +28,24 @@
     }
   }
 
+  /** @param {string} value */
   function handleDateFilterSelect(value) {
     strictDate = value === "strict";
+  }
+
+  /**
+   * @param {unknown} value
+   * @returns {value is { name: string, message: string }}
+   */
+  function hasErrorDetails(value) {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "name" in value &&
+      typeof value.name === "string" &&
+      "message" in value &&
+      typeof value.message === "string"
+    );
   }
 
   async function handleShareLink() {
@@ -46,10 +66,17 @@
         alert("Link copied to clipboard");
       }
     } catch (error) {
-      console.log("Share operation failed:", error.name, error.message);
+      const shareError = hasErrorDetails(error)
+        ? error
+        : { name: "Error", message: String(error) };
+
+      console.log("Share operation failed:", shareError.name, shareError.message);
 
       // Check if it's a user cancellation (common with navigator.share)
-      if (error.name === "AbortError" || error.message.includes("canceled")) {
+      if (
+        shareError.name === "AbortError" ||
+        shareError.message.includes("canceled")
+      ) {
         console.log("User canceled the share operation");
         // Don't show fallback for user cancellation
         onCloseMenu();
@@ -74,26 +101,15 @@
     { value: "strict", label: "Only events strictly within the date" },
   ];
 
-  let dateFilterValue = $state(strictDate ? "strict" : "overlapping");
+  const dateFilterValue = $derived(strictDate ? "strict" : "overlapping");
   const dateFilterDisplayValue = $derived(
     strictDate
       ? "Only events strictly within the date"
       : "All events overlapping with the date"
   );
-
-  // Sync the internal state with the prop
-  $effect(() => {
-    dateFilterValue = strictDate ? "strict" : "overlapping";
-  });
-
-  onMount(() => {
-    document.addEventListener("click", handleClickOutside);
-  });
-
-  onDestroy(() => {
-    document.removeEventListener("click", handleClickOutside);
-  });
 </script>
+
+<svelte:document onclick={handleClickOutside} />
 
 <div class="menu-container">
   <div class="menu-dropdown" onblur={handleMenuBlur} tabindex="-1">
@@ -121,10 +137,11 @@
       <div class="menu-group">
         <span class="menu-label">Date filter</span>
         <DropdownMenu
-          bind:value={dateFilterValue}
+          value={dateFilterValue}
           options={dateFilterOptions}
           displayValue={dateFilterDisplayValue}
           minWidth="280px"
+          ariaLabel="Date filter"
           onSelect={handleDateFilterSelect}
         />
       </div>

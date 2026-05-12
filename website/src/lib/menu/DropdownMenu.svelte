@@ -12,6 +12,7 @@
     placeholder = "Select...",
     minWidth = "60px",
     maxHeight = "200px",
+    ariaLabel = undefined,
     disabled = false,
     onSelect = () => {},
   } = $props();
@@ -164,6 +165,7 @@
     aria-haspopup="listbox"
     aria-controls={listboxId}
     aria-activedescendant={activeDescendantId}
+    aria-label={ariaLabel}
     aria-disabled={disabled}
   >
     <span class="dropdown-value">{displayValue || placeholder}</span>
