@@ -6,7 +6,18 @@
 
   import { appState, uiGlobals, uiState } from "../appState.svelte";
 
+  /**
+   * @typedef {Object} SearchEntry
+   * @property {string | number} [id]
+   * @property {*} [geokey]
+   * @property {string} page_title
+   * @property {number} lat
+   * @property {number} lon
+   * @property {number} [n_events]
+   */
+
   let searchQuery = $state("");
+  /** @type {SearchEntry[]} */
   let searchResults = $state([]);
   let isActive = $state(false);
   let isLoading = $state(false);
@@ -23,6 +34,11 @@
     isActive && selectedIndex >= 0 && searchResults[selectedIndex]
       ? getSearchOptionId(searchResults[selectedIndex])
       : undefined
+  );
+  const noResultsMessage = $derived(
+    appState.mode === "events"
+      ? "No matching pages or events found"
+      : "No matching locations found"
   );
 
   // Debounced search function
@@ -95,6 +111,9 @@
     if (debounceTimer) clearTimeout(debounceTimer);
   });
 
+  /**
+   * @param {KeyboardEvent} event
+   */
   function handleKeydown(event) {
     if (!isActive || searchResults.length === 0) return;
 
@@ -113,6 +132,9 @@
     }
   }
 
+  /**
+   * @param {SearchEntry} entry
+   */
   function handleSelect(entry) {
     if (appState.mode === "places") {
       const { geokey, lat, lon, page_title } = entry;
@@ -123,7 +145,9 @@
       appState.wikiSection = "";
       appState.wikiPage = page_title;
       appState.paneTab = "wikipedia";
-      uiGlobals.mapTravel({
+      /** @type {(options: { location: { lat: number, lon: number }, zoom: number, flyDuration: number }) => void} */ (
+        /** @type {unknown} */ (uiGlobals.mapTravel)
+      )({
         location: { lat, lon },
         zoom: Math.max(12, appState.zoom),
         flyDuration: 1,
@@ -139,6 +163,17 @@
     selectedIndex = -1;
   }
 
+  /**
+   * @param {KeyboardEvent} event
+   * @param {SearchEntry} entry
+   */
+  function handleSuggestionKeydown(event, entry) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    handleSelect(entry);
+  }
+
   function clearSearch() {
     searchRequestId += 1;
     searchQuery = "";
@@ -150,14 +185,14 @@
   }
 
   /**
-   * @param {{ id?: string | number, geokey?: string | number, page_title?: string }} entry
+   * @param {SearchEntry} entry
    */
   function getSearchResultKey(entry) {
     return entry.id ?? entry.geokey ?? entry.page_title;
   }
 
   /**
-   * @param {{ id?: string | number, geokey?: string | number, page_title?: string }} entry
+   * @param {SearchEntry} entry
    */
   function getSearchOptionId(entry) {
     return `search-option-${String(getSearchResultKey(entry)).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
@@ -210,17 +245,27 @@
       <img src={`${import.meta.env.BASE_URL}icons/search.svg`} alt="Search" />
     </div>
 
+    <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {#if uiState.dataIsLoading}
+        Loading data...
+      {/if}
+    </div>
+    <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {#if isLoading}
+        Searching...
+      {/if}
+    </div>
+
     <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
       {#if uiState.dataIsLoading}
-        <div class="menu-button loading" title="Loading...">
+        <div class="menu-loading-indicator" title="Loading data" aria-hidden="true">
           <div class="spinner"></div>
         </div>
-      {:else}
-        <button class="menu-button" onclick={toggleMenu} title="Menu">
-          <img src={`${basePath}icons/menu.svg`} alt="Menu" class="icon" />
-        </button>
       {/if}
+      <button class="menu-button" onclick={toggleMenu} title="Menu" aria-label="Menu">
+        <img src={`${basePath}icons/menu.svg`} alt="" class="icon" />
+      </button>
     </div>
   </div>
 
@@ -231,6 +276,7 @@
           id={getSearchOptionId(entry)}
           class="suggestion-item {i === selectedIndex ? 'selected' : ''}"
           onmousedown={() => handleSelect(entry)}
+          onkeydown={(event) => handleSuggestionKeydown(event, entry)}
           role="option"
           aria-selected={i === selectedIndex}
           tabindex="0"
@@ -254,7 +300,7 @@
         {#if isLoading}
           Searching...
         {:else}
-          No matching locations found
+          {noResultsMessage}
         {/if}
       </div>
     </div>
@@ -341,6 +387,13 @@
     padding: 0;
   }
 
+  .menu-loading-indicator {
+    position: absolute;
+    right: -2px;
+    top: -2px;
+    pointer-events: none;
+  }
+
   .menu-button-wrapper:hover {
     background-color: #eee;
   }
@@ -415,10 +468,10 @@
   }
 
   .spinner {
-    width: 18px;
-    height: 18px;
-    border: 3px solid #e0e0e0;
-    border-top: 3px solid #666;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #e0e0e0;
+    border-top: 2px solid #666;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -432,7 +485,15 @@
     }
   }
 
-  .menu-button.loading {
-    cursor: wait;
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>
