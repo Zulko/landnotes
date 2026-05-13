@@ -30,6 +30,7 @@ export function createMarker({ entry }) {
   const marker = L.marker([entry.lat, entry.lon], {
     icon: divIcon,
     pane: entry.displayClass + "MarkersPane",
+    keyboard: false,
   });
 
   // Store the current display class on the marker

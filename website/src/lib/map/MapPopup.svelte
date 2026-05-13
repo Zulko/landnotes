@@ -18,6 +18,7 @@
     triggerTitle = undefined,
     triggerRole = "button",
     triggerTag = "span",
+    triggerClass = undefined,
     onTriggerActivate = undefined,
     popupContent,
     children,
@@ -35,6 +36,13 @@
   let isHovered = $state(false);
   let isOpen = $derived(alwaysOpen || (!uiGlobals.isTouchDevice && isHovered));
   let popupAriaLabel = $derived(popupLabelledby ? undefined : popupLabel);
+  let isNativeButtonTrigger = $derived(triggerTag === "button");
+  let effectiveTriggerRole = $derived(
+    isNativeButtonTrigger ? undefined : triggerRole
+  );
+  let triggerHasPopupSemantics = $derived(
+    isNativeButtonTrigger || Boolean(effectiveTriggerRole)
+  );
   /** @type {number | undefined} */
   let closeTimeout = $state(undefined);
   /** @type {number | undefined} */
@@ -293,6 +301,10 @@
       return;
     }
 
+    if (isNativeButtonTrigger) {
+      return;
+    }
+
     if (
       (event.key === "Enter" || event.key === " ") &&
       typeof onTriggerActivate === "function"
@@ -354,25 +366,49 @@
   </div>
 {/if}
 
-<svelte:element
-  this={triggerTag}
-  bind:this={triggerElement}
-  role={triggerRole}
-  tabindex={triggerRole ? 0 : undefined}
-  aria-haspopup={triggerRole ? "dialog" : undefined}
-  aria-expanded={triggerRole ? isOpen : undefined}
-  aria-controls={triggerRole ? popupId : undefined}
-  aria-label={triggerLabel}
-  title={triggerTitle}
-  onmouseenter={onMouseEnter}
-  onmouseleave={onMouseLeave}
-  onfocusin={onMouseEnter}
-  onfocusout={onMouseLeave}
-  onclick={handleTriggerClick}
-  onkeydown={handleTriggerKeydown}
->
-  {@render children()}
-</svelte:element>
+{#if isNativeButtonTrigger}
+  <button
+    bind:this={triggerElement}
+    class={triggerClass}
+    type="button"
+    aria-haspopup="dialog"
+    aria-expanded={isOpen}
+    aria-controls={popupId}
+    aria-describedby={isOpen ? popupId : undefined}
+    aria-label={triggerLabel}
+    title={triggerTitle}
+    onmouseenter={onMouseEnter}
+    onmouseleave={onMouseLeave}
+    onfocusin={onMouseEnter}
+    onfocusout={onMouseLeave}
+    onclick={handleTriggerClick}
+    onkeydown={handleTriggerKeydown}
+  >
+    {@render children()}
+  </button>
+{:else}
+  <svelte:element
+    this={triggerTag}
+    bind:this={triggerElement}
+    class={triggerClass}
+    role={effectiveTriggerRole}
+    tabindex={effectiveTriggerRole ? 0 : undefined}
+    aria-haspopup={triggerHasPopupSemantics ? "dialog" : undefined}
+    aria-expanded={triggerHasPopupSemantics ? isOpen : undefined}
+    aria-controls={triggerHasPopupSemantics ? popupId : undefined}
+    aria-describedby={triggerHasPopupSemantics && isOpen ? popupId : undefined}
+    aria-label={triggerLabel}
+    title={triggerTitle}
+    onmouseenter={onMouseEnter}
+    onmouseleave={onMouseLeave}
+    onfocusin={onMouseEnter}
+    onfocusout={onMouseLeave}
+    onclick={handleTriggerClick}
+    onkeydown={handleTriggerKeydown}
+  >
+    {@render children()}
+  </svelte:element>
+{/if}
 
 <style>
   :global(.map-popup) {

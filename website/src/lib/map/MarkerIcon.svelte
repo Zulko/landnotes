@@ -99,7 +99,8 @@
     : `Wikipedia preview for ${entry.pageTitle}`}
   triggerLabel={markerTitle}
   triggerTitle={markerTitle}
-  triggerTag="div"
+  triggerTag="button"
+  triggerClass="map-marker-trigger"
   onTriggerActivate={onClick}
   enterable={entry.isEvent || uiGlobals.isTouchDevice}
   alwaysOpen={uiGlobals.isTouchDevice && entry.displayClass === "selected"}
@@ -127,6 +128,25 @@
 </MapPopup>
 
 <style>
+  :global(.map-marker-trigger) {
+    appearance: none;
+    -webkit-appearance: none;
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: 0;
+    cursor: pointer;
+    overflow: visible;
+  }
+
   .map-marker {
     transition:
       transform 0.1s ease,
