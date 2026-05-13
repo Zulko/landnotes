@@ -184,5 +184,6 @@ function selectMarkerAndCenterOnIt({ entry, selectDelay = 0 }) {
   uiGlobals.mapTravel({
     location: { lat: entry.lat, lon: entry.lon },
     flyDuration: 0.3,
+    reserveMobilePane: true,
   });
 }

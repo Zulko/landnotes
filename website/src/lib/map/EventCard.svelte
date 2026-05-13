@@ -54,7 +54,7 @@
       ? $state.snapshot(entry.location)
       : $state.snapshot(entry.locations_latlon[0]);
     const mapTravel =
-      /** @type {((options: { location: any, zoom: number, flyDuration: number }) => void) | null} */ (
+      /** @type {((options: { location: any, zoom: number, flyDuration: number, reserveMobilePane?: boolean }) => void) | null} */ (
         uiGlobals.mapTravel
       );
     if (mapTravel) {
@@ -87,7 +87,7 @@
       ? $state.snapshot(entry.location)
       : $state.snapshot(entry.locations_latlon[0]);
     const mapTravel =
-      /** @type {((options: { location: any, zoom: number, flyDuration: number }) => void) | null} */ (
+      /** @type {((options: { location: any, zoom: number, flyDuration: number, reserveMobilePane?: boolean }) => void) | null} */ (
         uiGlobals.mapTravel
       );
     if (mapTravel) {
@@ -95,6 +95,7 @@
         location: location,
         zoom: appState.zoom,
         flyDuration: 0.3,
+        reserveMobilePane: true,
       });
     }
     setTimeout(() => {

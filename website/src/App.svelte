@@ -17,6 +17,16 @@
     setStateFromURLParams,
   } from "./lib/appState.svelte";
 
+  type UrlState = {
+    location?: { lat: number; lon: number };
+    zoom?: number;
+  };
+  type MapTravel = (options: {
+    location: { lat: number; lon: number };
+    zoom?: number;
+    flyDuration: number;
+  }) => void;
+
   let isNarrowScreen = $state(false);
 
   // -------------------------
@@ -34,15 +44,18 @@
    * Initialize app state from URL parameters
    */
   function setStateFromURLParamsAndMoveMap() {
-    const urlState = setStateFromURLParams();
+    const urlState = setStateFromURLParams() as UrlState;
+    const mapTravel = uiGlobals.mapTravel as MapTravel | null;
+    if (!mapTravel) return;
+
     if (urlState.location) {
-      uiGlobals.mapTravel({
+      mapTravel({
         location: urlState.location,
         zoom: urlState.zoom,
         flyDuration: 0.3,
       });
     } else {
-      uiGlobals.mapTravel({
+      mapTravel({
         location: { lat: 48, lon: 0 },
         zoom: 4,
         flyDuration: 0,
@@ -84,7 +97,13 @@
   <div class="content-container">
     {#if appState.wikiPage || appState.paneTab === "same-location-events" || appState.paneTab === "about"}
       <div class="wiki-pane-container">
-        <SlidingPane />
+        {#if isNarrowScreen}
+          {#key appState.wikiPage}
+            <SlidingPane />
+          {/key}
+        {:else}
+          <SlidingPane />
+        {/if}
       </div>
     {/if}
 
@@ -136,8 +155,10 @@
   }
 
   main.narrow-screen .wiki-pane-container {
-    flex: 0 0 0;
-    order: 2; /* Put wiki pane at the bottom */
+    flex: none;
+    order: 2; /* Pane is fixed on mobile, so it should not resize the map. */
+    height: 0;
+    z-index: 900;
   }
 
   main.narrow-screen .map-container {

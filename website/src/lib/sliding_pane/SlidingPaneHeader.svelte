@@ -4,9 +4,17 @@
 
   let {
     expanded = $bindable(false),
+    sheetState = $bindable("half"),
+    isNarrowScreen = false,
     closePane,
     openWikiPageInNewTab,
   } = $props();
+
+  let mobileExpanded = $derived(sheetState === "full");
+
+  function toggleMobileSheetState() {
+    sheetState = mobileExpanded ? "half" : "full";
+  }
 </script>
 
 <div class="pane-header">
@@ -70,23 +78,24 @@
         class="icon"
       />
     </button>
-    <!-- Mobile Expand Button (hidden on desktop) -->
-    <button
-      type="button"
-      class="icon-button expand-button mobile-only"
-      class:active={expanded}
-      onclick={() => (expanded = !expanded)}
-      title={expanded ? "Shrink pane" : "Expand pane"}
-      aria-label={expanded ? "Shrink pane" : "Expand pane"}
-    >
-      <img
-        src={expanded
-          ? `${basePath}icons/shrink.svg`
-          : `${basePath}icons/expand-vertical.svg`}
-        alt={expanded ? "Shrink pane" : "Expand pane"}
-        class="icon"
-      />
-    </button>
+    {#if isNarrowScreen}
+      <button
+        type="button"
+        class="icon-button expand-button"
+        class:active={mobileExpanded}
+        onclick={toggleMobileSheetState}
+        title={mobileExpanded ? "Shrink pane" : "Expand pane"}
+        aria-label={mobileExpanded ? "Shrink pane" : "Expand pane"}
+      >
+        <img
+          src={mobileExpanded
+            ? `${basePath}icons/shrink.svg`
+            : `${basePath}icons/expand-vertical.svg`}
+          alt={mobileExpanded ? "Shrink pane" : "Expand pane"}
+          class="icon"
+        />
+      </button>
+    {/if}
     <button
       type="button"
       class="close-button"
@@ -181,20 +190,11 @@
     display: block;
   }
 
-  .mobile-only {
-    display: none;
-  }
-
   /* Mobile styles */
   @media (max-width: 768px) {
     /* Hide desktop-only elements on mobile */
     .desktop-only {
       display: none;
-    }
-
-    /* Show mobile-only elements on mobile */
-    .mobile-only {
-      display: block;
     }
   }
 </style>

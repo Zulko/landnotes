@@ -135,7 +135,12 @@
   }
 
   // ===== MAP CONTROL FUNCTIONS =====
-  export function mapTravel({ location, zoom, flyDuration }) {
+  export function mapTravel({
+    location,
+    zoom,
+    flyDuration,
+    reserveMobilePane = false,
+  }) {
     const { lat, lon } = location;
     clearTimeout(handleBoundChangesAfterFlyToTimeOut);
     clearTimeout(fixZoomAfterFlyToTimeOut);
@@ -146,14 +151,21 @@
       markerLayer.clearLayers();
     }
 
+    const travelCenter = getTravelCenter({
+      lat,
+      lon,
+      zoom,
+      reserveMobilePane,
+    });
+
     if (flyDuration == 0) {
-      map.setView([lat, lon], zoom, {
+      map.setView(travelCenter, zoom, {
         animate: false,
         duration: 0,
       });
     } else {
       isFlying = true;
-      map.flyTo([lat, lon], zoom, {
+      map.flyTo(travelCenter, zoom, {
         animate: true,
         duration: flyDuration, // Duration in seconds
       });
@@ -177,6 +189,31 @@
     }
   }
   uiGlobals.mapTravel = mapTravel;
+
+  function getTravelCenter({ lat, lon, zoom, reserveMobilePane }) {
+    const bottomInset = getMobilePaneBottomInset({ reserveMobilePane });
+    if (!bottomInset) {
+      return [lat, lon];
+    }
+
+    const targetPoint = map.project([lat, lon], zoom);
+    const adjustedCenterPoint = targetPoint.add([0, bottomInset / 2]);
+    const adjustedCenter = map.unproject(adjustedCenterPoint, zoom);
+    return [adjustedCenter.lat, adjustedCenter.lng];
+  }
+
+  function getMobilePaneBottomInset({ reserveMobilePane }) {
+    const paneIsOpen =
+      appState.wikiPage ||
+      appState.paneTab === "same-location-events" ||
+      appState.paneTab === "about";
+
+    if ((!paneIsOpen && !reserveMobilePane) || window.innerWidth > 768) {
+      return 0;
+    }
+
+    return window.innerHeight * 0.5;
+  }
 
   // ===== EVENT HANDLERS =====
   function handleBoundsChange() {

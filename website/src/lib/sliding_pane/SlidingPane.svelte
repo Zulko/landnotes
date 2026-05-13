@@ -6,12 +6,15 @@
   import { onMount } from "svelte";
   import { appState, uiState } from "../appState.svelte";
 
-  let isNarrowScreen = $state(
-    typeof window !== "undefined" && window.innerWidth <= 768
-  );
-  let expanded = $state(window.innerWidth <= 768); // fullscreen by default on narrow screens
+  const mobileSheetHeights = {
+    half: "50dvh",
+    full: "100dvh",
+  };
+
+  let isNarrowScreen = $state(false);
+  let expanded = $state(false);
+  let sheetState = $state("half");
   const normalWidth = "400px"; // Default width for desktop
-  const normalHeight = "35vh"; // Default height for mobile
 
   // ===== STATE VARIABLES =====
   let isInitialRender = $state(true);
@@ -33,10 +36,8 @@
     isInitialRender
       ? "0px"
       : isNarrowScreen
-        ? expanded
-          ? "100vh"
-          : normalHeight
-        : "100vh"
+        ? mobileSheetHeights[sheetState]
+        : "100dvh"
   );
 
   // Generate Wikipedia URL based on device and width
@@ -57,11 +58,11 @@
 
   // ===== EVENT HANDLERS =====
 
-  // Toggle expanded mode (works for both desktop and mobile)
   function closePane() {
     appState.wikiPage = null;
     appState.selectedMarkerId = null;
     appState.paneTab = "wikipedia";
+    sheetState = "half";
   }
 
   // Open in new tab
@@ -71,16 +72,16 @@
     }
   }
 
-  // Handle window resize
   function handleResize() {
     if (typeof window !== "undefined") {
-      // Update mobile detection
       isNarrowScreen = window.innerWidth <= 768;
     }
   }
 
   // ===== LIFECYCLE =====
   onMount(() => {
+    handleResize();
+
     // Trigger the initial animation after a small delay
     setTimeout(() => {
       isInitialRender = false;
@@ -93,9 +94,19 @@
   onresize={handleResize}
 />
 
-<div class="pane-container">
-  <div class="pane" style="width: {actualWidth}; height: {actualHeight};">
-    <SlidingPaneHeader bind:expanded {openWikiPageInNewTab} {closePane} />
+<div class="pane-container" class:mobile={isNarrowScreen}>
+  <div
+    class="pane"
+    data-sheet-state={sheetState}
+    style="width: {actualWidth}; height: {actualHeight};"
+  >
+    <SlidingPaneHeader
+      bind:expanded
+      bind:sheetState
+      {isNarrowScreen}
+      {openWikiPageInNewTab}
+      {closePane}
+    />
 
     <div class="pane-content">
       {#if appState.paneTab === "wikipedia" && appState.wikiPage}
@@ -122,6 +133,7 @@
 <style>
   .pane-container {
     display: flex;
+    height: 100%;
   }
 
   .pane {
@@ -134,6 +146,7 @@
       width 0.3s ease,
       height 0.3s ease;
     z-index: 100;
+    pointer-events: auto;
   }
 
   .pane-content {
@@ -153,10 +166,25 @@
 
   /* Mobile styles */
   @media (max-width: 768px) {
+    .pane-container.mobile {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: block;
+      height: auto;
+      z-index: 900;
+      pointer-events: none;
+    }
+
     .pane {
       width: 100% !important;
-      border-top-left-radius: 12px;
-      border-top-right-radius: 12px;
+      max-height: 100dvh;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
     }
+
   }
 </style>

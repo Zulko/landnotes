@@ -108,9 +108,10 @@
 >
   <div
     class={`map-marker marker-display-${entry.displayClass}`}
+    aria-hidden="true"
   >
     <div class="marker-icon-circle">
-      <img src={basePath + "icons/" + iconName + ".svg"} alt="icon" />
+      <img src={basePath + "icons/" + iconName + ".svg"} alt="" />
       {#if entry.isEvent && entry.same_location_events && entry.same_location_events.length > 0}
         <div class="event-count-indicator">
           +{entry.same_location_events.length}

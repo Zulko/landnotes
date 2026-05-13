@@ -145,12 +145,13 @@
       appState.wikiSection = "";
       appState.wikiPage = page_title;
       appState.paneTab = "wikipedia";
-      /** @type {(options: { location: { lat: number, lon: number }, zoom: number, flyDuration: number }) => void} */ (
+      /** @type {(options: { location: { lat: number, lon: number }, zoom: number, flyDuration: number, reserveMobilePane?: boolean }) => void} */ (
         /** @type {unknown} */ (uiGlobals.mapTravel)
       )({
         location: { lat, lon },
         zoom: Math.max(12, appState.zoom),
         flyDuration: 1,
+        reserveMobilePane: true,
       });
     } else {
       const { page_title } = entry;
