@@ -3,6 +3,18 @@
   import EventCard from "./EventCard.svelte";
   import WikiPreview from "./WikiPreview.svelte";
   import { appState, uiGlobals } from "../appState.svelte.js";
+
+  /**
+   * @typedef {Object} MarkerEntry
+   * @property {string} category
+   * @property {string} displayClass
+   * @property {boolean} isEvent
+   * @property {string} name
+   * @property {string} pageTitle
+   * @property {unknown[]} [same_location_events]
+   */
+
+  /** @type {{ entry: MarkerEntry, onClick?: ((event: MouseEvent | KeyboardEvent) => void) | null }} */
   const { entry, onClick = null } = $props();
 
   const basePath = import.meta.env.BASE_URL;
@@ -43,6 +55,7 @@
     work: "briefcase-business",
     travel: "luggage",
   };
+  /** @type {Record<string, string>} */
   const iconByType = {
     ...iconByPlaceType,
     ...iconsByEventType,
@@ -64,23 +77,14 @@
     `Show ${entry.name}${entry.name !== entry.pageTitle ? ` from ${entry.pageTitle}` : ""}`
   );
 
+  /** @param {string} pageTitle */
   function openWikiPage(pageTitle) {
     appState.wikiPage = pageTitle;
     appState.paneTab = "wikipedia";
   }
-
-  /** @param {KeyboardEvent} event */
-  function handleKeydown(event) {
-    if (event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
-
-    event.preventDefault();
-    onClick?.(event);
-  }
 </script>
 
-{#snippet popupContent(isOpen)}
+{#snippet popupContent(/** @type {boolean} */ isOpen)}
   {#if entry.isEvent}
     <EventCard {entry} constrainHeight={true} keepPopupsWithinMap={true} />
   {:else}
@@ -90,6 +94,13 @@
 
 <MapPopup
   {popupContent}
+  popupLabel={entry.isEvent
+    ? `Event details for ${entry.name}`
+    : `Wikipedia preview for ${entry.pageTitle}`}
+  triggerLabel={markerTitle}
+  triggerTitle={markerTitle}
+  triggerTag="div"
+  onTriggerActivate={onClick}
   enterable={entry.isEvent || uiGlobals.isTouchDevice}
   alwaysOpen={uiGlobals.isTouchDevice && entry.displayClass === "selected"}
   visibilityDelay={entry.isEvent ? 0 : 100}
@@ -97,12 +108,6 @@
 >
   <div
     class={`map-marker marker-display-${entry.displayClass}`}
-    onclick={onClick}
-    onkeydown={handleKeydown}
-    role="button"
-    tabindex="0"
-    aria-label={markerTitle}
-    title={markerTitle}
   >
     <div class="marker-icon-circle">
       <img src={basePath + "icons/" + iconName + ".svg"} alt="icon" />
@@ -228,7 +233,6 @@
       font-weight: bold;
       color: white;
       -webkit-text-stroke: 4px white;
-      text-stroke: 4px white;
       z-index: 1;
     }
   }
@@ -247,9 +251,7 @@
     font-weight: bold;
     color: white;
     -webkit-text-stroke: 6px white;
-    text-stroke: 6px white;
     -webkit-text-stroke-linejoin: round;
-    text-stroke-linejoin: round;
     z-index: 1;
   }
 
