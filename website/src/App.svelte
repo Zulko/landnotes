@@ -181,8 +181,7 @@
     width: 80%;
     max-width: 500px;
     z-index: 1000;
-    background-color: none;
-    border-radius: 20px;
+    border-radius: var(--ln-radius-pill);
     padding: 5px;
   }
 </style>

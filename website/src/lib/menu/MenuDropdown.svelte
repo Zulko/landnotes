@@ -215,10 +215,10 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #d1d5db;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    background: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-xl);
+    box-shadow: var(--ln-shadow-lg);
     z-index: 1000;
     max-height: 300px;
     overflow-y: auto;
@@ -229,7 +229,7 @@
 
   .menu-group {
     padding: 12px 16px;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--ln-color-border-muted);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -242,7 +242,7 @@
 
   .menu-label {
     font-weight: 600;
-    color: #374151;
+    color: var(--ln-color-text);
     font-size: 14px;
     min-width: fit-content;
   }
@@ -256,63 +256,63 @@
 
   .mode-option {
     padding: 6px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background-color: #ffffff;
-    color: #374151;
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-lg);
+    background-color: var(--ln-color-surface);
+    color: var(--ln-color-text);
     cursor: pointer;
     font-size: 14px;
     font-family: inherit;
     font-weight: 500;
     white-space: nowrap;
-    transition: all 0.2s ease;
+    transition: all var(--ln-transition-base);
     outline: none;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--ln-shadow-sm);
   }
 
   .mode-option:hover {
-    background-color: #f9fafb;
-    border-color: #9ca3af;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    background-color: var(--ln-color-surface-muted);
+    border-color: var(--ln-color-icon-muted);
+    box-shadow: var(--ln-shadow-md);
     transform: translateY(-1px);
   }
 
   .mode-option:focus {
-    border-color: #3b82f6;
+    border-color: var(--ln-color-focus);
     box-shadow:
-      0 0 0 3px rgba(59, 130, 246, 0.1),
-      0 2px 6px rgba(0, 0, 0, 0.15);
+      0 0 0 3px var(--ln-color-focus-ring),
+      var(--ln-shadow-md);
     transform: translateY(-1px);
   }
 
   .mode-option:active {
-    background-color: #f3f4f6;
+    background-color: var(--ln-color-surface-hover);
     transform: translateY(0);
   }
 
   .mode-option.active {
-    background-color: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    background-color: var(--ln-color-primary);
+    color: var(--ln-color-surface);
+    border-color: var(--ln-color-primary);
+    box-shadow: var(--ln-shadow-primary-sm);
   }
 
   .mode-option.active:hover {
-    background-color: #2563eb;
-    border-color: #2563eb;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    background-color: var(--ln-color-primary-hover);
+    border-color: var(--ln-color-primary-hover);
+    box-shadow: var(--ln-shadow-primary-md);
   }
 
   .menu-item {
     display: block;
     padding: 12px 16px;
     text-decoration: none;
-    color: #3b82f6;
-    border-bottom: 1px solid #f3f4f6;
+    color: var(--ln-color-primary);
+    border-bottom: 1px solid var(--ln-color-border-muted);
     cursor: pointer;
     font-size: 15px;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all var(--ln-transition-base);
   }
 
   .menu-item:last-child {
@@ -320,30 +320,30 @@
   }
 
   .menu-item:hover {
-    background-color: #f8fafc;
-    color: #2563eb;
+    background-color: var(--ln-color-surface-muted);
+    color: var(--ln-color-primary-hover);
     text-decoration: none;
   }
 
   .menu-item:focus {
-    background-color: #f8fafc;
-    outline: 2px solid #3b82f6;
+    background-color: var(--ln-color-surface-muted);
+    outline: 2px solid var(--ln-color-focus);
     outline-offset: -2px;
-    color: #2563eb;
+    color: var(--ln-color-primary-hover);
   }
 
   .menu-links {
-    border-top: 1px solid #f3f4f6;
+    border-top: 1px solid var(--ln-color-border-muted);
   }
 
   .share-status {
     min-height: 20px;
     padding: 0 16px 8px;
-    color: #166534;
+    color: var(--ln-color-success);
     font-size: 13px;
   }
 
   .share-status.error {
-    color: #b91c1c;
+    color: var(--ln-color-danger);
   }
 </style>

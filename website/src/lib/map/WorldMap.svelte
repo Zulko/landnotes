@@ -308,6 +308,11 @@
 
     const newDotMarkerLayer = L.layerGroup();
     const newDotMarkers = new Map();
+    const dotStroke = cssToken(
+      map.getZoom() < 7 ? "--ln-color-text-subtle" : "--ln-color-text",
+      map.getZoom() < 7 ? "#777" : "#111"
+    );
+    const dotFill = cssToken("--ln-color-surface", "white");
 
     for (const dotEntry of mapEntries.dots) {
       const markerId = dotEntry.id || `${dotEntry.lat}-${dotEntry.lon}`;
@@ -323,8 +328,8 @@
         marker = L.circleMarker([dotEntry.lat, dotEntry.lon], {
           radius: 4,
           weight: 1,
-          color: map.getZoom() < 7 ? "#777" : "#111",
-          fillColor: "white",
+          color: dotStroke,
+          fillColor: dotFill,
           fillOpacity: 1,
           pane: "dots",
         });
@@ -343,6 +348,12 @@
     newDotMarkerLayer.addTo(map);
     dotMarkerLayer = newDotMarkerLayer;
     currentDotMarkers = newDotMarkers;
+  }
+
+  function cssToken(name, fallback) {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue(name)
+      .trim() || fallback;
   }
 </script>
 
@@ -365,7 +376,7 @@
   }
 
   :global(.leaflet-popup-tip) {
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: var(--ln-color-surface);
   }
 
   /* :global(.leaflet-popup-pane) {

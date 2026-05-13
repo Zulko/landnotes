@@ -162,7 +162,7 @@
     &:hover > .marker-icon-circle,
     &.marker-display-selected > .marker-icon-circle {
       --circle-size: 32px !important;
-      box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
+      box-shadow: var(--ln-shadow-marker);
       z-index: 900 !important;
     }
 
@@ -183,8 +183,8 @@
     }
 
     &.marker-display-selected > .marker-icon-circle {
-      border: 6px solid #f00707;
-      box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.95);
+      border: 4px solid var(--ln-color-marker-selected);
+      box-shadow: var(--ln-shadow-marker-selected);
     }
 
     &.marker-display-full > .marker-text-container {
@@ -194,7 +194,7 @@
 
     &.marker-display-full > .marker-icon-circle {
       --circle-size: 32px;
-      box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
+      box-shadow: var(--ln-shadow-marker);
     }
 
     &.marker-display-reduced > .marker-icon-circle {
@@ -212,9 +212,9 @@
     & > .marker-icon-circle {
       width: var(--circle-size);
       height: var(--circle-size);
-      background-color: white;
+      background-color: var(--ln-color-surface);
       border-radius: 50%;
-      border: 2px solid #222;
+      border: 2px solid var(--ln-color-marker-stroke);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -235,6 +235,11 @@
     }
   }
 
+  :global(.map-marker-trigger:focus-visible) .marker-icon-circle {
+    outline: 3px solid var(--ln-color-focus);
+    outline-offset: 2px;
+  }
+
   .marker-text-container {
     margin-top: -5px;
     font-size: 14px;
@@ -252,15 +257,15 @@
       left: 0;
       right: 0;
       font-weight: bold;
-      color: white;
-      -webkit-text-stroke: 4px white;
+      color: var(--ln-color-surface);
+      -webkit-text-stroke: 4px var(--ln-color-surface);
       z-index: 1;
     }
   }
 
   .marker-text {
     font-weight: bold;
-    color: #111;
+    color: var(--ln-color-text);
     position: relative;
     z-index: 2;
   }
@@ -270,8 +275,8 @@
     left: 0;
     right: 0;
     font-weight: bold;
-    color: white;
-    -webkit-text-stroke: 6px white;
+    color: var(--ln-color-surface);
+    -webkit-text-stroke: 6px var(--ln-color-surface);
     -webkit-text-stroke-linejoin: round;
     z-index: 1;
   }
@@ -280,9 +285,9 @@
     position: absolute;
     top: -8px;
     right: -8px;
-    background-color: #ff5a5f;
-    color: white;
-    border-radius: 30%;
+    background-color: var(--ln-color-event-count);
+    color: var(--ln-color-surface);
+    border-radius: var(--ln-radius-pill);
     font-size: 10px;
     font-weight: bold;
     min-width: 14px;
@@ -290,9 +295,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid white;
+    border: 2px solid var(--ln-color-surface);
     padding: 0 2px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--ln-shadow-sm);
     z-index: 5;
   }
 </style>

@@ -418,10 +418,10 @@
     overflow: visible;
     padding: 0;
 
-    background: #fff;
-    border: 1px solid #a2a9b1;
-    border-radius: 2px;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+    background: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-lg);
+    box-shadow: var(--ln-shadow-popup);
     transition: opacity 0.2s ease-out;
     font-size: 14px;
   }

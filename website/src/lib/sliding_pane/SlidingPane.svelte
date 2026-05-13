@@ -137,8 +137,8 @@
   }
 
   .pane {
-    background: white;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+    background: var(--ln-color-surface);
+    box-shadow: var(--ln-shadow-pane);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -180,9 +180,9 @@
     .pane {
       width: 100% !important;
       max-height: 100dvh;
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
-      box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.22);
+      border-top-left-radius: var(--ln-radius-2xl);
+      border-top-right-radius: var(--ln-radius-2xl);
+      box-shadow: var(--ln-shadow-pane-mobile);
       overflow: hidden;
     }
 

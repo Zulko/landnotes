@@ -207,18 +207,18 @@
   .date-input {
     box-sizing: border-box;
     padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background-color: #ffffff;
-    color: #374151;
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-lg);
+    background-color: var(--ln-color-surface);
+    color: var(--ln-color-text);
     font-size: 14px;
     font-family: inherit;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all var(--ln-transition-base);
     outline: none;
     text-align: center;
     cursor: text;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--ln-shadow-sm);
   }
 
   .year-container {
@@ -252,41 +252,41 @@
     width: 18px;
     height: 14px;
     border: none;
-    border-radius: 3px;
+    border-radius: var(--ln-radius-sm);
     background-color: transparent;
-    color: #9ca3af;
+    color: var(--ln-color-icon-muted);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--ln-transition-fast);
     outline: none;
     padding: 0;
   }
 
   .year-spinner:hover {
-    background-color: #f3f4f6;
-    color: #6b7280;
+    background-color: var(--ln-color-surface-hover);
+    color: var(--ln-color-icon);
   }
 
   .year-spinner:focus {
-    background-color: #e5e7eb;
-    color: #374151;
+    background-color: var(--ln-color-surface-active);
+    color: var(--ln-color-text);
   }
 
   .year-spinner:active {
-    background-color: #d1d5db;
+    background-color: var(--ln-color-border);
     transform: scale(0.9);
   }
 
   .date-input:hover {
-    border-color: #9ca3af;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    border-color: var(--ln-color-icon-muted);
+    box-shadow: var(--ln-shadow-md);
     transform: translateY(-1px);
   }
 
   .date-input:focus {
-    border-color: #3b82f6;
+    border-color: var(--ln-color-focus);
     box-shadow:
-      0 0 0 3px rgba(59, 130, 246, 0.1),
-      0 2px 6px rgba(0, 0, 0, 0.15);
+      0 0 0 3px var(--ln-color-focus-ring),
+      var(--ln-shadow-md);
     transform: translateY(-1px);
   }
 
@@ -301,5 +301,11 @@
   .year-input[type="number"] {
     appearance: textfield;
     -moz-appearance: textfield;
+  }
+
+  @media (max-width: 768px) {
+    .date-input {
+      min-height: var(--ln-space-touch);
+    }
   }
 </style>

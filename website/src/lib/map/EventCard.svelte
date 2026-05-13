@@ -365,11 +365,11 @@
 
 <style>
   :global(.event-marker-popup .leaflet-popup-content-wrapper) {
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: var(--ln-radius-lg);
+    box-shadow: var(--ln-shadow-md);
     padding: 0;
     overflow: hidden;
-    background: #fff;
+    background: var(--ln-color-surface);
   }
 
   :global(.event-marker-popup .leaflet-popup-content) {
@@ -382,6 +382,7 @@
       Ubuntu, sans-serif;
     cursor: default;
     overflow-y: auto;
+    color: var(--ln-color-text);
   }
 
   .event-card .event-card-section {
@@ -389,7 +390,7 @@
     align-items: flex-start;
     margin-bottom: 5px;
     padding-bottom: 5px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--ln-color-border-muted);
   }
 
   .event-card .event-card-section:last-child {
@@ -419,26 +420,26 @@
   }
 
   .event-card-section.when .event-text {
-    color: #333;
+    color: var(--ln-color-text);
   }
   .event-card-section.location .event-text {
-    color: #333;
+    color: var(--ln-color-text);
   }
 
   .event-card-section.summary .event-text {
-    color: #333;
+    color: var(--ln-color-text-muted);
     font-style: italic;
   }
 
   .wiki-link {
-    color: #1a73e8 !important;
+    color: var(--ln-color-primary) !important;
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
   }
 
   .wiki-section {
-    color: #333;
+    color: var(--ln-color-text-muted);
     font-style: italic;
   }
 
@@ -451,43 +452,55 @@
   .event-card-section.go-to-event-button button {
     display: inline-flex;
     align-items: center;
-    background-color: white;
-    border: 1px solid #3366cc;
-    border-radius: 6px;
+    background-color: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-primary);
+    border-radius: var(--ln-radius-md);
     padding: 6px 14px;
+    min-height: 36px;
     font-size: 14px;
-    color: #3366cc;
+    color: var(--ln-color-primary);
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all var(--ln-transition-base);
+    box-shadow: var(--ln-shadow-sm);
   }
 
   .event-card-section.go-to-event-button button:hover {
-    background-color: #f0f5ff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    background-color: var(--ln-color-primary-soft);
+    box-shadow: var(--ln-shadow-md);
   }
 
   .event-card-section.go-to-event-button button:focus {
     outline: none;
     box-shadow:
-      0 0 0 2px rgba(51, 102, 204, 0.4),
-      0 1px 3px rgba(0, 0, 0, 0.1);
+      0 0 0 3px var(--ln-color-focus-ring),
+      var(--ln-shadow-sm);
   }
 
   .event-card-section.other-events-button button {
-    background-color: white;
-    border: 1px solid #3366cc;
-    border-radius: 6px;
+    background-color: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-primary);
+    border-radius: var(--ln-radius-md);
+    color: var(--ln-color-primary);
+    padding: 6px 14px;
+    min-height: 36px;
+    transition: all var(--ln-transition-base);
   }
 
   .event-card-section.other-events-button button:hover {
-    background-color: #f0f5ff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    background-color: var(--ln-color-primary-soft);
+    box-shadow: var(--ln-shadow-md);
     cursor: pointer;
   }
 
   .page-title-wrapper {
     display: inline-block;
     position: relative;
+  }
+
+  @media (max-width: 768px) {
+    .event-card-section.go-to-event-button button,
+    .event-card-section.other-events-button button {
+      min-height: var(--ln-space-touch);
+    }
   }
 </style>

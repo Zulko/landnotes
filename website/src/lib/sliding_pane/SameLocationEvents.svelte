@@ -203,7 +203,7 @@
   .same-location-events {
     padding: 16px;
     overflow-y: auto;
-    color: #222;
+    color: var(--ln-color-text);
     font-family: sans-serif;
   }
 
@@ -211,20 +211,20 @@
     margin-bottom: 8px;
     font-size: 1.8em;
     font-weight: normal;
-    border-bottom: 1px solid #a2a9b1;
+    border-bottom: 1px solid var(--ln-color-border-strong);
     padding-bottom: 0.2em;
   }
 
   .date-info {
     margin-bottom: 16px;
-    color: #54595d;
+    color: var(--ln-color-text-muted);
     font-size: 1.1em;
   }
 
   .loading,
   .no-events {
     padding: 12px 0;
-    color: #72777d;
+    color: var(--ln-color-text-subtle);
   }
 
   .month-section {
@@ -245,7 +245,7 @@
     cursor: pointer;
     user-select: none;
     border: 0;
-    border-bottom: 1px solid #eaecf0;
+    border-bottom: 1px solid var(--ln-color-border-muted);
     background: none;
     color: inherit;
     font: inherit;
@@ -253,7 +253,7 @@
   }
 
   .month-header:hover {
-    background-color: #f8f9fa;
+    background-color: var(--ln-color-surface-muted);
   }
 
   .section-title {
@@ -264,12 +264,12 @@
 
   .event-count {
     margin-right: 8px;
-    color: #72777d;
+    color: var(--ln-color-text-subtle);
     font-size: 0.85em;
   }
 
   .expand-icon {
-    color: #72777d;
+    color: var(--ln-color-text-subtle);
     font-size: 0.8em;
     width: 16px;
     text-align: center;
@@ -281,10 +281,10 @@
 
   .event-card-container {
     margin-bottom: 8px;
-    border: 1px solid #eaeaea;
-    border-radius: 6px;
+    border: 1px solid var(--ln-color-border-muted);
+    border-radius: var(--ln-radius-lg);
     padding: 12px;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: var(--ln-color-surface);
+    box-shadow: var(--ln-shadow-sm);
   }
 </style>

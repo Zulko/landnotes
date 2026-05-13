@@ -303,6 +303,7 @@
     padding: 12px 12px;
     position: relative;
     overflow-y: hidden !important;
+    color: var(--ln-color-text);
   }
 
   .wiki-content::after {
@@ -315,7 +316,7 @@
     background: linear-gradient(
       to bottom,
       rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 1)
+      var(--ln-color-surface)
     );
     pointer-events: none;
   }
@@ -325,7 +326,7 @@
     font-size: 1.2rem;
     font-weight: normal;
     margin: 0 0 -0.5em;
-    color: #222;
+    color: var(--ln-color-text);
     border-bottom: none;
   }
 
@@ -333,12 +334,10 @@
     margin-bottom: 0.2rem;
     float: right;
     margin-left: 1rem;
-    border-radius: 2px;
+    border-radius: var(--ln-radius-sm);
 
     &.with-shadow {
-      box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.15),
-        0 0 2px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--ln-shadow-md);
     }
   }
 
@@ -354,17 +353,18 @@
     cursor: pointer;
     display: block;
     padding: 0.5em 1em;
-    background-color: white;
-    color: #0645ad;
+    min-height: var(--ln-space-touch);
+    background-color: var(--ln-color-surface);
+    color: var(--ln-color-primary);
     text-decoration: none;
     font-weight: 600;
-    border: 1px solid #0645ad;
-    border-radius: 4px;
+    border: 1px solid var(--ln-color-primary);
+    border-radius: var(--ln-radius-lg);
     margin: 0.2em auto 0.2em;
     transition:
-      background-color 0.2s,
+      background-color var(--ln-transition-base),
       transform 0.1s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--ln-shadow-sm);
     position: absolute;
     bottom: 5px;
     left: 50%;
@@ -377,8 +377,8 @@
     width: 24px;
     height: 24px;
     margin: 20px auto;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #0645ad;
+    border: 3px solid var(--ln-color-border-muted);
+    border-top: 3px solid var(--ln-color-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }

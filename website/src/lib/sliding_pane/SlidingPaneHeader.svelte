@@ -113,10 +113,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.2rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--ln-color-border-muted);
     position: sticky;
     top: 0;
-    background: white;
+    background: var(--ln-color-surface);
     z-index: 1;
   }
 
@@ -133,16 +133,17 @@
     border-bottom: 2px solid transparent;
     cursor: pointer;
     font-weight: 500;
-    transition: all 0.2s ease;
+    color: var(--ln-color-text);
+    transition: all var(--ln-transition-base);
   }
 
   .tab-button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--ln-color-surface-hover);
   }
 
   .tab-button.active {
-    border-bottom: 2px solid #1a73e8;
-    color: #1a73e8;
+    border-bottom: 2px solid var(--ln-color-primary);
+    color: var(--ln-color-primary);
   }
 
   .header-buttons {
@@ -160,7 +161,7 @@
     padding: 0.5rem;
     min-width: 36px;
     height: 36px;
-    border-radius: 4px;
+    border-radius: var(--ln-radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -168,7 +169,7 @@
 
   .icon-button:hover,
   .close-button:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: var(--ln-color-surface-hover);
   }
 
   .icon {
@@ -182,7 +183,7 @@
   }
 
   .expand-button.active {
-    color: #1a73e8;
+    color: var(--ln-color-primary);
   }
 
   /* Hide/show based on device type */
@@ -195,6 +196,12 @@
     /* Hide desktop-only elements on mobile */
     .desktop-only {
       display: none;
+    }
+
+    .icon-button,
+    .close-button,
+    .tab-button {
+      min-height: var(--ln-space-touch);
     }
   }
 </style>
