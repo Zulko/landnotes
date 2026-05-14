@@ -238,7 +238,7 @@
 <div
   class="event-card"
   style={constrainHeight
-    ? `max-height: ${uiGlobals.isTouchDevice ? "230px" : "230px"}; font-size: ${fontSize}px;`
+    ? `max-height: 276px; font-size: ${fontSize}px;`
     : ""}
 >
   {#if displayPage}
@@ -479,14 +479,25 @@
       var(--ln-shadow-sm);
   }
 
+  .event-card-section.other-events-button {
+    padding-top: 2px;
+    margin-top: 4px;
+  }
+
   .event-card-section.other-events-button button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background-color: var(--ln-color-surface);
     border: 1px solid var(--ln-color-primary);
-    border-radius: var(--ln-radius-md);
+    border-radius: var(--ln-radius-sm);
     color: var(--ln-color-primary);
-    padding: 6px 14px;
-    min-height: 36px;
+    padding: 2px 10px;
+    min-height: 0;
+    line-height: 1.25;
+    font-size: 13px;
     transition: all var(--ln-transition-base);
+    box-shadow: var(--ln-shadow-sm);
   }
 
   .event-card-section.other-events-button button:hover {
@@ -501,9 +512,13 @@
   }
 
   @media (max-width: 768px) {
-    .event-card-section.go-to-event-button button,
-    .event-card-section.other-events-button button {
+    .event-card-section.go-to-event-button button {
       min-height: var(--ln-space-touch);
+    }
+
+    .event-card-section.other-events-button button {
+      min-height: 36px;
+      padding: 4px 12px;
     }
   }
 </style>
