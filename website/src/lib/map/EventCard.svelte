@@ -82,7 +82,9 @@
     }, 310);
   }
 
-  function openSameLocationEvents() {
+  /** @param {MouseEvent} event */
+  function openSameLocationEvents(event) {
+    event.stopPropagation();
     const location = entry.location?.lat
       ? $state.snapshot(entry.location)
       : $state.snapshot(entry.locations_latlon[0]);
@@ -99,15 +101,16 @@
       });
     }
     setTimeout(() => {
-      const update = {
-        paneTab: "same-location-events",
-        wikiPage: "",
-        selectedMarkerId: entry.id,
-      };
-      Object.assign(appState, update);
       Object.assign(uiState, {
         sameLocationEvents: [entry, ...entry.same_location_events],
       });
+      const update = {
+        paneTab: "same-location-events",
+        wikiPage: "",
+        wikiSection: "",
+        selectedMarkerId: null,
+      };
+      Object.assign(appState, update);
     }, 310);
   }
 
