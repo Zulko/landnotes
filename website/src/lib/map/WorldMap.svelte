@@ -332,7 +332,9 @@
           fillColor: dotFill,
           fillOpacity: 1,
           pane: "dots",
+          bubblingMouseEvents: false,
         });
+        marker.on("click", () => handleDotClick(dotEntry));
       }
       marker.addTo(newDotMarkerLayer);
       newDotMarkers.set(markerId, {
@@ -348,6 +350,17 @@
     newDotMarkerLayer.addTo(map);
     dotMarkerLayer = newDotMarkerLayer;
     currentDotMarkers = newDotMarkers;
+  }
+
+  function handleDotClick(dotEntry) {
+    if (!map) return;
+    const maxZoom = map.getMaxZoom();
+    const targetZoom = Math.min(map.getZoom() + 2, maxZoom);
+    mapTravel({
+      location: { lat: dotEntry.lat, lon: dotEntry.lon },
+      zoom: targetZoom,
+      flyDuration: 0.5,
+    });
   }
 
   function cssToken(name, fallback) {
