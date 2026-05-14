@@ -1,7 +1,7 @@
 <script>
   // Reactive state
   import { uiGlobals } from "../appState.svelte";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { portal } from "svelte-portal";
 
   const generatedPopupId = $props.id();
@@ -102,17 +102,25 @@
         portalTarget = document.getElementById("main");
       }
 
-      // Ensure we have valid element references before updating position
-      if (!popupElement || !triggerElement) {
-        // Wait for next tick to allow elements to be rendered
-        requestAnimationFrame(() => {
-          if (popupElement && triggerElement) {
-            updateTooltipPosition();
-          }
-        });
-      } else {
-        updateTooltipPosition();
+      if (popupElement) {
+        popupElement.style.removeProperty("visibility");
       }
+
+      // Wait for the popup snippet to render before measuring, otherwise the
+      // popup is sized to its empty wrapper and ends up overlapping the trigger.
+      tick().then(() => {
+        if (!isOpen) return;
+        if (popupElement && triggerElement) {
+          updateTooltipPosition();
+        } else {
+          requestAnimationFrame(() => {
+            if (isOpen && popupElement && triggerElement) {
+              updateTooltipPosition();
+            }
+          });
+        }
+      });
+
       clearTimeout(visibilityTimeout);
       visibilityTimeout = setTimeout(() => {
         visibility = "visible";
@@ -120,7 +128,7 @@
     } else if (!isOpen && wasOpen) {
       clearTimeout(visibilityTimeout);
       visibility = "hidden";
-      if (!enterable && popupElement) {
+      if (popupElement) {
         popupElement.style.visibility = "hidden";
       }
     }
@@ -243,8 +251,9 @@
 
   function onMouseLeave() {
     if (enterable) {
+      clearTimeout(closeTimeout);
       closeTimeout = setTimeout(() => {
-        isHovered = false;
+        closeHoverPopup();
       }, 200);
     } else {
       closeHoverPopup();
@@ -339,7 +348,9 @@
     aria-labelledby={popupLabelledby}
     aria-hidden={!isOpen}
   >
-    {@render popupContent(isOpen)}
+    {#if isOpen}
+      {@render popupContent(isOpen)}
+    {/if}
   </div>
 {:else}
   <div
@@ -362,7 +373,9 @@
     aria-labelledby={popupLabelledby}
     aria-hidden={!isOpen}
   >
-    {@render popupContent(isOpen)}
+    {#if isOpen}
+      {@render popupContent(isOpen)}
+    {/if}
   </div>
 {/if}
 
@@ -414,7 +427,7 @@
   :global(.map-popup) {
     position: fixed;
     width: 350px;
-    max-height: 260px;
+    max-height: 312px;
     overflow: visible;
     padding: 0;
 
