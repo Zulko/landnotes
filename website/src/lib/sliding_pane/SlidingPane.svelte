@@ -6,12 +6,15 @@
   import { onMount } from "svelte";
   import { appState, uiState } from "../appState.svelte";
 
-  let isNarrowScreen = $state(
-    typeof window !== "undefined" && window.innerWidth <= 768
-  );
-  let expanded = $state(window.innerWidth <= 768); // fullscreen by default on narrow screens
+  const mobileSheetHeights = {
+    half: "50dvh",
+    full: "100dvh",
+  };
+
+  let isNarrowScreen = $state(false);
+  let expanded = $state(false);
+  let sheetState = $state("half");
   const normalWidth = "400px"; // Default width for desktop
-  const normalHeight = "35vh"; // Default height for mobile
 
   // ===== STATE VARIABLES =====
   let isInitialRender = $state(true);
@@ -33,10 +36,8 @@
     isInitialRender
       ? "0px"
       : isNarrowScreen
-        ? expanded
-          ? "100vh"
-          : normalHeight
-        : "100vh"
+        ? mobileSheetHeights[sheetState]
+        : "100dvh"
   );
 
   // Generate Wikipedia URL based on device and width
@@ -55,32 +56,13 @@
         : "")
   );
 
-  // Reference to the iframe element
-  let wikiIframe = $state(null);
-
-  $inspect(wikiUrl);
-
-  // Focus the iframe whenever wikiUrl changes
-  $effect(() => {
-    if (
-      wikiIframe &&
-      wikiUrl !== "about:blank" &&
-      appState.paneTab === "wikipedia"
-    ) {
-      console.log("focusing iframe");
-      setTimeout(() => {
-        wikiIframe.focus();
-      }, 400); // Small delay to ensure iframe has loaded
-    }
-  });
-
   // ===== EVENT HANDLERS =====
 
-  // Toggle expanded mode (works for both desktop and mobile)
   function closePane() {
     appState.wikiPage = null;
     appState.selectedMarkerId = null;
     appState.paneTab = "wikipedia";
+    sheetState = "half";
   }
 
   // Open in new tab
@@ -90,16 +72,16 @@
     }
   }
 
-  // Handle window resize
   function handleResize() {
     if (typeof window !== "undefined") {
-      // Update mobile detection
       isNarrowScreen = window.innerWidth <= 768;
     }
   }
 
   // ===== LIFECYCLE =====
   onMount(() => {
+    handleResize();
+
     // Trigger the initial animation after a small delay
     setTimeout(() => {
       isInitialRender = false;
@@ -112,17 +94,24 @@
   onresize={handleResize}
 />
 
-<div class="pane-container">
-  <div class="pane" style="width: {actualWidth}; height: {actualHeight};">
-    <SlidingPaneHeader bind:expanded {openWikiPageInNewTab} {closePane} />
+<div class="pane-container" class:mobile={isNarrowScreen}>
+  <div
+    class="pane"
+    data-sheet-state={sheetState}
+    style="width: {actualWidth}; height: {actualHeight};"
+  >
+    <SlidingPaneHeader
+      bind:expanded
+      bind:sheetState
+      {isNarrowScreen}
+      {openWikiPageInNewTab}
+      {closePane}
+    />
 
     <div class="pane-content">
       {#if appState.paneTab === "wikipedia" && appState.wikiPage}
         <iframe
-          bind:this={wikiIframe}
           id="wiki-iframe"
-          tabindex="-2"
-          aria-hidden="true"
           title="Wikipedia Content"
           src={wikiUrl}
           frameborder="0"
@@ -144,11 +133,12 @@
 <style>
   .pane-container {
     display: flex;
+    height: 100%;
   }
 
   .pane {
-    background: white;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+    background: var(--ln-color-surface);
+    box-shadow: var(--ln-shadow-pane);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -156,6 +146,7 @@
       width 0.3s ease,
       height 0.3s ease;
     z-index: 100;
+    pointer-events: auto;
   }
 
   .pane-content {
@@ -175,10 +166,25 @@
 
   /* Mobile styles */
   @media (max-width: 768px) {
+    .pane-container.mobile {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: block;
+      height: auto;
+      z-index: 900;
+      pointer-events: none;
+    }
+
     .pane {
       width: 100% !important;
-      border-top-left-radius: 12px;
-      border-top-right-radius: 12px;
+      max-height: 100dvh;
+      border-top-left-radius: var(--ln-radius-2xl);
+      border-top-right-radius: var(--ln-radius-2xl);
+      box-shadow: var(--ln-shadow-pane-mobile);
+      overflow: hidden;
     }
+
   }
 </style>

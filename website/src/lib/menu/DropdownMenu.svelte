@@ -1,4 +1,10 @@
+<script module>
+  let dropdownIdCounter = 0;
+</script>
+
 <script>
+  /** @typedef {{ value: string | number, label: string }} DropdownOption */
+
   let {
     value = $bindable(),
     options = [],
@@ -6,52 +12,161 @@
     placeholder = "Select...",
     minWidth = "60px",
     maxHeight = "200px",
+    ariaLabel = undefined,
     disabled = false,
     onSelect = () => {},
   } = $props();
 
   let isOpen = $state(false);
-  let dropdownContainer;
+  let activeOptionIndex = $state(-1);
+  /** @type {HTMLElement | null} */
+  let dropdownContainer = null;
+  const dropdownId = `dropdown-${++dropdownIdCounter}`;
+  const triggerId = `${dropdownId}-trigger`;
+  const listboxId = `${dropdownId}-listbox`;
+  const selectedOptionIndex = $derived(
+    options.findIndex((option) => option.value === value)
+  );
+  const activeOption = $derived(
+    isOpen && activeOptionIndex >= 0 ? options[activeOptionIndex] : null
+  );
+  const activeDescendantId = $derived(
+    activeOption ? getOptionId(activeOption) : undefined
+  );
 
   function toggleDropdown() {
     if (!disabled) {
-      isOpen = !isOpen;
+      if (isOpen) {
+        closeDropdown();
+      } else {
+        openDropdown();
+      }
     }
   }
 
+  /** @param {number} [index] */
+  function openDropdown(index = selectedOptionIndex >= 0 ? selectedOptionIndex : 0) {
+    if (disabled) return;
+    isOpen = true;
+    activeOptionIndex = options.length > 0 ? index : -1;
+  }
+
+  function closeDropdown() {
+    isOpen = false;
+    activeOptionIndex = -1;
+  }
+
+  /**
+   * @param {string | number} optionValue
+   * @param {string} optionLabel
+   */
   function selectOption(optionValue, optionLabel) {
     value = optionValue;
     onSelect(optionValue, optionLabel);
-    isOpen = false;
+    closeDropdown();
   }
 
+  /** @param {MouseEvent} event */
   function handleClickOutside(event) {
-    if (dropdownContainer && !dropdownContainer.contains(event.target)) {
-      isOpen = false;
+    if (dropdownContainer && event.target instanceof Node && !dropdownContainer.contains(event.target)) {
+      closeDropdown();
     }
   }
 
-  function handleKeydown(event) {
+  /** @param {KeyboardEvent} event */
+  function handleWindowKeydown(event) {
     if (event.key === "Escape") {
-      isOpen = false;
+      closeDropdown();
     }
+  }
+
+  /** @param {KeyboardEvent} event */
+  function handleTriggerKeydown(event) {
+    if (disabled) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!isOpen) {
+        openDropdown();
+      } else {
+        moveActiveOption(1);
+      }
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!isOpen) {
+        openDropdown(options.length - 1);
+      } else {
+        moveActiveOption(-1);
+      }
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      openDropdown(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      openDropdown(options.length - 1);
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (isOpen && activeOption) {
+        selectOption(activeOption.value, activeOption.label);
+      } else {
+        openDropdown();
+      }
+    } else if (event.key === "Escape" && isOpen) {
+      event.preventDefault();
+      closeDropdown();
+    }
+  }
+
+  /** @param {number} offset */
+  function moveActiveOption(offset) {
+    if (options.length === 0) return;
+    const startingIndex = activeOptionIndex >= 0 ? activeOptionIndex : 0;
+    activeOptionIndex =
+      (startingIndex + offset + options.length) % options.length;
+  }
+
+  /** @param {DropdownOption} option */
+  function getOptionId(option) {
+    return `${dropdownId}-option-${String(option.value).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  }
+
+  /** @param {number} index */
+  function handleOptionMouseEnter(index) {
+    activeOptionIndex = index;
+  }
+
+  /** @param {DropdownOption} option */
+  function handleOptionClick(option) {
+    selectOption(option.value, option.label);
+  }
+
+  /** @param {number} index */
+  function isActiveOption(index) {
+    return isOpen && activeOptionIndex === index;
   }
 </script>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
+<svelte:window onclick={handleClickOutside} onkeydown={handleWindowKeydown} />
 
 <div
   class="dropdown-container"
   bind:this={dropdownContainer}
   style="min-width: {minWidth}"
 >
-  <button
+  <div
+    id={triggerId}
     class="dropdown-trigger"
     class:disabled
     onclick={toggleDropdown}
+    onkeydown={handleTriggerKeydown}
+    role="combobox"
+    tabindex={disabled ? -1 : 0}
     aria-expanded={isOpen}
     aria-haspopup="listbox"
-    {disabled}
+    aria-controls={listboxId}
+    aria-activedescendant={activeDescendantId}
+    aria-label={ariaLabel}
+    aria-disabled={disabled}
   >
     <span class="dropdown-value">{displayValue || placeholder}</span>
     <svg
@@ -68,17 +183,27 @@
     >
       <polyline points="6,9 12,15 18,9"></polyline>
     </svg>
-  </button>
+  </div>
 
   {#if isOpen}
-    <div class="dropdown-menu" role="listbox" style="max-height: {maxHeight}">
-      {#each options as option}
+    <div
+      id={listboxId}
+      class="dropdown-menu"
+      role="listbox"
+      aria-labelledby={triggerId}
+      style="max-height: {maxHeight}"
+    >
+      {#each options as option, index (option.value)}
         <button
+          id={getOptionId(option)}
           class="dropdown-item"
           class:selected={value === option.value}
-          onclick={() => selectOption(option.value, option.label)}
+          class:active={isActiveOption(index)}
+          onclick={() => handleOptionClick(option)}
+          onmouseenter={() => handleOptionMouseEnter(index)}
           role="option"
           aria-selected={value === option.value}
+          tabindex="-1"
         >
           {option.label}
         </button>
@@ -91,39 +216,41 @@
   .dropdown-container {
     position: relative;
     display: inline-block;
+    flex: 0 0 auto;
   }
 
   .dropdown-trigger {
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background-color: #ffffff;
-    color: #374151;
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-lg);
+    background-color: var(--ln-color-surface);
+    color: var(--ln-color-text);
     font-size: 14px;
     font-family: inherit;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--ln-transition-base);
     outline: none;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--ln-shadow-sm);
     width: 100%;
     text-align: left;
   }
 
   .dropdown-trigger:hover:not(.disabled) {
-    border-color: #9ca3af;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    border-color: var(--ln-color-icon-muted);
+    box-shadow: var(--ln-shadow-md);
     transform: translateY(-1px);
   }
 
   .dropdown-trigger:focus:not(.disabled) {
-    border-color: #3b82f6;
+    border-color: var(--ln-color-focus);
     box-shadow:
-      0 0 0 3px rgba(59, 130, 246, 0.1),
-      0 2px 6px rgba(0, 0, 0, 0.15);
+      0 0 0 3px var(--ln-color-focus-ring),
+      var(--ln-shadow-md);
     transform: translateY(-1px);
   }
 
@@ -142,8 +269,8 @@
 
   .dropdown-arrow {
     margin-left: 8px;
-    color: #9ca3af;
-    transition: transform 0.2s ease;
+    color: var(--ln-color-icon-muted);
+    transition: transform var(--ln-transition-base);
     flex-shrink: 0;
   }
 
@@ -155,10 +282,10 @@
     position: absolute;
     top: 100%;
     left: 0;
-    background: #ffffff;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    background: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-lg);
+    box-shadow: var(--ln-shadow-lg);
     z-index: 1000;
     margin-top: 4px;
     overflow-y: auto;
@@ -190,37 +317,38 @@
     font-size: 14px;
     font-family: inherit;
     font-weight: 500;
-    color: #374151;
-    transition: background-color 0.15s ease;
+    color: var(--ln-color-text);
+    transition: background-color var(--ln-transition-fast);
     outline: none;
     white-space: nowrap;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--ln-color-border-muted);
   }
 
   .dropdown-item:last-child {
     border-bottom: none;
   }
 
-  .dropdown-item:hover {
-    background-color: #f8fafc;
-    color: #2563eb;
+  .dropdown-item:hover,
+  .dropdown-item.active {
+    background-color: var(--ln-color-surface-muted);
+    color: var(--ln-color-primary-hover);
   }
 
   .dropdown-item:focus {
-    background-color: #f8fafc;
-    color: #2563eb;
-    outline: 2px solid #3b82f6;
+    background-color: var(--ln-color-surface-muted);
+    color: var(--ln-color-primary-hover);
+    outline: 2px solid var(--ln-color-focus);
     outline-offset: -2px;
   }
 
   .dropdown-item.selected {
-    background-color: #3b82f6;
-    color: #ffffff;
+    background-color: var(--ln-color-primary);
+    color: var(--ln-color-surface);
     font-weight: 600;
   }
 
   .dropdown-item.selected:hover {
-    background-color: #2563eb;
+    background-color: var(--ln-color-primary-hover);
   }
 
   /* Custom scrollbar for dropdown menus */
@@ -229,16 +357,23 @@
   }
 
   .dropdown-menu::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: var(--ln-color-surface-muted);
     border-radius: 3px;
   }
 
   .dropdown-menu::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--ln-color-border);
     border-radius: 3px;
   }
 
   .dropdown-menu::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--ln-color-icon-muted);
+  }
+
+  @media (max-width: 768px) {
+    .dropdown-trigger,
+    .dropdown-item {
+      min-height: var(--ln-space-touch);
+    }
   }
 </style>

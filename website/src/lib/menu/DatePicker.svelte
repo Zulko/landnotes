@@ -2,8 +2,13 @@
   import { constrainedDate } from "../data/date_utils";
   import DropdownMenu from "./DropdownMenu.svelte";
 
+  /** @typedef {number | "all"} DatePart */
+  /** @typedef {{ year: number, month: DatePart, day: DatePart }} DateValue */
+  /** @typedef {"year" | "month" | "day"} DateField */
+
   // Define a date object to hold the values
-  let { date = $bindable({ year: 1810, month: 3, day: "all" }) } = $props();
+  let { date = $bindable({ year: 1810, month: 3, day: "all" }) } =
+    /** @type {{ date?: DateValue }} */ ($props());
 
   // Add an array of month abbreviations
   const monthAbbreviations = [
@@ -26,16 +31,25 @@
   const firstYearRequiringMonth = 3000;
   const firstYearRequiringDay = 3000;
 
+  /**
+   * @param {number} year
+   * @param {number} month
+   */
   function getDaysInMonth(year, month) {
     return new Date(year < 0 ? year + 1 : year, month, 0).getDate();
   }
 
+  /**
+   * @param {DateField} field
+   * @param {DatePart} value
+   */
   function updateDate(field, value) {
     if (field === "year" && value === 0) {
       // If setting year to 0, change to -1 if current year is positive, or 1 otherwise
       value = date.year > 0 ? -1 : 1;
     }
-    date = constrainedDate({ ...date, [field]: value });
+    const nextDate = /** @type {DateValue} */ ({ ...date, [field]: value });
+    date = /** @type {DateValue} */ (constrainedDate(nextDate));
   }
 
   function incrementYear() {
@@ -56,10 +70,12 @@
     }
   }
 
+  /** @param {DatePart} value */
   function handleDaySelect(value) {
     updateDate("day", value);
   }
 
+  /** @param {DatePart} value */
   function handleMonthSelect(value) {
     updateDate("month", value);
   }
@@ -70,7 +86,9 @@
     if (date.year < firstYearRequiringDay) {
       options.push({ value: "all", label: "All" });
     }
-    for (let i = 1; i <= getDaysInMonth(date.year, date.month); i++) {
+    const daysInMonth =
+      date.month === "all" ? 0 : getDaysInMonth(date.year, date.month);
+    for (let i = 1; i <= daysInMonth; i++) {
       options.push({ value: i, label: i.toString() });
     }
     return options;
@@ -101,7 +119,8 @@
       bind:value={date.day}
       options={dayOptions}
       displayValue={dayDisplayValue}
-      minWidth="60px"
+      minWidth="72px"
+      ariaLabel="Day"
       onSelect={handleDaySelect}
     />
   {/if}
@@ -110,7 +129,8 @@
     bind:value={date.month}
     options={monthOptions}
     displayValue={monthDisplayValue}
-    minWidth="75px"
+    minWidth="128px"
+    ariaLabel="Month"
     onSelect={handleMonthSelect}
   />
 
@@ -132,7 +152,6 @@
         onclick={incrementYear}
         aria-label="Increment year"
         title="Increment year"
-        tabindex="-1"
       >
         <svg
           width="10"
@@ -153,7 +172,6 @@
         onclick={decrementYear}
         aria-label="Decrement year"
         title="Decrement year"
-        tabindex="-1"
       >
         <svg
           width="10"
@@ -183,32 +201,34 @@
     padding: 8px;
     width: fit-content;
     margin: 0 auto;
-    gap: 4px;
+    gap: 8px;
   }
 
   .date-input {
+    box-sizing: border-box;
     padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background-color: #ffffff;
-    color: #374151;
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-lg);
+    background-color: var(--ln-color-surface);
+    color: var(--ln-color-text);
     font-size: 14px;
     font-family: inherit;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all var(--ln-transition-base);
     outline: none;
     text-align: center;
     cursor: text;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--ln-shadow-sm);
   }
 
   .year-container {
     position: relative;
     display: inline-block;
+    flex: 0 0 auto;
   }
 
   .year-input {
-    width: 65px;
+    width: 104px;
     cursor: text;
     background-image: none;
     padding-right: 28px;
@@ -232,41 +252,41 @@
     width: 18px;
     height: 14px;
     border: none;
-    border-radius: 3px;
+    border-radius: var(--ln-radius-sm);
     background-color: transparent;
-    color: #9ca3af;
+    color: var(--ln-color-icon-muted);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--ln-transition-fast);
     outline: none;
     padding: 0;
   }
 
   .year-spinner:hover {
-    background-color: #f3f4f6;
-    color: #6b7280;
+    background-color: var(--ln-color-surface-hover);
+    color: var(--ln-color-icon);
   }
 
   .year-spinner:focus {
-    background-color: #e5e7eb;
-    color: #374151;
+    background-color: var(--ln-color-surface-active);
+    color: var(--ln-color-text);
   }
 
   .year-spinner:active {
-    background-color: #d1d5db;
+    background-color: var(--ln-color-border);
     transform: scale(0.9);
   }
 
   .date-input:hover {
-    border-color: #9ca3af;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    border-color: var(--ln-color-icon-muted);
+    box-shadow: var(--ln-shadow-md);
     transform: translateY(-1px);
   }
 
   .date-input:focus {
-    border-color: #3b82f6;
+    border-color: var(--ln-color-focus);
     box-shadow:
-      0 0 0 3px rgba(59, 130, 246, 0.1),
-      0 2px 6px rgba(0, 0, 0, 0.15);
+      0 0 0 3px var(--ln-color-focus-ring),
+      var(--ln-shadow-md);
     transform: translateY(-1px);
   }
 
@@ -279,6 +299,13 @@
 
   /* Firefox number input styling */
   .year-input[type="number"] {
+    appearance: textfield;
     -moz-appearance: textfield;
+  }
+
+  @media (max-width: 768px) {
+    .date-input {
+      min-height: var(--ln-space-touch);
+    }
   }
 </style>

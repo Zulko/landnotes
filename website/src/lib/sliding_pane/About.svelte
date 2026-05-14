@@ -1,6 +1,6 @@
 <script>
-  import { appState } from "../appState.svelte";
   const { closePane } = $props();
+  const menuIconPath = `${import.meta.env.BASE_URL}icons/menu.svg`;
 </script>
 
 <div class="about-page">
@@ -8,7 +8,7 @@
 
   <p>
     Landnotes shows Wikipedia places and events on a map (see the menu
-    <img src="/icons/menu.svg" alt="menu" class="menu-icon" />
+    <img src={menuIconPath} alt="menu" class="menu-icon" />
     for options).
   </p>
 
@@ -18,7 +18,8 @@
     might be 10 times more events to extract by scanning all of Wikipedia -
     learn more on the project's <a
       href="https://github.com/Zulko/landnotes"
-      target="_blank">Github page</a
+      target="_blank"
+      rel="noreferrer">GitHub page</a
     >.
   </p>
 
@@ -29,7 +30,7 @@
   .about-page {
     padding: 16px;
     overflow-y: auto;
-    color: #222;
+    color: var(--ln-color-text);
     font-family: sans-serif;
   }
 
@@ -38,7 +39,7 @@
     margin-bottom: 16px;
     font-size: 1.4em;
     font-weight: normal;
-    border-bottom: 1px solid #a2a9b1;
+    border-bottom: 1px solid var(--ln-color-border-strong);
     padding-bottom: 0.2em;
     text-align: center;
   }
@@ -46,11 +47,11 @@
   p {
     margin-bottom: 16px;
     line-height: 1.5;
-    color: #222;
+    color: var(--ln-color-text);
   }
 
   a {
-    color: #0645ad;
+    color: var(--ln-color-primary);
     text-decoration: none;
   }
 
@@ -70,20 +71,21 @@
     display: block;
     margin: 20px auto;
     padding: 8px 16px;
-    background-color: #4285f4;
-    color: white;
+    min-height: var(--ln-space-touch);
+    background-color: var(--ln-color-primary);
+    color: var(--ln-color-surface);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--ln-radius-lg);
     cursor: pointer;
     font-size: 1em;
-    transition: background-color 0.2s;
+    transition: background-color var(--ln-transition-base);
   }
 
   .close-button:hover {
-    background-color: #0b57d0;
+    background-color: var(--ln-color-primary-hover);
   }
 
   .close-button:active {
-    background-color: #054a9e;
+    background-color: var(--ln-color-primary-active);
   }
 </style>

@@ -22,6 +22,10 @@ export const mapEntries = $state({ markerInfos: [], dots: [] });
 export const mapBounds = $state({});
 
 let cachedPlaceData = new Map();
+let placeEntriesRequestId = 0;
+let eventEntriesRequestId = 0;
+let selectedMarkerRequestId = 0;
+let handledSelectedMarkerId = null;
 
 $effect.root(() => {
   $effect(() => {
@@ -58,29 +62,48 @@ $effect.root(() => {
  * @param {number} options.zoom - The current zoom level of the map
  */
 async function updateMapPlaceEntries({ mapBounds, zoom }) {
+  const requestId = ++placeEntriesRequestId;
   const willBeLoadingTimeOut = setTimeout(() => {
     uiState.dataIsLoading = true;
   }, 500);
-  const { entryInfos, dots } = await getGeodataFromBounds({
-    bounds: mapBounds,
-    maxZoomLevel: zoom - 1,
-    cachedQueries: cachedPlaceData,
-  });
-
-  // Make sure the selected marker is included
-  if (
-    appState.selectedMarkerId &&
-    !entryInfos.some((entry) => entry.geokey === appState.selectedMarkerId)
-  ) {
-    const selectedMarker = await getPlaceDataFromGeokeys({
-      geokeys: [appState.selectedMarkerId],
+  try {
+    const { entryInfos, dots } = await getGeodataFromBounds({
+      bounds: mapBounds,
+      maxZoomLevel: zoom - 1,
       cachedQueries: cachedPlaceData,
     });
-    entryInfos.push(selectedMarker[0]);
+
+    if (requestId !== placeEntriesRequestId || appState.mode !== "places") {
+      return;
+    }
+
+    // Make sure the selected marker is included
+    if (
+      appState.selectedMarkerId &&
+      !entryInfos.some((entry) => entry.geokey === appState.selectedMarkerId)
+    ) {
+      const selectedMarker = await getPlaceDataFromGeokeys({
+        geokeys: [appState.selectedMarkerId],
+        cachedQueries: cachedPlaceData,
+      });
+      if (requestId !== placeEntriesRequestId || appState.mode !== "places") {
+        return;
+      }
+      if (selectedMarker[0]) {
+        entryInfos.push(selectedMarker[0]);
+      }
+    }
+    updateMapEntriesFromQueryResults({ entryInfos, dots });
+  } catch (error) {
+    if (requestId === placeEntriesRequestId) {
+      console.error("Error updating place map entries:", error);
+    }
+  } finally {
+    clearTimeout(willBeLoadingTimeOut);
+    if (requestId === placeEntriesRequestId && appState.mode === "places") {
+      uiState.dataIsLoading = false;
+    }
   }
-  updateMapEntriesFromQueryResults({ entryInfos, dots });
-  clearTimeout(willBeLoadingTimeOut);
-  uiState.dataIsLoading = false;
 }
 
 /**
@@ -93,34 +116,50 @@ async function updateMapPlaceEntries({ mapBounds, zoom }) {
  * @returns {Promise<Object>} - Object containing event information and dots for the map
  */
 async function updateMapEventEntries({ mapBounds, zoom, date, strictDate }) {
+  const requestId = ++eventEntriesRequestId;
   const willBeLoadingTimeOut = setTimeout(() => {
     uiState.dataIsLoading = true;
   }, 500);
-  const { events, dotEvents } = await getEventsForBoundsAndDate({
-    date,
-    bounds: mapBounds,
-    zoom: zoom - 1,
-    strictDate,
-  });
-  const eventIds = events.map((event) => event.event_id);
-  const eventInfos = await getEventsById(eventIds);
-  // Add type annotation to make it clear this is a Map of objects
-  const eventInfosById = new Map(
-    eventInfos.map((eventInfo) => [eventInfo.event_id, eventInfo])
-  );
+  try {
+    const { events, dotEvents } = await getEventsForBoundsAndDate({
+      date,
+      bounds: mapBounds,
+      zoom: zoom - 1,
+      strictDate,
+    });
+    if (requestId !== eventEntriesRequestId || appState.mode !== "events") {
+      return;
+    }
 
-  const eventsWithInfos = events.map((event) => {
-    // Cast to object type or use type assertion
-    const eventInfo = eventInfosById.get(event.event_id) || {};
-    return { ...eventInfo, ...event };
-  });
+    const eventIds = events.map((event) => event.event_id);
+    const eventInfos = await getEventsById(eventIds);
+    if (requestId !== eventEntriesRequestId || appState.mode !== "events") {
+      return;
+    }
 
-  updateMapEntriesFromQueryResults({
-    entryInfos: eventsWithInfos,
-    dots: dotEvents,
-  });
-  clearTimeout(willBeLoadingTimeOut);
-  uiState.dataIsLoading = false;
+    const eventInfosById = new Map(
+      eventInfos.map((eventInfo) => [eventInfo.event_id, eventInfo])
+    );
+
+    const eventsWithInfos = events.map((event) => {
+      const eventInfo = eventInfosById.get(event.event_id) || {};
+      return { ...eventInfo, ...event };
+    });
+
+    updateMapEntriesFromQueryResults({
+      entryInfos: eventsWithInfos,
+      dots: dotEvents,
+    });
+  } catch (error) {
+    if (requestId === eventEntriesRequestId) {
+      console.error("Error updating event map entries:", error);
+    }
+  } finally {
+    clearTimeout(willBeLoadingTimeOut);
+    if (requestId === eventEntriesRequestId && appState.mode === "events") {
+      uiState.dataIsLoading = false;
+    }
+  }
 }
 
 function updateMapEntriesFromQueryResults({ entryInfos, dots }) {
@@ -153,15 +192,20 @@ function updateDisplayClasses(entries) {
 }
 
 async function handleNewSelectedMarker(selectedMarkerId) {
-  if (selectedMarkerId === appState.selectedMarkerId) return;
+  if (selectedMarkerId === handledSelectedMarkerId) return;
+  const requestId = ++selectedMarkerRequestId;
+
   if (!selectedMarkerId) {
+    handledSelectedMarkerId = null;
     // a marker got deselected. Let's just update the display classes
     updateDisplayClasses(mapEntries.markerInfos);
+    mapEntries.markerInfos = [...mapEntries.markerInfos];
     return;
   }
 
+  const selectedMode = appState.mode;
   let query;
-  if (appState.mode === "places") {
+  if (selectedMode === "places") {
     query = await getPlaceDataFromGeokeys({
       geokeys: [selectedMarkerId],
       cachedQueries: cachedPlaceData,
@@ -170,7 +214,17 @@ async function handleNewSelectedMarker(selectedMarkerId) {
     query = await getEventsById([selectedMarkerId]);
   }
 
+  if (
+    requestId !== selectedMarkerRequestId ||
+    selectedMarkerId !== appState.selectedMarkerId ||
+    selectedMode !== appState.mode ||
+    !query[0]
+  ) {
+    return;
+  }
+
   const selectedMarker = normalizeMapEntryInfo(query[0]);
+  handledSelectedMarkerId = selectedMarkerId;
   appState.wikiSection = selectedMarker.page_section;
   appState.wikiPage = selectedMarker.pageTitle;
   appState.paneTab = "wikipedia";

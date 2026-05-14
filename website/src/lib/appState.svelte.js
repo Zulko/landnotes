@@ -134,7 +134,6 @@ export function updateURLParams(state, addToHistory = true) {
   const newUrl = `${window.location.pathname}?${params.toString()}`;
 
   if (params.toString() === window.location.search.slice(1)) {
-    console.log("Skipping pushstate because the url is the same");
     return;
   }
 

@@ -8,7 +8,6 @@ const cachedEventsById = new Map();
 function initEventsWorker() {
   // Create a single worker instance that will be reused
 
-  console.log("Initializing worker");
   if (worker === null) {
     worker = new Worker(new URL("./events_worker.js", import.meta.url), {
       type: "module",

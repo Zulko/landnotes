@@ -4,10 +4,22 @@
   import { onMount } from "svelte";
   import { portal } from "svelte-portal";
 
+  const generatedPopupId = $props.id();
+
   // Add portal target check
+  /** @type {HTMLElement | null} */
   let portalTarget = $state(null);
 
   let {
+    popupId = generatedPopupId,
+    popupLabel = "Map popup",
+    popupLabelledby = undefined,
+    triggerLabel = undefined,
+    triggerTitle = undefined,
+    triggerRole = "button",
+    triggerTag = "span",
+    triggerClass = undefined,
+    onTriggerActivate = undefined,
     popupContent,
     children,
     alwaysOpen = false,
@@ -15,19 +27,32 @@
     visibilityDelay = 0,
     keepWithinMap = false,
   } = $props(); // Title to look up
+  /** @type {HTMLElement | null} */
   let popupElement = $state(null); // Reference to popup element
-  let triggerElement = $state(null); // Reference to trigger span
+  /** @type {HTMLElement | null} */
+  let triggerElement = $state(null); // Reference to trigger element
   let popupTop = $state(0);
   let popupLeft = $state(0);
   let isHovered = $state(false);
   let isOpen = $derived(alwaysOpen || (!uiGlobals.isTouchDevice && isHovered));
-  let closeTimeout = $state(null);
-  let visibilityTimeout = $state(null); // Track visibility timeout
+  let popupAriaLabel = $derived(popupLabelledby ? undefined : popupLabel);
+  let isNativeButtonTrigger = $derived(triggerTag === "button");
+  let effectiveTriggerRole = $derived(
+    isNativeButtonTrigger ? undefined : triggerRole
+  );
+  let triggerHasPopupSemantics = $derived(
+    isNativeButtonTrigger || Boolean(effectiveTriggerRole)
+  );
+  /** @type {number | undefined} */
+  let closeTimeout = $state(undefined);
+  /** @type {number | undefined} */
+  let visibilityTimeout = $state(undefined); // Track visibility timeout
   let visibility = $state("hidden");
   let zIndex = $state(8000);
   let popupStyle = $derived(
     `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility}; z-index: ${zIndex};`
   );
+  /** @type {ResizeObserver | null} */
   let resizeObserver = $state(null);
 
   onMount(() => {
@@ -39,7 +64,7 @@
 
     if (popupElement) {
       // Find parent popup if it exists
-      let parent = triggerElement.closest(".map-popup");
+      let parent = triggerElement?.closest(".map-popup");
       if (parent) {
         // Get parent's z-index and increment by 10
         const parentZIndex =
@@ -194,6 +219,7 @@
   }
 
   // Helper function to find the nearest scrollable parent
+  /** @param {HTMLElement | null} element */
   function findScrollableParent(element) {
     if (!element) return document.documentElement;
 
@@ -221,15 +247,7 @@
         isHovered = false;
       }, 200);
     } else {
-      // For non-enterable popups, immediately close
-      isHovered = false;
-      // Clear any pending visibility timeout
-      clearTimeout(visibilityTimeout);
-      // Force immediate visibility hiding
-      visibility = "hidden";
-      if (popupElement) {
-        popupElement.style.visibility = "hidden";
-      }
+      closeHoverPopup();
     }
   }
   function clearCloseTimeoutIfEnterable() {
@@ -241,10 +259,67 @@
     clearCloseTimeoutIfEnterable();
     isHovered = true;
   }
+
+  function closeHoverPopup({ focusTrigger = false } = {}) {
+    isHovered = false;
+    clearTimeout(closeTimeout);
+    clearTimeout(visibilityTimeout);
+    visibility = "hidden";
+    if (popupElement) {
+      popupElement.style.visibility = "hidden";
+    }
+    if (focusTrigger && triggerElement) {
+      triggerElement.focus();
+    }
+  }
+
+  /** @param {KeyboardEvent} event */
+  function handleEscape(event) {
+    if (event.key !== "Escape" || !isOpen || alwaysOpen) {
+      return;
+    }
+
+    const activeElement = document.activeElement;
+    const focusInPopup = popupElement?.contains(activeElement);
+    const focusInTrigger = triggerElement?.contains(activeElement);
+
+    if (focusInPopup || focusInTrigger || isHovered) {
+      event.stopPropagation();
+      closeHoverPopup({ focusTrigger: focusInPopup });
+    }
+  }
+
+  /** @param {MouseEvent} event */
+  function handleTriggerClick(event) {
+    onTriggerActivate?.(event);
+  }
+
+  /** @param {KeyboardEvent} event */
+  function handleTriggerKeydown(event) {
+    if (event.key === "Escape") {
+      handleEscape(event);
+      return;
+    }
+
+    if (isNativeButtonTrigger) {
+      return;
+    }
+
+    if (
+      (event.key === "Enter" || event.key === " ") &&
+      typeof onTriggerActivate === "function"
+    ) {
+      event.preventDefault();
+      onTriggerActivate(event);
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleEscape} />
 
 {#if portalTarget}
   <div
+    id={popupId}
     class="map-popup"
     use:portal={"#main"}
     bind:this={popupElement}
@@ -255,13 +330,20 @@
       }
     }}
     onmouseleave={onMouseLeave}
+    onfocusin={clearCloseTimeoutIfEnterable}
+    onfocusout={onMouseLeave}
     tabindex="-1"
-    role="tooltip"
+    role="dialog"
+    aria-modal="false"
+    aria-label={popupAriaLabel}
+    aria-labelledby={popupLabelledby}
+    aria-hidden={!isOpen}
   >
     {@render popupContent(isOpen)}
   </div>
 {:else}
   <div
+    id={popupId}
     class="map-popup"
     bind:this={popupElement}
     style={popupStyle}
@@ -271,24 +353,62 @@
       }
     }}
     onmouseleave={onMouseLeave}
+    onfocusin={clearCloseTimeoutIfEnterable}
+    onfocusout={onMouseLeave}
     tabindex="-1"
-    role="tooltip"
+    role="dialog"
+    aria-modal="false"
+    aria-label={popupAriaLabel}
+    aria-labelledby={popupLabelledby}
+    aria-hidden={!isOpen}
   >
     {@render popupContent(isOpen)}
   </div>
 {/if}
 
-<span
-  bind:this={triggerElement}
-  role="button"
-  tabindex="0"
-  onmouseenter={onMouseEnter}
-  onmouseleave={onMouseLeave}
-  onfocus={onMouseEnter}
-  onblur={onMouseLeave}
->
-  {@render children()}
-</span>
+{#if isNativeButtonTrigger}
+  <button
+    bind:this={triggerElement}
+    class={triggerClass}
+    type="button"
+    aria-haspopup="dialog"
+    aria-expanded={isOpen}
+    aria-controls={popupId}
+    aria-describedby={isOpen ? popupId : undefined}
+    aria-label={triggerLabel}
+    title={triggerTitle}
+    onmouseenter={onMouseEnter}
+    onmouseleave={onMouseLeave}
+    onfocusin={onMouseEnter}
+    onfocusout={onMouseLeave}
+    onclick={handleTriggerClick}
+    onkeydown={handleTriggerKeydown}
+  >
+    {@render children()}
+  </button>
+{:else}
+  <svelte:element
+    this={triggerTag}
+    bind:this={triggerElement}
+    class={triggerClass}
+    role={effectiveTriggerRole}
+    tabindex={effectiveTriggerRole ? 0 : undefined}
+    aria-haspopup={triggerHasPopupSemantics ? "dialog" : undefined}
+    aria-expanded={triggerHasPopupSemantics ? isOpen : undefined}
+    aria-controls={triggerHasPopupSemantics ? popupId : undefined}
+    aria-describedby={triggerHasPopupSemantics && isOpen ? popupId : undefined}
+    aria-label={triggerLabel}
+    title={triggerTitle}
+    onmouseenter={onMouseEnter}
+    onmouseleave={onMouseLeave}
+    onfocusin={onMouseEnter}
+    onfocusout={onMouseLeave}
+    onclick={handleTriggerClick}
+    onkeydown={handleTriggerKeydown}
+  >
+    {@render children()}
+  </svelte:element>
+{/if}
 
 <style>
   :global(.map-popup) {
@@ -298,10 +418,10 @@
     overflow: visible;
     padding: 0;
 
-    background: #fff;
-    border: 1px solid #a2a9b1;
-    border-radius: 2px;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+    background: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-lg);
+    box-shadow: var(--ln-shadow-popup);
     transition: opacity 0.2s ease-out;
     font-size: 14px;
   }

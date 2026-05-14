@@ -103,13 +103,11 @@ export async function getGeodataFromBounds({
   // Create a list of dot markers from dots
   const dots = [];
   const seenCoordinates = new Set(); // Track coordinates we've already processed
-  let totalEntries = 0;
   for (const result of geokeyResults) {
     if (!result.dots) continue;
     if (!result.dots[maxZoomLevel]) continue;
     // Process each entry at this zoom level
     for (const entry of result.dots[maxZoomLevel]) {
-      totalEntries++;
       if (seenCoordinates.has(entry.geokey)) continue;
       seenCoordinates.add(entry.geokey);
 

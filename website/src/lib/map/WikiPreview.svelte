@@ -1,3 +1,17 @@
+<script module>
+  /**
+   * @typedef {Object} WikiPreview
+   * @property {string} summary
+   * @property {string} thumbnail
+   * @property {number} imageWidth
+   * @property {number} imageHeight
+   * @property {boolean} imageHasWhiteBackground
+   */
+
+  /** @type {Record<string, WikiPreview>} */
+  const wikiPreviewCache = Object.create(null);
+</script>
+
 <script>
   // Reactive state
   import { uiGlobals, appState } from "../appState.svelte";
@@ -8,31 +22,69 @@
   let imageWidth = $state(120);
   let imageHasWhiteBackground = $state(false);
   let infosFetched = $state(false);
-  let fontSize = $state("1rem"); // New state for dynamic font size
+  let requestedTitle = "";
+  let loadedTitle = "";
+  let fontSize = $derived(
+    summary ? (summary.length > 250 ? "12px" : "14px") : "1rem",
+  ); // New state for dynamic font size
 
   $effect(() => {
-    if (isOpen && !infosFetched) {
-      fetchWikiInfos();
+    if (!isOpen || !pageTitle) {
+      return;
+    }
+
+    if (loadedTitle === pageTitle && infosFetched) {
+      return;
+    }
+
+    if (requestedTitle !== pageTitle) {
+      resetPreview();
+      requestedTitle = pageTitle;
+      fetchWikiInfos(pageTitle);
     }
   });
 
-  // New effect to update font size based on content
-  $effect(() => {
-    if (summary) {
-      const baseSize = 0.9;
-      const shouldReduce = summary.length > 250;
-      fontSize = `${shouldReduce ? "12px" : "14px"}`; // 0.0625rem = 1px
-    }
-  });
+  function resetPreview() {
+    summary = "";
+    thumbnail = "";
+    imageWidth = 120;
+    imageHeight = 140;
+    imageHasWhiteBackground = false;
+    infosFetched = false;
+    loadedTitle = "";
+  }
+
+  /**
+   * @param {WikiPreview} preview
+   * @param {string} title
+   */
+  function applyPreview(preview, title) {
+    summary = preview.summary;
+    thumbnail = preview.thumbnail;
+    imageWidth = preview.imageWidth;
+    imageHeight = preview.imageHeight;
+    imageHasWhiteBackground = preview.imageHasWhiteBackground;
+    loadedTitle = title;
+    infosFetched = true;
+  }
 
   /**
    * Fetches summary and thumbnail information from Wikipedia API for the given page title.
    * Updates the component state with extracted summary and image properties.
+   * @param {string} title
    * @returns {Promise<void>}
    */
-  async function fetchWikiInfos() {
+  async function fetchWikiInfos(title) {
+    const cachedPreview = wikiPreviewCache[title];
+    if (cachedPreview) {
+      if (requestedTitle === title && pageTitle === title) {
+        applyPreview(cachedPreview, title);
+      }
+      return;
+    }
+
     const wikiEndpoint = "https://en.wikipedia.org/api/rest_v1/page/summary/";
-    const encodedTitle = encodeURIComponent(pageTitle.replaceAll(" ", "_"));
+    const encodedTitle = encodeURIComponent(title.replaceAll(" ", "_"));
 
     let url;
     let requestOptions;
@@ -48,30 +100,42 @@
     }
 
     const res = await fetch(url, requestOptions);
+    /** @type {WikiPreview} */
+    const preview = {
+      summary: "",
+      thumbnail: "",
+      imageWidth: 120,
+      imageHeight: 140,
+      imageHasWhiteBackground: false,
+    };
+
     if (res.ok) {
       const data = await res.json();
-      summary = extractSummary(data.extract_html);
+      preview.summary = extractSummary(data.extract_html);
 
-      thumbnail = data.thumbnail?.source || "";
+      preview.thumbnail = data.thumbnail?.source || "";
       // Calculate dimensions that maintain aspect ratio within our constraints
       if (data.thumbnail) {
-        ({ imageWidth, imageHeight } = calculateDimensions(data.thumbnail));
-        imageHasWhiteBackground =
-          await checkImageCornersForWhiteBackground(thumbnail);
+        const dimensions = calculateDimensions(data.thumbnail);
+        preview.imageWidth = dimensions.imageWidth;
+        preview.imageHeight = dimensions.imageHeight;
+        preview.imageHasWhiteBackground =
+          await checkImageCornersForWhiteBackground(preview.thumbnail);
       }
     } else {
-      summary = "No information available.";
-      thumbnail = "";
+      preview.summary = "No information available.";
     }
-    infosFetched = true;
+
+    wikiPreviewCache[title] = preview;
+    if (requestedTitle === title && pageTitle === title) {
+      applyPreview(preview, title);
+    }
   }
 
   /**
    * Calculates optimal dimensions for the thumbnail while maintaining aspect ratio.
-   * @param {Object} thumbnail - The thumbnail object from Wikipedia API
-   * @param {number} thumbnail.width - Original width of the thumbnail
-   * @param {number} thumbnail.height - Original height of the thumbnail
-   * @returns {Object} Object containing calculated imageWidth and imageHeight
+   * @param {{ width: number, height: number }} thumbnail - The thumbnail object from Wikipedia API
+   * @returns {{ imageWidth: number, imageHeight: number }} Object containing calculated imageWidth and imageHeight
    */
   function calculateDimensions(thumbnail) {
     const maxWidth = 120;
@@ -151,6 +215,10 @@
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          resolve(false);
+          return;
+        }
         ctx.drawImage(img, 0, 0);
 
         const positions = [
@@ -235,6 +303,7 @@
     padding: 12px 12px;
     position: relative;
     overflow-y: hidden !important;
+    color: var(--ln-color-text);
   }
 
   .wiki-content::after {
@@ -247,7 +316,7 @@
     background: linear-gradient(
       to bottom,
       rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 1)
+      var(--ln-color-surface)
     );
     pointer-events: none;
   }
@@ -257,7 +326,7 @@
     font-size: 1.2rem;
     font-weight: normal;
     margin: 0 0 -0.5em;
-    color: #222;
+    color: var(--ln-color-text);
     border-bottom: none;
   }
 
@@ -265,12 +334,10 @@
     margin-bottom: 0.2rem;
     float: right;
     margin-left: 1rem;
-    border-radius: 2px;
+    border-radius: var(--ln-radius-sm);
 
     &.with-shadow {
-      box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.15),
-        0 0 2px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--ln-shadow-md);
     }
   }
 
@@ -286,17 +353,18 @@
     cursor: pointer;
     display: block;
     padding: 0.5em 1em;
-    background-color: white;
-    color: #0645ad;
+    min-height: var(--ln-space-touch);
+    background-color: var(--ln-color-surface);
+    color: var(--ln-color-primary);
     text-decoration: none;
     font-weight: 600;
-    border: 1px solid #0645ad;
-    border-radius: 4px;
+    border: 1px solid var(--ln-color-primary);
+    border-radius: var(--ln-radius-lg);
     margin: 0.2em auto 0.2em;
     transition:
-      background-color 0.2s,
+      background-color var(--ln-transition-base),
       transform 0.1s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--ln-shadow-sm);
     position: absolute;
     bottom: 5px;
     left: 50%;
@@ -309,8 +377,8 @@
     width: 24px;
     height: 24px;
     margin: 20px auto;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #0645ad;
+    border: 3px solid var(--ln-color-border-muted);
+    border-top: 3px solid var(--ln-color-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }

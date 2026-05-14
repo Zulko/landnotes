@@ -4,26 +4,40 @@
 
   let {
     expanded = $bindable(false),
+    sheetState = $bindable("half"),
+    isNarrowScreen = false,
     closePane,
     openWikiPageInNewTab,
   } = $props();
+
+  let mobileExpanded = $derived(sheetState === "full");
+
+  function toggleMobileSheetState() {
+    sheetState = mobileExpanded ? "half" : "full";
+  }
 </script>
 
 <div class="pane-header">
   {#if appState.paneTab === "wikipedia" || appState.paneTab === "events"}
-    <div class="tab-buttons">
+    <div class="tab-buttons" role="tablist" aria-label="Sliding pane content">
       <button
+        type="button"
+        role="tab"
         class="tab-button"
         class:active={appState.paneTab === "wikipedia"}
         onclick={() => (appState.paneTab = "wikipedia")}
+        aria-selected={appState.paneTab === "wikipedia"}
         aria-label="Wikipedia tab"
       >
         Wikipedia
       </button>
       <button
+        type="button"
+        role="tab"
         class="tab-button"
         class:active={appState.paneTab === "events"}
         onclick={() => (appState.paneTab = "events")}
+        aria-selected={appState.paneTab === "events"}
         aria-label="Events tab"
       >
         Events
@@ -32,20 +46,24 @@
   {/if}
 
   <div class="header-buttons">
-    <button
-      class="icon-button external-link-button"
-      onclick={openWikiPageInNewTab}
-      title="Open in new tab"
-      aria-label="Open in new tab"
-    >
-      <img
-        src={`${basePath}icons/external-link.svg`}
-        alt="Open in new tab"
-        class="icon"
-      />
-    </button>
+    {#if appState.wikiPage}
+      <button
+        type="button"
+        class="icon-button external-link-button"
+        onclick={openWikiPageInNewTab}
+        title="Open in new tab"
+        aria-label="Open in new tab"
+      >
+        <img
+          src={`${basePath}icons/external-link.svg`}
+          alt="Open in new tab"
+          class="icon"
+        />
+      </button>
+    {/if}
     <!-- Desktop Expand Button (hidden on mobile) -->
     <button
+      type="button"
       class="icon-button expand-button desktop-only"
       class:active={expanded}
       onclick={() => (expanded = !expanded)}
@@ -60,23 +78,30 @@
         class="icon"
       />
     </button>
-    <!-- Mobile Expand Button (hidden on desktop) -->
+    {#if isNarrowScreen}
+      <button
+        type="button"
+        class="icon-button expand-button"
+        class:active={mobileExpanded}
+        onclick={toggleMobileSheetState}
+        title={mobileExpanded ? "Shrink pane" : "Expand pane"}
+        aria-label={mobileExpanded ? "Shrink pane" : "Expand pane"}
+      >
+        <img
+          src={mobileExpanded
+            ? `${basePath}icons/shrink.svg`
+            : `${basePath}icons/expand-vertical.svg`}
+          alt={mobileExpanded ? "Shrink pane" : "Expand pane"}
+          class="icon"
+        />
+      </button>
+    {/if}
     <button
-      class="icon-button expand-button mobile-only"
-      class:active={expanded}
-      onclick={() => (expanded = !expanded)}
-      title={expanded ? "Shrink pane" : "Expand pane"}
-      aria-label={expanded ? "Shrink pane" : "Expand pane"}
+      type="button"
+      class="close-button"
+      onclick={closePane}
+      aria-label="Close panel"
     >
-      <img
-        src={expanded
-          ? `${basePath}icons/shrink.svg`
-          : `${basePath}icons/expand-vertical.svg`}
-        alt={expanded ? "Shrink pane" : "Expand pane"}
-        class="icon"
-      />
-    </button>
-    <button class="close-button" onclick={closePane} aria-label="Close panel">
       &times;
     </button>
   </div>
@@ -88,10 +113,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.2rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--ln-color-border-muted);
     position: sticky;
     top: 0;
-    background: white;
+    background: var(--ln-color-surface);
     z-index: 1;
   }
 
@@ -108,16 +133,17 @@
     border-bottom: 2px solid transparent;
     cursor: pointer;
     font-weight: 500;
-    transition: all 0.2s ease;
+    color: var(--ln-color-text);
+    transition: all var(--ln-transition-base);
   }
 
   .tab-button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--ln-color-surface-hover);
   }
 
   .tab-button.active {
-    border-bottom: 2px solid #1a73e8;
-    color: #1a73e8;
+    border-bottom: 2px solid var(--ln-color-primary);
+    color: var(--ln-color-primary);
   }
 
   .header-buttons {
@@ -135,7 +161,7 @@
     padding: 0.5rem;
     min-width: 36px;
     height: 36px;
-    border-radius: 4px;
+    border-radius: var(--ln-radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -143,7 +169,7 @@
 
   .icon-button:hover,
   .close-button:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: var(--ln-color-surface-hover);
   }
 
   .icon {
@@ -157,16 +183,12 @@
   }
 
   .expand-button.active {
-    color: #1a73e8;
+    color: var(--ln-color-primary);
   }
 
   /* Hide/show based on device type */
   .desktop-only {
     display: block;
-  }
-
-  .mobile-only {
-    display: none;
   }
 
   /* Mobile styles */
@@ -176,9 +198,10 @@
       display: none;
     }
 
-    /* Show mobile-only elements on mobile */
-    .mobile-only {
-      display: block;
+    .icon-button,
+    .close-button,
+    .tab-button {
+      min-height: var(--ln-space-touch);
     }
   }
 </style>

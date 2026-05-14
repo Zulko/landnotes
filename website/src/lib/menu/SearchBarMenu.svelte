@@ -6,15 +6,40 @@
 
   import { appState, uiGlobals, uiState } from "../appState.svelte";
 
+  /**
+   * @typedef {Object} SearchEntry
+   * @property {string | number} [id]
+   * @property {*} [geokey]
+   * @property {string} page_title
+   * @property {number} lat
+   * @property {number} lon
+   * @property {number} [n_events]
+   */
+
   let searchQuery = $state("");
+  /** @type {SearchEntry[]} */
   let searchResults = $state([]);
   let isActive = $state(false);
   let isLoading = $state(false);
   let selectedIndex = $state(-1); // Track the currently selected suggestion
   let isMenuOpen = $state(false); // State for menu dropdown visibility
 
+  /** @type {ReturnType<typeof setTimeout> | null} */
   let debounceTimer = null;
+  let searchRequestId = 0;
   const basePath = import.meta.env.BASE_URL;
+  const searchInputId = "search-input";
+  const searchResultsId = "search-results";
+  const activeDescendantId = $derived(
+    isActive && selectedIndex >= 0 && searchResults[selectedIndex]
+      ? getSearchOptionId(searchResults[selectedIndex])
+      : undefined
+  );
+  const noResultsMessage = $derived(
+    appState.mode === "events"
+      ? "No matching pages or events found"
+      : "No matching locations found"
+  );
 
   // Debounced search function
   function debouncedSearch() {
@@ -22,15 +47,25 @@
 
     // Clear any existing timer
     if (debounceTimer) clearTimeout(debounceTimer);
+    const requestId = ++searchRequestId;
 
     // Set a new timer
     debounceTimer = setTimeout(async () => {
-      if (searchQuery && searchQuery.length > 1) {
+      const query = searchQuery;
+      const searchMode = appState.mode === "events" ? "pages" : "places";
+
+      if (query && query.length > 1) {
         // Different API endpoints based on mode
-        const searchMode = appState.mode === "events" ? "pages" : "places";
-        searchResults = await getEntriesfromText(searchQuery, searchMode);
+        const results = await getEntriesfromText(query, searchMode);
+        if (requestId !== searchRequestId) {
+          return;
+        }
+        searchResults = results;
         isActive = true;
       } else {
+        if (requestId !== searchRequestId) {
+          return;
+        }
         searchResults = [];
         isActive = false;
       }
@@ -45,6 +80,7 @@
       searchResults = [];
       debouncedSearch();
     } else {
+      searchRequestId += 1;
       searchResults = [];
       isActive = false;
       isLoading = false;
@@ -75,6 +111,9 @@
     if (debounceTimer) clearTimeout(debounceTimer);
   });
 
+  /**
+   * @param {KeyboardEvent} event
+   */
   function handleKeydown(event) {
     if (!isActive || searchResults.length === 0) return;
 
@@ -93,6 +132,9 @@
     }
   }
 
+  /**
+   * @param {SearchEntry} entry
+   */
   function handleSelect(entry) {
     if (appState.mode === "places") {
       const { geokey, lat, lon, page_title } = entry;
@@ -103,10 +145,13 @@
       appState.wikiSection = "";
       appState.wikiPage = page_title;
       appState.paneTab = "wikipedia";
-      uiGlobals.mapTravel({
+      /** @type {(options: { location: { lat: number, lon: number }, zoom: number, flyDuration: number, reserveMobilePane?: boolean }) => void} */ (
+        /** @type {unknown} */ (uiGlobals.mapTravel)
+      )({
         location: { lat, lon },
         zoom: Math.max(12, appState.zoom),
         flyDuration: 1,
+        reserveMobilePane: true,
       });
     } else {
       const { page_title } = entry;
@@ -117,6 +162,41 @@
     searchQuery = "";
     isActive = false;
     selectedIndex = -1;
+  }
+
+  /**
+   * @param {KeyboardEvent} event
+   * @param {SearchEntry} entry
+   */
+  function handleSuggestionKeydown(event, entry) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    handleSelect(entry);
+  }
+
+  function clearSearch() {
+    searchRequestId += 1;
+    searchQuery = "";
+    searchResults = [];
+    isActive = false;
+    selectedIndex = -1;
+    isLoading = false;
+    if (debounceTimer) clearTimeout(debounceTimer);
+  }
+
+  /**
+   * @param {SearchEntry} entry
+   */
+  function getSearchResultKey(entry) {
+    return entry.id ?? entry.geokey ?? entry.page_title;
+  }
+
+  /**
+   * @param {SearchEntry} entry
+   */
+  function getSearchOptionId(entry) {
+    return `search-option-${String(getSearchResultKey(entry)).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   }
 
   function handleBlur() {
@@ -138,6 +218,7 @@
 <div class="search-container">
   <div class="search-input-wrapper">
     <input
+      id={searchInputId}
       type="text"
       placeholder={`Search a ${appState.mode === "places" ? "place" : "page"}`}
       bind:value={searchQuery}
@@ -145,14 +226,18 @@
       onblur={handleBlur}
       onkeydown={handleKeydown}
       class="search-input"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded={isActive}
+      aria-controls={searchResultsId}
+      aria-activedescendant={activeDescendantId}
     />
     {#if searchQuery}
       <button
         class="clear-button"
-        onclick={() => {
-          searchQuery = "";
-          isActive = false;
-        }}
+        onclick={clearSearch}
+        aria-label="Clear search"
+        title="Clear search"
       >
         ×
       </button>
@@ -161,26 +246,38 @@
       <img src={`${import.meta.env.BASE_URL}icons/search.svg`} alt="Search" />
     </div>
 
+    <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {#if uiState.dataIsLoading}
+        Loading data...
+      {/if}
+    </div>
+    <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {#if isLoading}
+        Searching...
+      {/if}
+    </div>
+
     <!-- Menu button wrapper with the hamburger icon now here -->
     <div class="menu-button-wrapper">
       {#if uiState.dataIsLoading}
-        <div class="menu-button loading" title="Loading...">
+        <div class="menu-loading-indicator" title="Loading data" aria-hidden="true">
           <div class="spinner"></div>
         </div>
-      {:else}
-        <button class="menu-button" onclick={toggleMenu} title="Menu">
-          <img src={`${basePath}icons/menu.svg`} alt="Menu" class="icon" />
-        </button>
       {/if}
+      <button class="menu-button" onclick={toggleMenu} title="Menu" aria-label="Menu">
+        <img src={`${basePath}icons/menu.svg`} alt="" class="icon" />
+      </button>
     </div>
   </div>
 
   {#if isActive && searchResults.length > 0}
-    <div class="suggestions" role="listbox">
-      {#each searchResults as entry, i}
+    <div class="suggestions" id={searchResultsId} role="listbox" aria-labelledby={searchInputId}>
+      {#each searchResults as entry, i (getSearchResultKey(entry))}
         <div
+          id={getSearchOptionId(entry)}
           class="suggestion-item {i === selectedIndex ? 'selected' : ''}"
           onmousedown={() => handleSelect(entry)}
+          onkeydown={(event) => handleSuggestionKeydown(event, entry)}
           role="option"
           aria-selected={i === selectedIndex}
           tabindex="0"
@@ -199,12 +296,12 @@
       {/each}
     </div>
   {:else if isActive && searchQuery.length > 1}
-    <div class="suggestions" role="listbox">
+    <div class="suggestions" id={searchResultsId} role="listbox" aria-labelledby={searchInputId}>
       <div class="no-results" role="presentation">
         {#if isLoading}
           Searching...
         {:else}
-          No matching locations found
+          {noResultsMessage}
         {/if}
       </div>
     </div>
@@ -234,33 +331,35 @@
     position: relative;
     display: flex;
     align-items: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    border-radius: 20px;
+    box-shadow: var(--ln-shadow-md);
+    border-radius: var(--ln-radius-pill);
     padding: 0px;
   }
 
   .search-input {
     width: 100%;
     padding: 10px 40px 10px 35px;
-    border: 1px solid #ccc;
-    border-radius: 20px;
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-pill);
+    background-color: var(--ln-color-surface);
+    color: var(--ln-color-text);
     font-size: 16px;
     outline: none;
     transition:
-      border-color 0.2s,
-      box-shadow 0.2s;
+      border-color var(--ln-transition-base),
+      box-shadow var(--ln-transition-base);
   }
 
   .search-input:focus {
-    border-color: #4285f4;
-    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    border-color: var(--ln-color-focus);
+    box-shadow: 0 0 0 3px var(--ln-color-focus-ring);
   }
 
   .search-icon {
     position: absolute;
     left: 8px;
     pointer-events: none;
-    color: #666;
+    color: var(--ln-color-icon);
     height: 25px;
     opacity: 0.5;
   }
@@ -271,8 +370,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 28px;
-    width: 28px;
+    min-height: 28px;
+    min-width: 28px;
     border-radius: 50%;
     padding: 5px;
   }
@@ -281,7 +380,7 @@
     background: transparent;
     border: none;
     font-size: 18px;
-    color: #999;
+    color: var(--ln-color-icon-muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -291,8 +390,15 @@
     padding: 0;
   }
 
+  .menu-loading-indicator {
+    position: absolute;
+    right: -2px;
+    top: -2px;
+    pointer-events: none;
+  }
+
   .menu-button-wrapper:hover {
-    background-color: #eee;
+    background-color: var(--ln-color-surface-hover);
   }
 
   .clear-button {
@@ -301,7 +407,7 @@
     background: none;
     border: none;
     font-size: 20px;
-    color: #666;
+    color: var(--ln-color-icon);
     cursor: pointer;
     padding: 0;
     height: 20px;
@@ -317,27 +423,27 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-border);
+    border-radius: var(--ln-radius-xl);
+    box-shadow: var(--ln-shadow-lg);
     z-index: 1000;
     max-height: 300px;
     overflow-y: auto;
-    margin-top: 5px;
+    margin-top: 6px;
   }
 
   .suggestion-item {
     padding: 10px 15px;
     cursor: pointer;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--ln-color-border-muted);
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
   .suggestion-item.selected {
-    background-color: #f0f7ff;
+    background-color: var(--ln-color-primary-soft);
   }
 
   .suggestion-item:last-child {
@@ -345,7 +451,7 @@
   }
 
   .suggestion-item:hover {
-    background-color: #f5f5f5;
+    background-color: var(--ln-color-surface-hover);
   }
 
   .suggestion-title {
@@ -354,21 +460,21 @@
 
   .suggestion-location {
     font-size: 0.8em;
-    color: #666;
+    color: var(--ln-color-text-muted);
   }
 
   .no-results {
     padding: 15px;
     text-align: center;
-    color: #666;
+    color: var(--ln-color-text-muted);
     font-style: italic;
   }
 
   .spinner {
-    width: 18px;
-    height: 18px;
-    border: 3px solid #e0e0e0;
-    border-top: 3px solid #666;
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--ln-color-border-muted);
+    border-top: 2px solid var(--ln-color-icon);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -382,7 +488,30 @@
     }
   }
 
-  .menu-button.loading {
-    cursor: wait;
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 768px) {
+    .menu-button-wrapper {
+      min-width: var(--ln-space-touch);
+      min-height: var(--ln-space-touch);
+      right: -3px;
+      padding: 0;
+    }
+
+    .clear-button {
+      min-width: var(--ln-space-touch);
+      min-height: var(--ln-space-touch);
+      right: 36px;
+    }
   }
 </style>

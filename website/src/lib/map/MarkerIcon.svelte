@@ -3,6 +3,18 @@
   import EventCard from "./EventCard.svelte";
   import WikiPreview from "./WikiPreview.svelte";
   import { appState, uiGlobals } from "../appState.svelte.js";
+
+  /**
+   * @typedef {Object} MarkerEntry
+   * @property {string} category
+   * @property {string} displayClass
+   * @property {boolean} isEvent
+   * @property {string} name
+   * @property {string} pageTitle
+   * @property {unknown[]} [same_location_events]
+   */
+
+  /** @type {{ entry: MarkerEntry, onClick?: ((event: MouseEvent | KeyboardEvent) => void) | null }} */
   const { entry, onClick = null } = $props();
 
   const basePath = import.meta.env.BASE_URL;
@@ -43,6 +55,7 @@
     work: "briefcase-business",
     travel: "luggage",
   };
+  /** @type {Record<string, string>} */
   const iconByType = {
     ...iconByPlaceType,
     ...iconsByEventType,
@@ -51,7 +64,7 @@
   const iconName = $derived(iconByType[entry.category] || iconByType.other);
 
   // Compute the label based on entry name and page title
-  const label = $derived(() => {
+  const label = $derived.by(() => {
     if (entry.name !== entry.pageTitle) {
       const fullLabel = entry.name + " - " + entry.pageTitle;
       if (fullLabel.length <= 30) {
@@ -60,14 +73,18 @@
     }
     return entry.name;
   });
+  const markerTitle = $derived(
+    `Show ${entry.name}${entry.name !== entry.pageTitle ? ` from ${entry.pageTitle}` : ""}`
+  );
 
+  /** @param {string} pageTitle */
   function openWikiPage(pageTitle) {
     appState.wikiPage = pageTitle;
     appState.paneTab = "wikipedia";
   }
 </script>
 
-{#snippet popupContent(isOpen)}
+{#snippet popupContent(/** @type {boolean} */ isOpen)}
   {#if entry.isEvent}
     <EventCard {entry} constrainHeight={true} keepPopupsWithinMap={true} />
   {:else}
@@ -77,6 +94,14 @@
 
 <MapPopup
   {popupContent}
+  popupLabel={entry.isEvent
+    ? `Event details for ${entry.name}`
+    : `Wikipedia preview for ${entry.pageTitle}`}
+  triggerLabel={markerTitle}
+  triggerTitle={markerTitle}
+  triggerTag="button"
+  triggerClass="map-marker-trigger"
+  onTriggerActivate={onClick}
   enterable={entry.isEvent || uiGlobals.isTouchDevice}
   alwaysOpen={uiGlobals.isTouchDevice && entry.displayClass === "selected"}
   visibilityDelay={entry.isEvent ? 0 : 100}
@@ -84,13 +109,10 @@
 >
   <div
     class={`map-marker marker-display-${entry.displayClass}`}
-    onclick={onClick}
-    onkeydown={onClick}
-    role="button"
-    tabindex="0"
+    aria-hidden="true"
   >
     <div class="marker-icon-circle">
-      <img src={basePath + "icons/" + iconName + ".svg"} alt="icon" />
+      <img src={basePath + "icons/" + iconName + ".svg"} alt="" />
       {#if entry.isEvent && entry.same_location_events && entry.same_location_events.length > 0}
         <div class="event-count-indicator">
           +{entry.same_location_events.length}
@@ -99,13 +121,32 @@
     </div>
 
     <div class="marker-text-container">
-      <div class="marker-text marker-text-outline">{label()}</div>
-      <div class="marker-text">{label()}</div>
+      <div class="marker-text marker-text-outline">{label}</div>
+      <div class="marker-text">{label}</div>
     </div>
   </div>
 </MapPopup>
 
 <style>
+  :global(.map-marker-trigger) {
+    appearance: none;
+    -webkit-appearance: none;
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: 0;
+    cursor: pointer;
+    overflow: visible;
+  }
+
   .map-marker {
     transition:
       transform 0.1s ease,
@@ -121,7 +162,7 @@
     &:hover > .marker-icon-circle,
     &.marker-display-selected > .marker-icon-circle {
       --circle-size: 32px !important;
-      box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
+      box-shadow: var(--ln-shadow-marker);
       z-index: 900 !important;
     }
 
@@ -142,8 +183,8 @@
     }
 
     &.marker-display-selected > .marker-icon-circle {
-      border: 6px solid #f00707;
-      box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.95);
+      border: 4px solid var(--ln-color-marker-selected);
+      box-shadow: var(--ln-shadow-marker-selected);
     }
 
     &.marker-display-full > .marker-text-container {
@@ -153,7 +194,7 @@
 
     &.marker-display-full > .marker-icon-circle {
       --circle-size: 32px;
-      box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.35);
+      box-shadow: var(--ln-shadow-marker);
     }
 
     &.marker-display-reduced > .marker-icon-circle {
@@ -171,9 +212,9 @@
     & > .marker-icon-circle {
       width: var(--circle-size);
       height: var(--circle-size);
-      background-color: white;
+      background-color: var(--ln-color-surface);
       border-radius: 50%;
-      border: 2px solid #222;
+      border: 2px solid var(--ln-color-marker-stroke);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -194,6 +235,11 @@
     }
   }
 
+  :global(.map-marker-trigger:focus-visible) .marker-icon-circle {
+    outline: 3px solid var(--ln-color-focus);
+    outline-offset: 2px;
+  }
+
   .marker-text-container {
     margin-top: -5px;
     font-size: 14px;
@@ -211,16 +257,15 @@
       left: 0;
       right: 0;
       font-weight: bold;
-      color: white;
-      -webkit-text-stroke: 4px white;
-      text-stroke: 4px white;
+      color: var(--ln-color-surface);
+      -webkit-text-stroke: 4px var(--ln-color-surface);
       z-index: 1;
     }
   }
 
   .marker-text {
     font-weight: bold;
-    color: #111;
+    color: var(--ln-color-text);
     position: relative;
     z-index: 2;
   }
@@ -230,11 +275,9 @@
     left: 0;
     right: 0;
     font-weight: bold;
-    color: white;
-    -webkit-text-stroke: 6px white;
-    text-stroke: 6px white;
+    color: var(--ln-color-surface);
+    -webkit-text-stroke: 6px var(--ln-color-surface);
     -webkit-text-stroke-linejoin: round;
-    text-stroke-linejoin: round;
     z-index: 1;
   }
 
@@ -242,9 +285,9 @@
     position: absolute;
     top: -8px;
     right: -8px;
-    background-color: #ff5a5f;
-    color: white;
-    border-radius: 30%;
+    background-color: var(--ln-color-event-count);
+    color: var(--ln-color-surface);
+    border-radius: var(--ln-radius-pill);
     font-size: 10px;
     font-weight: bold;
     min-width: 14px;
@@ -252,9 +295,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid white;
+    border: 2px solid var(--ln-color-surface);
     padding: 0 2px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--ln-shadow-sm);
     z-index: 5;
   }
 </style>

@@ -9,6 +9,11 @@
   let loadingEvents = $state(true);
   let expandedYears = $state({});
   let dataLoadedByYear = $state({});
+  const sortedYearEntries = $derived(
+    Object.entries(eventIdsByYear).sort(
+      ([yearA], [yearB]) => Number(yearA) - Number(yearB)
+    )
+  );
 
   $effect(() => {
     loadEventList(wikiPage);
@@ -65,6 +70,11 @@
       .map(normalizeMapEntryInfo)
       .sort((a, b) => a.start_date.localeCompare(b.start_date));
   }
+
+  /** @param {string} year */
+  function yearEventsId(year) {
+    return `page-events-year-${year}-events`;
+  }
 </script>
 
 <div class="page-events">
@@ -75,27 +85,29 @@
   {:else if Object.keys(eventIdsByYear).length === 0}
     <div class="no-events">No events found for this page.</div>
   {:else}
-    {#each Object.entries(eventIdsByYear).sort(([yearA], [yearB]) => Number(yearA) - Number(yearB)) as [year, yearEventIds]}
+    {#each sortedYearEntries as [year, yearEventIds] (year)}
       <div class="year-section">
-        <div
-          class="year-header"
-          onclick={() => toggleYear(year)}
-          onkeydown={(e) => e.key === "Enter" && toggleYear(year)}
-          role="button"
-          tabindex="0"
-        >
-          <h2>{year}</h2>
-          <span class="event-count"
-            >{yearEventIds.length} event{yearEventIds.length !== 1
-              ? "s"
-              : ""}</span
+        <h2 class="year-heading">
+          <button
+            type="button"
+            class="year-header"
+            onclick={() => toggleYear(year)}
+            aria-expanded={expandedYears[year]}
+            aria-controls={yearEventsId(year)}
           >
-          <span class="expand-icon">{expandedYears[year] ? "▼" : "►"}</span>
-        </div>
+            <span class="section-title">{year}</span>
+            <span class="event-count"
+              >{yearEventIds.length} event{yearEventIds.length !== 1
+                ? "s"
+                : ""}</span
+            >
+            <span class="expand-icon">{expandedYears[year] ? "▼" : "►"}</span>
+          </button>
+        </h2>
 
         {#if expandedYears[year]}
-          <div class="year-events">
-            {#each dataLoadedByYear[year] as event}
+          <div class="year-events" id={yearEventsId(year)}>
+            {#each dataLoadedByYear[year] as event (event.id)}
               <div class="event-card-container">
                 <EventCard
                   entry={event}
@@ -115,7 +127,7 @@
   .page-events {
     padding: 16px;
     overflow-y: auto;
-    color: #222;
+    color: var(--ln-color-text);
     font-family: sans-serif;
   }
 
@@ -123,35 +135,46 @@
     margin-bottom: 16px;
     font-size: 1.8em;
     font-weight: normal;
-    border-bottom: 1px solid #a2a9b1;
+    border-bottom: 1px solid var(--ln-color-border-strong);
     padding-bottom: 0.2em;
   }
 
   .loading,
   .no-events {
     padding: 12px 0;
-    color: #72777d;
+    color: var(--ln-color-text-subtle);
   }
 
   .year-section {
     margin-bottom: 8px;
   }
 
+  .year-heading {
+    margin: 0;
+    font-size: 1em;
+    font-weight: normal;
+  }
+
   .year-header {
+    width: 100%;
     display: flex;
     align-items: center;
     padding: 4px 0;
     cursor: pointer;
     user-select: none;
-    border-bottom: 1px solid #eaecf0;
+    border: 0;
+    border-bottom: 1px solid var(--ln-color-border-muted);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
   }
 
   .year-header:hover {
-    background-color: #f8f9fa;
+    background-color: var(--ln-color-surface-muted);
   }
 
-  .year-header h2 {
-    margin: 0;
+  .section-title {
     font-size: 1.3em;
     font-weight: normal;
     flex-grow: 1;
@@ -159,12 +182,12 @@
 
   .event-count {
     margin-right: 8px;
-    color: #72777d;
+    color: var(--ln-color-text-subtle);
     font-size: 0.85em;
   }
 
   .expand-icon {
-    color: #72777d;
+    color: var(--ln-color-text-subtle);
     font-size: 0.8em;
     width: 16px;
     text-align: center;
@@ -186,10 +209,10 @@
 
   .event-card-container {
     margin-bottom: 8px;
-    border: 1px solid #eaeaea;
-    border-radius: 6px;
+    border: 1px solid var(--ln-color-border-muted);
+    border-radius: var(--ln-radius-lg);
     padding: 12px;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: var(--ln-color-surface);
+    box-shadow: var(--ln-shadow-sm);
   }
 </style>

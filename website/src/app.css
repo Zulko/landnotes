@@ -2,6 +2,56 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
+  --ln-color-surface: #ffffff;
+  --ln-color-surface-muted: #f8fafc;
+  --ln-color-surface-hover: #f3f4f6;
+  --ln-color-surface-active: #e5e7eb;
+  --ln-color-border: #d1d5db;
+  --ln-color-border-muted: #e5e7eb;
+  --ln-color-border-strong: #a2a9b1;
+
+  --ln-color-text: #202122;
+  --ln-color-text-muted: #54595d;
+  --ln-color-text-subtle: #72777d;
+  --ln-color-icon: #6b7280;
+  --ln-color-icon-muted: #9ca3af;
+
+  --ln-color-primary: #3366cc;
+  --ln-color-primary-hover: #254aa5;
+  --ln-color-primary-active: #1f3f8a;
+  --ln-color-primary-soft: #f0f5ff;
+  --ln-color-focus: #3b82f6;
+  --ln-color-focus-ring: rgba(59, 130, 246, 0.18);
+  --ln-shadow-primary-sm: 0 2px 6px rgba(51, 102, 204, 0.3);
+  --ln-shadow-primary-md: 0 2px 8px rgba(51, 102, 204, 0.35);
+
+  --ln-color-success: #166534;
+  --ln-color-danger: #b91c1c;
+  --ln-color-marker-selected: #e53935;
+  --ln-color-event-count: #f97373;
+  --ln-color-marker-stroke: #2f3437;
+
+  --ln-radius-xs: 2px;
+  --ln-radius-sm: 4px;
+  --ln-radius-md: 6px;
+  --ln-radius-lg: 8px;
+  --ln-radius-xl: 12px;
+  --ln-radius-2xl: 16px;
+  --ln-radius-pill: 999px;
+
+  --ln-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --ln-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.14);
+  --ln-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+  --ln-shadow-popup: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --ln-shadow-pane: 2px 0 10px rgba(0, 0, 0, 0.2);
+  --ln-shadow-pane-mobile: 0 -4px 18px rgba(0, 0, 0, 0.22);
+  --ln-shadow-marker: 4px 4px 8px rgba(0, 0, 0, 0.35);
+  --ln-shadow-marker-selected: 6px 6px 14px rgba(0, 0, 0, 0.55);
+
+  --ln-space-touch: 44px;
+  --ln-transition-fast: 0.15s ease;
+  --ln-transition-base: 0.2s ease;
 }
 
 body {
@@ -17,4 +67,19 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-} 
+}
+
+button,
+[role="button"],
+[role="combobox"],
+input {
+  font: inherit;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="combobox"]:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--ln-color-focus);
+  outline-offset: 2px;
+}

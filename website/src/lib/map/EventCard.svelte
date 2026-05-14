@@ -9,6 +9,15 @@
   } from "../data/date_utils";
   const basePath = import.meta.env.BASE_URL;
 
+  /**
+   * @typedef {Record<string, any>} EventEntry
+   *
+   * @typedef {Object} LinkedItem
+   * @property {string} name
+   * @property {boolean} hasPage
+   */
+
+  /** @type {{ entry: EventEntry, displayPage?: boolean, displayLocation?: boolean, displayGoToEventLink?: boolean, constrainHeight?: boolean, keepPopupsWithinMap?: boolean }} */
   let {
     entry,
     displayPage = true,
@@ -17,7 +26,9 @@
     constrainHeight = false,
     keepPopupsWithinMap = false,
   } = $props();
+  /** @type {LinkedItem[]} */
   let people = $state([]);
+  /** @type {LinkedItem[]} */
   let places = $state([]);
   let fontSize = $state(14);
   onMount(() => {
@@ -42,11 +53,17 @@
     const location = entry.location.lat
       ? $state.snapshot(entry.location)
       : $state.snapshot(entry.locations_latlon[0]);
-    uiGlobals.mapTravel({
-      location: location,
-      zoom: 12,
-      flyDuration: 0.3,
-    });
+    const mapTravel =
+      /** @type {((options: { location: any, zoom: number, flyDuration: number, reserveMobilePane?: boolean }) => void) | null} */ (
+        uiGlobals.mapTravel
+      );
+    if (mapTravel) {
+      mapTravel({
+        location: location,
+        zoom: 12,
+        flyDuration: 0.3,
+      });
+    }
     if (uiGlobals.isTouchDevice) {
       appState.wikiPage = "";
       appState.wikiSection = "";
@@ -65,48 +82,74 @@
     }, 310);
   }
 
-  function openSameLocationEvents() {
+  /** @param {MouseEvent} event */
+  function openSameLocationEvents(event) {
+    event.stopPropagation();
     const location = entry.location?.lat
       ? $state.snapshot(entry.location)
       : $state.snapshot(entry.locations_latlon[0]);
-    uiGlobals.mapTravel({
-      location: location,
-      zoom: appState.zoom,
-      flyDuration: 0.3,
-    });
+    const mapTravel =
+      /** @type {((options: { location: any, zoom: number, flyDuration: number, reserveMobilePane?: boolean }) => void) | null} */ (
+        uiGlobals.mapTravel
+      );
+    if (mapTravel) {
+      mapTravel({
+        location: location,
+        zoom: appState.zoom,
+        flyDuration: 0.3,
+        reserveMobilePane: true,
+      });
+    }
     setTimeout(() => {
+      Object.assign(uiState, {
+        sameLocationEvents: [entry, ...entry.same_location_events],
+      });
       const update = {
         paneTab: "same-location-events",
         wikiPage: "",
-        selectedMarkerId: entry.id,
+        wikiSection: "",
+        selectedMarkerId: null,
       };
       Object.assign(appState, update);
-      uiState.sameLocationEvents = [entry, ...entry.same_location_events];
     }, 310);
   }
 
+  /**
+   * @param {string} pageTitle
+   * @param {string} [pageSection]
+   */
   function openWikiPage(pageTitle, pageSection) {
-    appState.wikiSection = pageSection;
+    appState.wikiSection = /** @type {string} */ (pageSection);
     appState.wikiPage = pageTitle;
     appState.paneTab = "wikipedia";
   }
 
+  /**
+   * @template {Record<string, unknown>} T
+   * @param {T[]} array
+   * @param {keyof T} idKey
+   * @returns {T[]}
+   */
   function deduplicate(array, idKey) {
-    const seen = new Map();
+    /** @type {unknown[]} */
+    const seen = [];
     return array.filter((item) => {
       const value = item[idKey];
-      if (seen.has(value)) {
+      if (seen.includes(value)) {
         return false;
       }
-      seen.set(value, true);
+      seen.push(value);
       return true;
     });
   }
+
+  /** @returns {LinkedItem[]} */
   function parsePeople() {
     if (!entry.people) {
       return [];
     }
-    const peopleList = entry.people
+    /** @type {LinkedItem[]} */
+    const peopleList = /** @type {string} */ (entry.people)
       .split("|")
       .map((person) => {
         const hasPage = !person.trim().endsWith("(?)");
@@ -138,21 +181,29 @@
     return deduplicate(filteredList, "name");
   }
 
+  /** @returns {LinkedItem[]} */
   function parsePlaces() {
     entry.city_page_title = entry.city_page_title || "";
     if (!entry.where_page_title && !entry.city_page_title) {
       return [];
     }
-    const placesWithLinks = [
-      ...entry.where_page_title
+    /** @type {string[]} */
+    const linkedPlaceNames = [
+      .../** @type {string} */ (entry.where_page_title)
         .split("|")
         .filter((place) => place.trim().length > 0),
-      ...entry.city_page_title
+      .../** @type {string} */ (entry.city_page_title)
         .split("|")
         .filter((city) => city.trim().length > 0),
-    ].map((place) => ({ name: place, hasPage: true }));
+    ];
+    /** @type {LinkedItem[]} */
+    const placesWithLinks = [
+      ...linkedPlaceNames.map((place) => ({ name: place, hasPage: true })),
+    ];
 
-    const placeList = (entry.location || "")
+    const locationNames = /** @type {string} */ (entry.location || "");
+    /** @type {LinkedItem[]} */
+    const placeList = locationNames
       .split(/[\|,]/)
       .map((location) => {
         return location
@@ -175,18 +226,11 @@
   }
 </script>
 
-{#snippet linkedPage(pageTitle, pageSection)}
-  <span
-    class="wiki-link"
-    onclick={() => openWikiPage(pageTitle, pageSection)}
-    role="button"
-    tabindex="0"
-    onkeydown={(e) => {
-      if (e.key === "Enter") {
-        openWikiPage(pageTitle, pageSection);
-      }
-    }}
-  >
+{#snippet linkedPage(
+  /** @type {string} */ pageTitle,
+  /** @type {string | undefined} */ pageSection = undefined
+)}
+  <span class="wiki-link">
     {pageTitle}
   </span>
 {/snippet}
@@ -203,12 +247,16 @@
         <img src="{basePath}icons/text-search.svg" alt="search" />
       </div>
       <div class="event-text">
-        {#snippet popupContent(isOpen)}
+        {#snippet popupContent(/** @type {boolean} */ isOpen)}
           <WikiPreview pageTitle={entry.pageTitle} {isOpen} />
         {/snippet}
         <span class="page-title-wrapper">
           <MapPopup
             {popupContent}
+            popupLabel={`Wikipedia preview for ${entry.pageTitle}`}
+            triggerLabel={`Open Wikipedia page for ${entry.pageTitle}`}
+            onTriggerActivate={() =>
+              openWikiPage(entry.pageTitle, entry.page_section)}
             enterable={false}
             keepWithinMap={keepPopupsWithinMap}
           >
@@ -237,13 +285,16 @@
         <img src="{basePath}icons/map.svg" alt="map" />
       </div>
       <div class="event-text">
-        {#each places as place, index}
+        {#each places as place, index (place.name)}
           {#if place.hasPage}
-            {#snippet popupContent(isOpen)}
+            {#snippet popupContent(/** @type {boolean} */ isOpen)}
               <WikiPreview pageTitle={place.name} {isOpen} />
             {/snippet}
             <MapPopup
               {popupContent}
+              popupLabel={`Wikipedia preview for ${place.name}`}
+              triggerLabel={`Open Wikipedia page for ${place.name}`}
+              onTriggerActivate={() => openWikiPage(place.name)}
               enterable={false}
               keepWithinMap={keepPopupsWithinMap}
             >
@@ -265,13 +316,16 @@
         <img src="{basePath}icons/square-user-round.svg" alt="person" />
       </div>
       <div class="event-text">
-        {#each people as person, index}
+        {#each people as person, index (person.name)}
           {#if person.hasPage}
-            {#snippet popupContent(isOpen)}
+            {#snippet popupContent(/** @type {boolean} */ isOpen)}
               <WikiPreview pageTitle={person.name} {isOpen} />
             {/snippet}
             <MapPopup
               {popupContent}
+              popupLabel={`Wikipedia preview for ${person.name}`}
+              triggerLabel={`Open Wikipedia page for ${person.name}`}
+              onTriggerActivate={() => openWikiPage(person.name)}
               enterable={false}
               keepWithinMap={keepPopupsWithinMap}
             >
@@ -291,7 +345,7 @@
     <div class="event-icon">
       <img src="{basePath}icons/newspaper.svg" alt="newspaper" />
     </div>
-    {#snippet popupContent(isOpen)}
+    {#snippet popupContent(/** @type {boolean} */ isOpen)}
       <WikiPreview pageTitle={entry.pageTitle} {isOpen} />
     {/snippet}
     <div class="event-text">
@@ -314,11 +368,11 @@
 
 <style>
   :global(.event-marker-popup .leaflet-popup-content-wrapper) {
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: var(--ln-radius-lg);
+    box-shadow: var(--ln-shadow-md);
     padding: 0;
     overflow: hidden;
-    background: #fff;
+    background: var(--ln-color-surface);
   }
 
   :global(.event-marker-popup .leaflet-popup-content) {
@@ -331,6 +385,7 @@
       Ubuntu, sans-serif;
     cursor: default;
     overflow-y: auto;
+    color: var(--ln-color-text);
   }
 
   .event-card .event-card-section {
@@ -338,7 +393,7 @@
     align-items: flex-start;
     margin-bottom: 5px;
     padding-bottom: 5px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--ln-color-border-muted);
   }
 
   .event-card .event-card-section:last-child {
@@ -368,26 +423,26 @@
   }
 
   .event-card-section.when .event-text {
-    color: #333;
+    color: var(--ln-color-text);
   }
   .event-card-section.location .event-text {
-    color: #333;
+    color: var(--ln-color-text);
   }
 
   .event-card-section.summary .event-text {
-    color: #333;
+    color: var(--ln-color-text-muted);
     font-style: italic;
   }
 
   .wiki-link {
-    color: #1a73e8 !important;
+    color: var(--ln-color-primary) !important;
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
   }
 
   .wiki-section {
-    color: #333;
+    color: var(--ln-color-text-muted);
     font-style: italic;
   }
 
@@ -400,43 +455,55 @@
   .event-card-section.go-to-event-button button {
     display: inline-flex;
     align-items: center;
-    background-color: white;
-    border: 1px solid #3366cc;
-    border-radius: 6px;
+    background-color: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-primary);
+    border-radius: var(--ln-radius-md);
     padding: 6px 14px;
+    min-height: 36px;
     font-size: 14px;
-    color: #3366cc;
+    color: var(--ln-color-primary);
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all var(--ln-transition-base);
+    box-shadow: var(--ln-shadow-sm);
   }
 
   .event-card-section.go-to-event-button button:hover {
-    background-color: #f0f5ff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    background-color: var(--ln-color-primary-soft);
+    box-shadow: var(--ln-shadow-md);
   }
 
   .event-card-section.go-to-event-button button:focus {
     outline: none;
     box-shadow:
-      0 0 0 2px rgba(51, 102, 204, 0.4),
-      0 1px 3px rgba(0, 0, 0, 0.1);
+      0 0 0 3px var(--ln-color-focus-ring),
+      var(--ln-shadow-sm);
   }
 
   .event-card-section.other-events-button button {
-    background-color: white;
-    border: 1px solid #3366cc;
-    border-radius: 6px;
+    background-color: var(--ln-color-surface);
+    border: 1px solid var(--ln-color-primary);
+    border-radius: var(--ln-radius-md);
+    color: var(--ln-color-primary);
+    padding: 6px 14px;
+    min-height: 36px;
+    transition: all var(--ln-transition-base);
   }
 
   .event-card-section.other-events-button button:hover {
-    background-color: #f0f5ff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    background-color: var(--ln-color-primary-soft);
+    box-shadow: var(--ln-shadow-md);
     cursor: pointer;
   }
 
   .page-title-wrapper {
     display: inline-block;
     position: relative;
+  }
+
+  @media (max-width: 768px) {
+    .event-card-section.go-to-event-button button,
+    .event-card-section.other-events-button button {
+      min-height: var(--ln-space-touch);
+    }
   }
 </style>

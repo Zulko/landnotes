@@ -97,7 +97,7 @@
       // "https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg",
       {
         attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
         minZoom: 2,
       }
@@ -135,7 +135,12 @@
   }
 
   // ===== MAP CONTROL FUNCTIONS =====
-  export function mapTravel({ location, zoom, flyDuration }) {
+  export function mapTravel({
+    location,
+    zoom,
+    flyDuration,
+    reserveMobilePane = false,
+  }) {
     const { lat, lon } = location;
     clearTimeout(handleBoundChangesAfterFlyToTimeOut);
     clearTimeout(fixZoomAfterFlyToTimeOut);
@@ -146,14 +151,21 @@
       markerLayer.clearLayers();
     }
 
+    const travelCenter = getTravelCenter({
+      lat,
+      lon,
+      zoom,
+      reserveMobilePane,
+    });
+
     if (flyDuration == 0) {
-      map.setView([lat, lon], zoom, {
+      map.setView(travelCenter, zoom, {
         animate: false,
         duration: 0,
       });
     } else {
       isFlying = true;
-      map.flyTo([lat, lon], zoom, {
+      map.flyTo(travelCenter, zoom, {
         animate: true,
         duration: flyDuration, // Duration in seconds
       });
@@ -177,6 +189,31 @@
     }
   }
   uiGlobals.mapTravel = mapTravel;
+
+  function getTravelCenter({ lat, lon, zoom, reserveMobilePane }) {
+    const bottomInset = getMobilePaneBottomInset({ reserveMobilePane });
+    if (!bottomInset) {
+      return [lat, lon];
+    }
+
+    const targetPoint = map.project([lat, lon], zoom);
+    const adjustedCenterPoint = targetPoint.add([0, bottomInset / 2]);
+    const adjustedCenter = map.unproject(adjustedCenterPoint, zoom);
+    return [adjustedCenter.lat, adjustedCenter.lng];
+  }
+
+  function getMobilePaneBottomInset({ reserveMobilePane }) {
+    const paneIsOpen =
+      appState.wikiPage ||
+      appState.paneTab === "same-location-events" ||
+      appState.paneTab === "about";
+
+    if ((!paneIsOpen && !reserveMobilePane) || window.innerWidth > 768) {
+      return 0;
+    }
+
+    return window.innerHeight * 0.5;
+  }
 
   // ===== EVENT HANDLERS =====
   function handleBoundsChange() {
@@ -271,6 +308,11 @@
 
     const newDotMarkerLayer = L.layerGroup();
     const newDotMarkers = new Map();
+    const dotStroke = cssToken(
+      map.getZoom() < 7 ? "--ln-color-text-subtle" : "--ln-color-text",
+      map.getZoom() < 7 ? "#777" : "#111"
+    );
+    const dotFill = cssToken("--ln-color-surface", "white");
 
     for (const dotEntry of mapEntries.dots) {
       const markerId = dotEntry.id || `${dotEntry.lat}-${dotEntry.lon}`;
@@ -286,11 +328,13 @@
         marker = L.circleMarker([dotEntry.lat, dotEntry.lon], {
           radius: 4,
           weight: 1,
-          color: map.getZoom() < 7 ? "#777" : "#111",
-          fillColor: "white",
+          color: dotStroke,
+          fillColor: dotFill,
           fillOpacity: 1,
           pane: "dots",
+          bubblingMouseEvents: false,
         });
+        marker.on("click", () => handleDotClick(dotEntry));
       }
       marker.addTo(newDotMarkerLayer);
       newDotMarkers.set(markerId, {
@@ -306,6 +350,23 @@
     newDotMarkerLayer.addTo(map);
     dotMarkerLayer = newDotMarkerLayer;
     currentDotMarkers = newDotMarkers;
+  }
+
+  function handleDotClick(dotEntry) {
+    if (!map) return;
+    const maxZoom = map.getMaxZoom();
+    const targetZoom = Math.min(map.getZoom() + 2, maxZoom);
+    mapTravel({
+      location: { lat: dotEntry.lat, lon: dotEntry.lon },
+      zoom: targetZoom,
+      flyDuration: 0.5,
+    });
+  }
+
+  function cssToken(name, fallback) {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue(name)
+      .trim() || fallback;
   }
 </script>
 
@@ -328,7 +389,7 @@
   }
 
   :global(.leaflet-popup-tip) {
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: var(--ln-color-surface);
   }
 
   /* :global(.leaflet-popup-pane) {
