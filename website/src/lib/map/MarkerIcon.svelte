@@ -103,7 +103,9 @@
   triggerClass="map-marker-trigger"
   onTriggerActivate={onClick}
   enterable={entry.isEvent || uiGlobals.isTouchDevice}
-  alwaysOpen={uiGlobals.isTouchDevice && entry.displayClass === "selected"}
+  alwaysOpen={uiGlobals.isTouchDevice &&
+    entry.displayClass === "selected" &&
+    entry.isEvent}
   visibilityDelay={entry.isEvent ? 0 : 100}
   keepWithinMap={true}
 >

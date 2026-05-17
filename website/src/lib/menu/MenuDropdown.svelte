@@ -180,9 +180,11 @@
       >
         Share the link for the current view
       </span>
-      <div class="share-status {shareStatusType}" role="status" aria-live="polite">
-        {shareStatus}
-      </div>
+      {#if shareStatus}
+        <div class="share-status {shareStatusType}" role="status" aria-live="polite">
+          {shareStatus}
+        </div>
+      {/if}
       <span
         onclick={() => {
           appState.paneTab = "about";
@@ -337,7 +339,6 @@
   }
 
   .share-status {
-    min-height: 20px;
     padding: 0 16px 8px;
     color: var(--ln-color-success);
     font-size: 13px;
