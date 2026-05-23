@@ -63,54 +63,46 @@
     );
   }
 
-  async function handleShareLink() {
-    const currentUrl = window.location.href;
+  const canNativeShare = $derived(
+    typeof navigator !== "undefined" && typeof navigator.share === "function",
+  );
 
+  function getCurrentUrl() {
+    return window.location.href;
+  }
+
+  async function handleCopyLink() {
     try {
-      if (navigator.share) {
-        // Use native share on mobile devices
-        await navigator.share({
-          title: "Landnotes - Wikipedia on the map",
-          url: currentUrl,
-        });
-        // If we reach here, sharing was successful
-        console.log("Share completed successfully");
-        onCloseMenu();
-        return;
-      } else {
-        // Copy to clipboard on desktop
-        await navigator.clipboard.writeText(currentUrl);
-        setShareStatus("Link copied to clipboard.");
-        closeAfterStatus();
-        return;
-      }
+      await navigator.clipboard.writeText(getCurrentUrl());
+      setShareStatus("Copied");
+      closeAfterStatus();
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+      setShareStatus("Couldn't copy link", "error");
+    }
+  }
+
+  async function handleShareLink() {
+    try {
+      await navigator.share({
+        title: "Landnotes - Wikipedia on the map",
+        url: getCurrentUrl(),
+      });
+      onCloseMenu();
     } catch (error) {
       const shareError = hasErrorDetails(error)
         ? error
         : { name: "Error", message: String(error) };
 
-      console.log("Share operation failed:", shareError.name, shareError.message);
-
-      // Check if it's a user cancellation (common with navigator.share)
       if (
         shareError.name === "AbortError" ||
         shareError.message.includes("canceled")
       ) {
-        console.log("User canceled the share operation");
-        // Don't show fallback for user cancellation
-        onCloseMenu();
         return;
       }
 
-      // Fallback: copy to clipboard for other errors
-      try {
-        await navigator.clipboard.writeText(currentUrl);
-        setShareStatus("Link copied to clipboard.");
-        closeAfterStatus();
-      } catch (clipboardError) {
-        console.error("Failed to share or copy link:", error, clipboardError);
-        setShareStatus("Unable to copy link. Please try again.", "error");
-      }
+      console.error("Share operation failed:", shareError.name, shareError.message);
+      setShareStatus("Couldn't share link", "error");
     }
   }
 
@@ -165,44 +157,53 @@
       </div>
     {/if}
 
-    <!-- Links section -->
-    <div class="menu-links">
-      <span
-        onclick={handleShareLink}
-        onkeydown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            handleShareLink();
-          }
-        }}
-        class="menu-item"
-        role="button"
-        tabindex="0"
-      >
-        Share the link for the current view
-      </span>
+    <div class="menu-group share-group">
+      <span class="menu-label">Link to your current view</span>
+      <div class="menu-options">
+        <button type="button" class="mode-option" onclick={handleCopyLink}>
+          <span aria-hidden="true">⧉</span> Copy
+        </button>
+        <button
+          type="button"
+          class="mode-option"
+          onclick={handleShareLink}
+          disabled={!canNativeShare}
+          title={canNativeShare ? undefined : "Sharing is not supported in this browser"}
+        >
+          <span aria-hidden="true">↗</span> Share
+        </button>
+      </div>
       {#if shareStatus}
-        <div class="share-status {shareStatusType}" role="status" aria-live="polite">
+        <p
+          class="share-feedback {shareStatusType}"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="share-feedback-mark" aria-hidden="true">
+            {shareStatusType === "success" ? "✓" : "!"}
+          </span>
           {shareStatus}
-        </div>
+        </p>
       {/if}
-      <span
-        onclick={() => {
+    </div>
+
+    <span
+      onclick={() => {
+        appState.paneTab = "about";
+        onCloseMenu();
+      }}
+      onkeydown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
           appState.paneTab = "about";
           onCloseMenu();
-        }}
-        onkeydown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            appState.paneTab = "about";
-            onCloseMenu();
-          }
-        }}
-        class="menu-item"
-        role="button"
-        tabindex="0"
-      >
-        About Landnotes
-      </span>
-    </div>
+        }
+      }}
+      class="menu-item"
+      role="button"
+      tabindex="0"
+    >
+      About Landnotes
+    </span>
   </div>
 </div>
 
@@ -236,10 +237,6 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
-  }
-
-  .menu-group:last-of-type {
-    border-bottom: none;
   }
 
   .menu-label {
@@ -305,20 +302,29 @@
     box-shadow: var(--ln-shadow-primary-md);
   }
 
+  .mode-option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .mode-option:disabled:hover,
+  .mode-option:disabled:focus {
+    background-color: var(--ln-color-surface);
+    border-color: var(--ln-color-border);
+    box-shadow: var(--ln-shadow-sm);
+    transform: none;
+  }
+
   .menu-item {
     display: block;
     padding: 12px 16px;
     text-decoration: none;
     color: var(--ln-color-primary);
-    border-bottom: 1px solid var(--ln-color-border-muted);
     cursor: pointer;
     font-size: 15px;
     font-weight: 500;
     transition: all var(--ln-transition-base);
-  }
-
-  .menu-item:last-child {
-    border-bottom: none;
   }
 
   .menu-item:hover {
@@ -334,17 +340,58 @@
     color: var(--ln-color-primary-hover);
   }
 
-  .menu-links {
-    border-top: 1px solid var(--ln-color-border-muted);
+  .share-group .share-feedback {
+    flex-basis: 100%;
+    margin: 2px 0 0;
   }
 
-  .share-status {
-    padding: 0 16px 8px;
+  .share-feedback {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 5px 10px;
+    border-radius: var(--ln-radius-md);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+    background: color-mix(in srgb, var(--ln-color-success) 10%, var(--ln-color-surface));
     color: var(--ln-color-success);
-    font-size: 13px;
+    animation: share-feedback-in var(--ln-transition-base);
   }
 
-  .share-status.error {
+  .share-feedback-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: var(--ln-radius-pill);
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    background: color-mix(in srgb, var(--ln-color-success) 18%, var(--ln-color-surface));
+  }
+
+  .share-feedback.error {
+    background: color-mix(in srgb, var(--ln-color-danger) 10%, var(--ln-color-surface));
     color: var(--ln-color-danger);
+  }
+
+  .share-feedback.error .share-feedback-mark {
+    background: color-mix(in srgb, var(--ln-color-danger) 18%, var(--ln-color-surface));
+  }
+
+  @keyframes share-feedback-in {
+    from {
+      opacity: 0;
+      transform: translateY(-3px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 </style>
