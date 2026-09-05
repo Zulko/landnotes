@@ -50,6 +50,8 @@
   let visibilityTimeout = $state(undefined); // Track visibility timeout
   /** @type {number | undefined} */
   let unmountTimeout = $state(undefined);
+  /** @type {number | undefined} */
+  let settleTimeout = $state(undefined);
   let visibility = $state("hidden");
   let zIndex = $state(8000);
   let revealOx = $state("50%");
@@ -62,9 +64,10 @@
   let contentMounted = $state(false);
   /** @type {"idle" | "in" | "out"} */
   let revealPhase = $state(/** @type {"idle" | "in" | "out"} */ ("idle"));
+  let revealSettled = $state(false);
   const showPopupContent = $derived(fluid ? contentMounted : isOpen);
   const fluidInteractive = $derived(
-    fluid && enterable && revealPhase === "in"
+    fluid && enterable && revealPhase === "in" && revealSettled
   );
   const triggerClassName = $derived(
     [triggerClass, isHovered && "is-hovered"].filter(Boolean).join(" ")
@@ -106,6 +109,7 @@
       clearTimeout(closeTimeout);
       clearTimeout(visibilityTimeout);
       clearTimeout(unmountTimeout);
+      clearTimeout(settleTimeout);
     };
   });
 
@@ -124,8 +128,10 @@
 
       if (fluid) {
         clearTimeout(unmountTimeout);
+        clearTimeout(settleTimeout);
         contentMounted = true;
         revealPhase = "idle";
+        revealSettled = false;
       }
 
       // Wait for the popup snippet to render before measuring, otherwise the
@@ -148,6 +154,12 @@
           visibility = "visible";
           if (fluid) {
             revealPhase = "in";
+            clearTimeout(settleTimeout);
+            settleTimeout = setTimeout(() => {
+              if (isOpen && revealPhase === "in") {
+                revealSettled = true;
+              }
+            }, 400);
           }
         }, visibilityDelay);
       });
@@ -155,6 +167,8 @@
       clearTimeout(visibilityTimeout);
       if (fluid) {
         revealPhase = "idle";
+        revealSettled = false;
+        clearTimeout(settleTimeout);
         const reducedMotion = window.matchMedia(
           "(prefers-reduced-motion: reduce)"
         ).matches;
@@ -328,20 +342,22 @@
   function pointerStillOnPopupOrTrigger() {
     return Boolean(
       triggerElement?.matches(":hover") ||
-        (enterable && popupElement?.matches(":hover"))
+        (enterable &&
+          (!fluid || revealSettled) &&
+          popupElement?.matches(":hover"))
     );
   }
 
   function onMouseLeave() {
-    // Leaflet pane moves and the growing card can fire a fake leave.
-    // Wait a frame and only close if the pointer is actually gone.
+    // Leaflet pane moves can fire a fake leave. Wait a frame, then abort
+    // unless the pointer is still on the marker (or a fully grown card).
     requestAnimationFrame(() => {
       if (pointerStillOnPopupOrTrigger()) {
         clearTimeout(closeTimeout);
         isHovered = true;
         return;
       }
-      if (enterable) {
+      if (enterable && (!fluid || revealSettled)) {
         clearTimeout(closeTimeout);
         closeTimeout = setTimeout(() => {
           if (pointerStillOnPopupOrTrigger()) {
@@ -369,6 +385,10 @@
     isHovered = false;
     clearTimeout(closeTimeout);
     clearTimeout(visibilityTimeout);
+    clearTimeout(settleTimeout);
+    if (fluid) {
+      revealSettled = false;
+    }
     if (!fluid) {
       visibility = "hidden";
       if (popupElement) {
@@ -377,6 +397,18 @@
     }
     if (focusTrigger && triggerElement) {
       triggerElement.focus();
+    }
+  }
+
+  /** @param {TransitionEvent} event */
+  function onRevealTransitionEnd(event) {
+    if (event.target !== event.currentTarget) return;
+    if (event.propertyName !== "transform" && event.propertyName !== "opacity") {
+      return;
+    }
+    if (revealPhase === "in" && isOpen) {
+      revealSettled = true;
+      clearTimeout(settleTimeout);
     }
   }
 
@@ -434,6 +466,7 @@
           "reveal-in": fluid && revealPhase === "in",
         },
       ]}
+      ontransitionend={onRevealTransitionEnd}
     >
       <div class="map-popup-content">
         {@render popupContent(true)}
@@ -587,12 +620,12 @@
     clip-path: circle(280% at var(--reveal-ox, 50%) var(--reveal-oy, 100%));
     box-shadow: var(--ln-shadow-popup);
     transition-duration: 0.35s;
-    transition-timing-function: cubic-bezier(0.42, 0, 0.58, 0.8);
+    transition-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
   }
 
   .map-popup-body.fluid.reveal-in .map-popup-content {
     opacity: 1;
-    transition: opacity 0.14s ease-out 0.16s;
+    transition: opacity 0.12s ease-out 0.22s;
   }
 
   @media (prefers-reduced-motion: reduce) {
