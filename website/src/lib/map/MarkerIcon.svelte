@@ -108,6 +108,7 @@
     entry.isEvent}
   visibilityDelay={entry.isEvent ? 0 : 100}
   keepWithinMap={true}
+  fluid={true}
 >
   <div
     class={`map-marker marker-display-${entry.displayClass}`}
@@ -156,12 +157,14 @@
     display: block;
     text-align: center;
 
-    &:hover {
+    &:hover,
+    :global(.map-marker-trigger.is-hovered) & {
       transform: scale(1.1);
       filter: brightness(1.2);
       z-index: 1000 !important; /* Ensure hovered markers appear above others */
     }
     &:hover > .marker-icon-circle,
+    :global(.map-marker-trigger.is-hovered) & > .marker-icon-circle,
     &.marker-display-selected > .marker-icon-circle {
       --circle-size: 32px !important;
       box-shadow: var(--ln-shadow-marker);
@@ -169,6 +172,7 @@
     }
 
     &:hover > .marker-text-container,
+    :global(.map-marker-trigger.is-hovered) & > .marker-text-container,
     &.marker-display-selected > .marker-text-container {
       z-index: 901 !important;
     }
@@ -179,6 +183,7 @@
     }
 
     &:hover > .marker-text-container,
+    :global(.map-marker-trigger.is-hovered) & > .marker-text-container,
     &.marker-display-selected > .marker-text-container {
       visibility: visible;
       opacity: 1;

@@ -26,6 +26,7 @@
     enterable = false,
     visibilityDelay = 0,
     keepWithinMap = false,
+    fluid = false,
   } = $props(); // Title to look up
   /** @type {HTMLElement | null} */
   let popupElement = $state(null); // Reference to popup element
@@ -47,13 +48,27 @@
   let closeTimeout = $state(undefined);
   /** @type {number | undefined} */
   let visibilityTimeout = $state(undefined); // Track visibility timeout
+  /** @type {number | undefined} */
+  let unmountTimeout = $state(undefined);
   let visibility = $state("hidden");
   let zIndex = $state(8000);
+  let revealOx = $state("50%");
+  let revealOy = $state("100%");
   let popupStyle = $derived(
-    `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility}; z-index: ${zIndex};`
+    `transform: translate(${popupLeft}px, ${popupTop}px); visibility: ${visibility}; z-index: ${zIndex}; --reveal-ox: ${revealOx}; --reveal-oy: ${revealOy};`
   );
   /** @type {ResizeObserver | null} */
   let resizeObserver = $state(null);
+  let contentMounted = $state(false);
+  /** @type {"idle" | "in" | "out"} */
+  let revealPhase = $state(/** @type {"idle" | "in" | "out"} */ ("idle"));
+  const showPopupContent = $derived(fluid ? contentMounted : isOpen);
+  const fluidInteractive = $derived(
+    fluid && enterable && revealPhase === "in"
+  );
+  const triggerClassName = $derived(
+    [triggerClass, isHovered && "is-hovered"].filter(Boolean).join(" ")
+  );
 
   onMount(() => {
     // Check if portal target exists
@@ -90,6 +105,7 @@
       // Clear any pending timeouts on unmount
       clearTimeout(closeTimeout);
       clearTimeout(visibilityTimeout);
+      clearTimeout(unmountTimeout);
     };
   });
 
@@ -106,6 +122,12 @@
         popupElement.style.removeProperty("visibility");
       }
 
+      if (fluid) {
+        clearTimeout(unmountTimeout);
+        contentMounted = true;
+        revealPhase = "idle";
+      }
+
       // Wait for the popup snippet to render before measuring, otherwise the
       // popup is sized to its empty wrapper and ends up overlapping the trigger.
       tick().then(() => {
@@ -119,21 +141,72 @@
             }
           });
         }
-      });
 
-      clearTimeout(visibilityTimeout);
-      visibilityTimeout = setTimeout(() => {
-        visibility = "visible";
-      }, visibilityDelay);
+        clearTimeout(visibilityTimeout);
+        visibilityTimeout = setTimeout(() => {
+          if (!isOpen) return;
+          visibility = "visible";
+          if (fluid) {
+            revealPhase = "in";
+          }
+        }, visibilityDelay);
+      });
     } else if (!isOpen && wasOpen) {
       clearTimeout(visibilityTimeout);
-      visibility = "hidden";
-      if (popupElement) {
-        popupElement.style.visibility = "hidden";
+      if (fluid) {
+        revealPhase = "idle";
+        const reducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+        clearTimeout(unmountTimeout);
+        unmountTimeout = setTimeout(
+          () => {
+            if (!isOpen) {
+              contentMounted = false;
+              revealPhase = "idle";
+              visibility = "hidden";
+              if (popupElement) {
+                popupElement.style.visibility = "hidden";
+              }
+            }
+          },
+          reducedMotion ? 120 : 180
+        );
+      } else {
+        visibility = "hidden";
+        if (popupElement) {
+          popupElement.style.visibility = "hidden";
+        }
       }
     }
     wasOpen = isOpen;
   });
+
+  /**
+   * Grow/shrink from the marker circle, not the card center — including when
+   * the popup is shifted to stay on-screen.
+   * @param {number} left
+   * @param {number} top
+   * @param {number} popupWidth
+   * @param {number} popupHeight
+   */
+  function updateRevealOrigin(left, top, popupWidth, popupHeight) {
+    if (!triggerElement) return;
+    // Freeze origin during expand/collapse so resize does not snap the scale.
+    if (revealPhase === "in" || !isOpen) return;
+
+    const circle = triggerElement.querySelector(".marker-icon-circle");
+    const anchorRect =
+      circle instanceof HTMLElement
+        ? circle.getBoundingClientRect()
+        : triggerElement.getBoundingClientRect();
+    const anchorX = anchorRect.left + anchorRect.width / 2 + window.scrollX;
+    const anchorY = anchorRect.top + anchorRect.height / 2 + window.scrollY;
+    const originX = Math.min(Math.max(anchorX - left, 0), popupWidth);
+    const originY = Math.min(Math.max(anchorY - top, 0), popupHeight);
+    revealOx = `${originX}px`;
+    revealOy = `${originY}px`;
+  }
 
   // Position the popup based on available screen space
   function updateTooltipPosition() {
@@ -154,10 +227,11 @@
 
     try {
       const triggerRect = triggerElement.getBoundingClientRect();
-      const popupRect = popupElement.getBoundingClientRect();
+      const popupWidth = popupElement.offsetWidth;
+      const popupHeight = popupElement.offsetHeight;
 
       // Validate rect values
-      if (popupRect.width === 0 || popupRect.height === 0) {
+      if (popupWidth === 0 || popupHeight === 0) {
         // Element might not be rendered yet, try again on next frame
         requestAnimationFrame(() => updateTooltipPosition());
         return;
@@ -178,12 +252,12 @@
           : viewportWidth - mapWidth;
 
       // Default position (above and centered)
-      let top = absoluteTop - popupRect.height - 2;
-      let left = absoluteLeft - popupRect.width / 2 + triggerRect.width / 2;
+      let top = absoluteTop - popupHeight - 2;
+      let left = absoluteLeft - popupWidth / 2 + triggerRect.width / 2;
 
       // Check right edge
-      if (left + popupRect.width > viewportWidth - 10) {
-        left = viewportWidth - popupRect.width - 10;
+      if (left + popupWidth > viewportWidth - 10) {
+        left = viewportWidth - popupWidth - 10;
       }
 
       // Check left edge against map bounds
@@ -198,29 +272,31 @@
         viewportHeight - (triggerRect.top + triggerRect.height);
 
       // Adjust vertical position if needed
-      if (spaceAbove < popupRect.height + 10) {
+      if (spaceAbove < popupHeight + 10) {
         // Not enough space above, try below
-        if (spaceBelow >= popupRect.height + 10) {
+        if (spaceBelow >= popupHeight + 10) {
           // Enough space below
           top = absoluteTop + triggerRect.height + 5;
         } else {
           // Not enough space above or below, use the side with more space
-          top =
-            spaceAbove > spaceBelow
-              ? Math.max(
-                  window.scrollY + 10,
-                  absoluteTop - popupRect.height - 2
-                )
-              : Math.min(
-                  absoluteTop + triggerRect.height + 5,
-                  window.scrollY + viewportHeight - popupRect.height - 10
-                );
+          if (spaceAbove > spaceBelow) {
+            top = Math.max(
+              window.scrollY + 10,
+              absoluteTop - popupHeight - 2
+            );
+          } else {
+            top = Math.min(
+              absoluteTop + triggerRect.height + 5,
+              window.scrollY + viewportHeight - popupHeight - 10
+            );
+          }
         }
       }
 
       // Set absolute position
       popupTop = top;
       popupLeft = left;
+      updateRevealOrigin(left, top, popupWidth, popupHeight);
     } catch (error) {
       console.error("MapPopup: Error updating position", error);
     }
@@ -249,15 +325,35 @@
     return document.documentElement;
   }
 
+  function pointerStillOnPopupOrTrigger() {
+    return Boolean(
+      triggerElement?.matches(":hover") ||
+        (enterable && popupElement?.matches(":hover"))
+    );
+  }
+
   function onMouseLeave() {
-    if (enterable) {
-      clearTimeout(closeTimeout);
-      closeTimeout = setTimeout(() => {
+    // Leaflet pane moves and the growing card can fire a fake leave.
+    // Wait a frame and only close if the pointer is actually gone.
+    requestAnimationFrame(() => {
+      if (pointerStillOnPopupOrTrigger()) {
+        clearTimeout(closeTimeout);
+        isHovered = true;
+        return;
+      }
+      if (enterable) {
+        clearTimeout(closeTimeout);
+        closeTimeout = setTimeout(() => {
+          if (pointerStillOnPopupOrTrigger()) {
+            isHovered = true;
+            return;
+          }
+          closeHoverPopup();
+        }, 200);
+      } else {
         closeHoverPopup();
-      }, 200);
-    } else {
-      closeHoverPopup();
-    }
+      }
+    });
   }
   function clearCloseTimeoutIfEnterable() {
     if (enterable) {
@@ -273,9 +369,11 @@
     isHovered = false;
     clearTimeout(closeTimeout);
     clearTimeout(visibilityTimeout);
-    visibility = "hidden";
-    if (popupElement) {
-      popupElement.style.visibility = "hidden";
+    if (!fluid) {
+      visibility = "hidden";
+      if (popupElement) {
+        popupElement.style.visibility = "hidden";
+      }
     }
     if (focusTrigger && triggerElement) {
       triggerElement.focus();
@@ -326,10 +424,28 @@
 
 <svelte:window onkeydown={handleEscape} />
 
+{#snippet popupPanel()}
+  {#if showPopupContent}
+    <div
+      class={[
+        "map-popup-body",
+        {
+          fluid,
+          "reveal-in": fluid && revealPhase === "in",
+        },
+      ]}
+    >
+      <div class="map-popup-content">
+        {@render popupContent(true)}
+      </div>
+    </div>
+  {/if}
+{/snippet}
+
 {#if portalTarget}
   <div
     id={popupId}
-    class="map-popup"
+    class={["map-popup", fluid && "fluid-popup", fluidInteractive && "fluid-interactive"]}
     use:portal={"#main"}
     bind:this={popupElement}
     style={popupStyle}
@@ -346,16 +462,14 @@
     aria-modal="false"
     aria-label={popupAriaLabel}
     aria-labelledby={popupLabelledby}
-    aria-hidden={!isOpen}
+    aria-hidden={!showPopupContent}
   >
-    {#if isOpen}
-      {@render popupContent(isOpen)}
-    {/if}
+    {@render popupPanel()}
   </div>
 {:else}
   <div
     id={popupId}
-    class="map-popup"
+    class={["map-popup", fluid && "fluid-popup", fluidInteractive && "fluid-interactive"]}
     bind:this={popupElement}
     style={popupStyle}
     onmouseenter={() => {
@@ -371,18 +485,16 @@
     aria-modal="false"
     aria-label={popupAriaLabel}
     aria-labelledby={popupLabelledby}
-    aria-hidden={!isOpen}
+    aria-hidden={!showPopupContent}
   >
-    {#if isOpen}
-      {@render popupContent(isOpen)}
-    {/if}
+    {@render popupPanel()}
   </div>
 {/if}
 
 {#if isNativeButtonTrigger}
   <button
     bind:this={triggerElement}
-    class={triggerClass}
+    class={triggerClassName}
     type="button"
     aria-haspopup="dialog"
     aria-expanded={isOpen}
@@ -403,7 +515,7 @@
   <svelte:element
     this={triggerTag}
     bind:this={triggerElement}
-    class={triggerClass}
+    class={triggerClassName}
     role={effectiveTriggerRole}
     tabindex={effectiveTriggerRole ? 0 : undefined}
     aria-haspopup={triggerHasPopupSemantics ? "dialog" : undefined}
@@ -430,12 +542,77 @@
     max-height: 312px;
     overflow: visible;
     padding: 0;
+    font-size: 14px;
+  }
 
+  :global(.map-popup.fluid-popup) {
+    pointer-events: none;
+  }
+
+  :global(.map-popup.fluid-popup.fluid-interactive) {
+    pointer-events: auto;
+  }
+
+  .map-popup-body {
+    width: 100%;
+    max-height: 312px;
+    overflow: hidden;
     background: var(--ln-color-surface);
     border: 1px solid var(--ln-color-border);
     border-radius: var(--ln-radius-lg);
     box-shadow: var(--ln-shadow-popup);
-    transition: opacity 0.2s ease-out;
-    font-size: 14px;
+  }
+
+  .map-popup-body.fluid {
+    transform: scale(0.02);
+    transform-origin: var(--reveal-ox, 50%) var(--reveal-oy, 100%);
+    border-radius: 50%;
+    clip-path: circle(2% at var(--reveal-ox, 50%) var(--reveal-oy, 100%));
+    box-shadow: none;
+    transition:
+      transform 0.15s cubic-bezier(0.7, 0, 0.84, 0),
+      clip-path 0.15s cubic-bezier(0.7, 0, 0.84, 0),
+      border-radius 0.15s cubic-bezier(0.7, 0, 0.84, 0),
+      box-shadow 0.15s cubic-bezier(0.7, 0, 0.84, 0);
+  }
+
+  .map-popup-body.fluid .map-popup-content {
+    opacity: 0;
+    transition: opacity 0.08s ease-in;
+  }
+
+  .map-popup-body.fluid.reveal-in {
+    transform: scale(1);
+    border-radius: var(--ln-radius-lg);
+    clip-path: circle(280% at var(--reveal-ox, 50%) var(--reveal-oy, 100%));
+    box-shadow: var(--ln-shadow-popup);
+    transition-duration: 0.35s;
+    transition-timing-function: cubic-bezier(0.42, 0, 0.58, 0.8);
+  }
+
+  .map-popup-body.fluid.reveal-in .map-popup-content {
+    opacity: 1;
+    transition: opacity 0.14s ease-out 0.16s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .map-popup-body.fluid {
+      transform: none;
+      clip-path: none;
+      border-radius: var(--ln-radius-lg);
+      box-shadow: var(--ln-shadow-popup);
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+
+    .map-popup-body.fluid.reveal-in {
+      opacity: 1;
+    }
+
+    .map-popup-body.fluid .map-popup-content,
+    .map-popup-body.fluid.reveal-in .map-popup-content {
+      opacity: 1;
+      transition: none;
+    }
   }
 </style>

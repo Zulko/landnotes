@@ -67,9 +67,20 @@ export function updateMarkerIcon({ marker, entry }) {
 }
 
 export function updateMarkerPane(marker, pane) {
-  uiGlobals.leafletMap.removeLayer(marker);
+  if (marker.options.pane === pane) return;
+
+  const map = /** @type {L.Map | null} */ (uiGlobals.leafletMap);
+  if (!map) return;
+  const paneEl = map.getPane(pane);
   marker.options.pane = pane;
-  marker.addTo(uiGlobals.leafletMap);
+  // Move the existing icon instead of removeLayer/addTo — remounting
+  // fires a spurious mouseleave that restarts hover animations.
+  if (paneEl && marker._icon && marker._icon.parentNode !== paneEl) {
+    paneEl.appendChild(marker._icon);
+  }
+  if (paneEl && marker._shadow && marker._shadow.parentNode !== paneEl) {
+    paneEl.appendChild(marker._shadow);
+  }
 }
 
 export function cleanupMarker(marker) {
@@ -128,7 +139,8 @@ function bindHoverEvents({ marker, entry }) {
     marker.on("mouseover", () => {
       clearTimeout(unhoverTimeout);
       if (isHovered) return;
-      
+      isHovered = true;
+
       // Update icon size directly without creating a new icon
       const [width, height] = iconSizesByDisplayClass["full"];
       marker.options.icon.options.iconSize = [width, height];
@@ -145,11 +157,17 @@ function bindHoverEvents({ marker, entry }) {
       
       // Move to top pane
       updateMarkerPane(marker, "topPane");
-      isHovered = true;
     });
     
-    marker.on("mouseout", () => {
+    marker.on("mouseout", (event) => {
+      const related = event.originalEvent?.relatedTarget;
+      // @ts-ignore - accessing internal Leaflet property
+      if (related && marker._icon?.contains(related)) return;
+
       unhoverTimeout = setTimeout(() => {
+        // @ts-ignore - accessing internal Leaflet property
+        if (marker._icon?.matches(":hover")) return;
+
         // Use the current display class stored on the marker
         // @ts-ignore - accessing custom property
         const currentDisplayClass = marker._currentDisplayClass || 'reduced';
